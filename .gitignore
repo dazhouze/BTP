@@ -12,10 +12,13 @@
 *.txt
 !requirements.txt
 !LICENSES.txt
+nohup.out
+*.sh
 
 # Directory
 __*/
 *__/
+HLA_*/
 
 # Python
 *.py[cod]
