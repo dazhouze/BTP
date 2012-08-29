@@ -1,12 +1,10 @@
 #!/bin/bash
-dir=./HLA_A
-gene=A
-rm -rf $dir/
-# A gene
-python phasing.py -s 29910247 -e 29913661 -o $dir 
+dir=./HLA_DPA1
+gene=DPA1
+python3 phasing.py -s 33032346 -e 33048555 -o $dir 
 
 # fetch fastq
-python fetch.py $dir/phase_0.txt $dir/phase_1.txt
+python3 fetch.py $dir/phase_0.txt $dir/phase_1.txt
 # BWA Alignment Command
 align="bwa mem -x pacbio"
 # Homo Sapiens Reference Renome hg19

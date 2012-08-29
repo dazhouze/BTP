@@ -425,9 +425,11 @@ class LinkedBinaryTree(object):
         And return the root of tree or the break point(new root of tree)
         '''
         pruning_f = open(tree_p, 'a')
+        result = [] # result list: tree node Position
         if not self.is_empty():
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
+                print(other, node.get_element())
                 dep = node.get_element().get_depth()  # left child element value
                 if dep == 0: # root
                     continue
@@ -467,6 +469,7 @@ class LinkedBinaryTree(object):
                     if left_num is not None and right_num is not None:
                         # left child element value is larger, delete right child tree
                         if left_num >= right_num:
+                            result.append(left_p) # add left child node Position to result list
                             self.delete_subtree(right_p)
                             if com is not True:
                                 # left child element need to clean as homo snp
@@ -476,6 +479,7 @@ class LinkedBinaryTree(object):
                                 self.__validate(left_p).get_element().set_clean(1)
                         # right child element value is larger, delete left child tree
                         elif left_num < right_num:
+                            result.append(right_p) # add right child node Position to result list
                             self.delete_subtree(left_p)
                             if com is not True:
                                 # right child element need to clean as homo snp
@@ -485,13 +489,17 @@ class LinkedBinaryTree(object):
                                 self.__validate(right_p).get_element().set_clean(1)
                         elif left_num == right_num == 0: # no link information
                             if left_cross > right_cross: # use cross information
+                                result.append(left_p) # add left child node Position to result list
                                 self.delete_subtree(right_p)
                             elif right_cross > left_cross:
+                                result.append(right_p) # add right child node Position to result list
                                 self.delete_subtree(left_p)
                             else: # no link info and crossover info
                                 #raise ValueError('depth', dep, 'Should be break point.')
                                 # break point
+                                result.append(left_p) # add left child node Position to result list
                                 self.delete_subtree(right_p) # rm right subtree (all 2 node in same level)
+        return result # result list: tree node Position
 
 
     def align_error(self, num_direct, cross_direct, sig_num, sig_cross, heter_base):
@@ -598,36 +606,34 @@ class LinkedBinaryTree(object):
             sub_r.append(direct)
         return sub_l, sub_r
 
-    def setdefault(self, d, n):
+    def setdefault(self, p, d, n):
         '''Init 2 child of depth d and set default v.
         Traverse tree through postorder.
         '''
-        before_n = 0 # set 0 before depth
-        for other in self.__subtree_preorder(self.root()):
-            #dep = self.__validate(other).get_element().get_depth()  # depth of node
-            dep = self.depth(other)
+        for other in self.__subtree_preorder(p):
+            dep = 0 # depth of node
+            if other != self.root():
+                dep = self.__validate(other).get_element().get_depth()
             if dep < d-1 and self.num_children(other) == 0:
-                self.add_left(other, Marker(dep+1, before_n, 0))
-                self.add_right(other, Marker(dep+1, before_n, 1))
+                self.add_left(other, Marker(dep+1, 0, 0))
+                self.add_right(other, Marker(dep+1, 0, 1))
             elif dep == d-1 and self.num_children(other) == 0:
                 self.add_left(other, Marker(dep+1, n, 0))
                 self.add_right(other, Marker(dep+1, n, 1))
 
-    def clean(self, level_s):
+    def clean(self, left_right_p):
         '''Clean the tree, rm seq/align error and homo snp'''
         mis_level = None
         clean_type = 0
-        for other in self.__subtree_preorder(self.root()):
-            mar = self.__validate(other).get_element()
-            dep = mar.get_depth()  # depth of mar
-            clean_type = mar.get_clean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
-            mis_level = dep
-            if clean_type == 1:
-                self.delete_depth(dep)
-                break
-            if clean_type == 2:
-                self.delete_depth(dep)
-                break
+        for p in left_right_p:
+            for other in self.__subtree_preorder(p):
+                mar = self.__validate(other).get_element()
+                dep = mar.get_depth()  # depth of mar
+                clean_type = mar.get_clean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
+                if clean_type == 1 or clean_type == 2:
+                    mis_level = dep
+                    self.delete_subtree(other)
+                    break
         if clean_type == 1:
             print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
         elif clean_type == 2:
@@ -635,14 +641,15 @@ class LinkedBinaryTree(object):
         else:
             mis_level = None
         return mis_level
-
+    '''
     def delete_depth(self, d):
-        '''Delete all tree after depth d.'''
+        #Delete all tree after depth d.
         for other in self.__subtree_postorder(self.root()):
             mar = self.__validate(other).get_element()
             dep = mar.get_depth()  # depth of mar
             if dep >= d:
                 self.delete_subtree(other)
+    '''
 
 if __name__ == '__main__':
     import cpuCheck, os

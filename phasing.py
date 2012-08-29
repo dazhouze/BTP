@@ -50,7 +50,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binary_tree.LinkedBinaryTree() # init a heter-snp-marker tree
     tree.add_root(binary_tree.Marker(0, 'root', 0)) # root
-    tree.setdefault(1, 1)
+    tree.setdefault(tree.root(), 1, 1)
     bak_queue = positional_list.PositionalList() # a back up positional list
     phase_0, phase_1, pos_level, read_queue, heter_snp = clustering_SNP.clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
     bak_queue = None

@@ -40,13 +40,16 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     i = None # mem release
     del i # mem release
 
-    #walk_len = 5 # local tree walk step length
-    walk_len = 5 # local tree walk step length
+    # arrary for tree node Position to speed up pruning and clean of tree
+    tree_pointer = [[None,None] for row in range(0,len(heter_snp))]
+    tree_pointer[0][0] = tree.root()
+    tree_pointer[1][0], tree_pointer[1][1] = tree.left(tree.root()), tree.right(tree.root())
+    walk_len = 4 # local tree walk step length
     assert walk_len > 2, 'walk_len must larger than 2'
     assert walk_len < len(heter_snp), 'walk_len must small than slice tree len'
     level_s = 1
     while level_s < len(heter_snp):
-        ''' Every time grow 5 level.'''
+        ''' Every time grow walk_len level.'''
         # determine the start level and end level of each round
         level_e = level_s + walk_len - 1 # new level end
         if level_e > len(heter_snp):
@@ -58,7 +61,8 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
               (level_s, level_e, len(read_queue), len(level_pos)))
         #tree.preorder_indent(tree.root())
 
-        tree.setdefault(level_e, 0) # value must be 0
+        tree.setdefault(tree_pointer[level_s][0], level_e, 0)
+        tree.setdefault(tree_pointer[level_s][1], level_e, 0)
         # determine heter-snp-marker pattern of each read
         cursor = read_queue.first() # read queue first Position
         while cursor != None:
@@ -103,12 +107,22 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         # alignment error and snp error check
-        tree.pruning(tree.root(), heter_snp, level_pos, tree_p)
+        print(tree_pointer[level_s:level_e])
+        tree.preorder_indent(tree.root())
+        pointers = tree.pruning(tree_pointer[level_s][0], heter_snp, level_pos, tree_p)
+        for x in range(0, len(pointers)):
+            tree_pointer[level_s+x+1][0] = pointers[x]
+        pointers = tree.pruning(tree_pointer[level_s][1], heter_snp, level_pos, tree_p)
+        for x in range(0, len(pointers)):
+            tree_pointer[level_s+x+1][1] = pointers[x]
+        tree.preorder_indent(tree.root())
         # clean alignment error snps and ambiguous snps
-        mis_level = tree.clean(level_s) # clean tree
+        mis_level = tree.clean(tree_pointer[level_s]) # clean tree
         if mis_level is not None:
             # alignment error in heter_snp dict
+            print(mis_level)
             heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p)
+            tree_pointer.pop(mis_level)
             level_s = mis_level - 1
         else:
             level_s = level_e # renew level_s equall to next level_s
@@ -143,16 +157,6 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             heter_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
     print(phase_0, phase_1)
     return phase_0, phase_1, pos_level, read_queue, heter_snp
-
-def rightMost(l, i): # pruning level
-    '''Return the index of last i in left of list l'''
-    prev_ind = 0
-    for k in range(0, len(l)):
-        v = l[k]
-        if v != i:
-            return prev_ind
-        prev_ind = k
-    return prev_ind
 
 def last_min(pos_level, coor): # pruning level
     '''Return the last (the largest) k's value of dict less than v:'''

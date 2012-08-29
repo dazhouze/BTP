@@ -58,4 +58,8 @@ if __name__ == '__main__':
     for x in ccs:
         if not os.path.exists(x):
             raise ValueError('File not exists:%s' % x)
-    main(ccs, f1, f2, './test/phase_0.fq', './test/phase_1.fq')
+    out1 = os.path.dirname(f1)
+    out1 = os.path.join(out1, 'phase_0.fq')
+    out2 = os.path.dirname(f2)
+    out2 = os.path.join(out2, 'phase_1.fq')
+    main(ccs, f1, f2, out1, out2)
