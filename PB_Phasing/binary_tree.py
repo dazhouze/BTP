@@ -519,13 +519,13 @@ class LinkedBinaryTree(object):
             return True
         return abs(v1-v2)/min_num >= 0.5
 
-    def add_value_left(self, d, n, directect):
+    def add_value_left(self, p, d, n, directect):
         '''Add value=v to all node element in depth=d.
            direct == 1 is right
            direct = 0 is left
         '''
         if not self.is_empty():
-            for other in self.__subtree_preorder(self.root()):
+            for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
                 direct = node.get_element().get_dir() # directection of node
@@ -538,13 +538,13 @@ class LinkedBinaryTree(object):
                         mar.set_num(prev_n + n)
                         assert prev_n != mar.get_num(), 'Value add error'
 
-    def add_value_right(self, d, n, directect):
+    def add_value_right(self, p, d, n, directect):
         '''Add value=v to all node element in depth=d.
            direct == 1 is right
            direct = 0 is left
         '''
         if not self.is_empty():
-            for other in self.__subtree_postorder(self.root()):
+            for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
                 direct = node.get_element().get_dir() # directection of node
@@ -557,11 +557,11 @@ class LinkedBinaryTree(object):
                         mar.set_num(prev_n + n)
                         assert prev_n != mar.get_num(), 'Value add error'
 
-    def add_cross_left(self, d, c, directect):
+    def add_cross_left(self, p, d, c, directect):
         '''Add cross=v to all node element in depth=d.
         '''
         if not self.is_empty():
-            for other in self.__subtree_preorder(self.root()):
+            for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
                 direct = node.get_element().get_dir() # directection of node
@@ -573,11 +573,11 @@ class LinkedBinaryTree(object):
                         mar.set_cross(prev_c + c)
                         assert prev_c != mar.get_cross(), 'Value add error'
 
-    def add_cross_right(self, d, c, directect):
+    def add_cross_right(self, p, d, c, directect):
         '''Add cross=v to all node element in depth=d.
         '''
         if not self.is_empty():
-            for other in self.__subtree_preorder(self.root()):
+            for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
                 direct = node.get_element().get_dir() # directection of node

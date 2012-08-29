@@ -41,25 +41,26 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     del i # mem release
 
     # arrary for tree node Position to speed up pruning and clean of tree
-    tree_pointer = [[None,None] for row in range(0,len(heter_snp))]
+    tree_pointer = [[None,None] for row in range(0, len(heter_snp)+1)]
     tree_pointer[0][0] = tree.root()
     tree_pointer[1][0], tree_pointer[1][1] = tree.left(tree.root()), tree.right(tree.root())
-    walk_len = 4 # local tree walk step length
+    walk_len = 3 # local tree walk step length
     assert walk_len > 2, 'walk_len must larger than 2'
     assert walk_len < len(heter_snp), 'walk_len must small than slice tree len'
     level_s = 1
     while level_s < len(heter_snp):
         ''' Every time grow walk_len level.'''
         # determine the start level and end level of each round
-        level_e = level_s + walk_len - 1 # new level end
+        level_e = level_s + walk_len # new level end
         if level_e > len(heter_snp):
             level_e = len(heter_snp)
         # level_s go back if last round not long enough
+        '''
         if level_e == len(heter_snp):
-            level_s = level_e - walk_len + 1
+            level_s = level_e - walk_len
+        '''
         print(' - Level:%d-%d Read:%d Marker:%d' % \
               (level_s, level_e, len(read_queue), len(level_pos)))
-        #tree.preorder_indent(tree.root())
 
         tree.setdefault(tree_pointer[level_s][0], level_e, 0)
         tree.setdefault(tree_pointer[level_s][1], level_e, 0)
@@ -91,24 +92,31 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
                     # parent's left node add one
                     if now_b == 0:
                         # find depth-1, add_value_left means add left to depth x-1 node
-                        tree.add_value_left(d-1, v, prev_b)
+                        tree.add_value_left(tree_pointer[level_s][0],d-1, v, prev_b)
+                        tree.add_value_left(tree_pointer[level_s][1],d-1, v, prev_b)
                         # cross over
                         if prev_b == 0:
-                            tree.add_cross_right(d-1, c, 1) # cross over
+                            tree.add_cross_right(tree_pointer[level_s][0], d-1, c, 1) # cross over
+                            tree.add_cross_right(tree_pointer[level_s][1], d-1, c, 1) # cross over
                         else:
-                            tree.add_cross_right(d-1, c, 0) # cross over
+                            tree.add_cross_right(tree_pointer[level_s][0],d-1, c, 0) # cross over
+                            tree.add_cross_right(tree_pointer[level_s][1],d-1, c, 0) # cross over
                     elif now_b == 1:
-                        tree.add_value_right(d-1, v, prev_b)
+                        tree.add_value_right(tree_pointer[level_s][0], d-1, v, prev_b)
+                        tree.add_value_right(tree_pointer[level_s][1], d-1, v, prev_b)
                         # cross over
                         if prev_b == 0:
-                            tree.add_cross_left(d-1, c, 1) # cross over
+                            tree.add_cross_left(tree_pointer[level_s][0],d-1, c, 1) # cross over
+                            tree.add_cross_left(tree_pointer[level_s][1],d-1, c, 1) # cross over
                         else:
-                            tree.add_cross_left(d-1, c, 0) # cross over
+                            tree.add_cross_left(tree_pointer[level_s][0], d-1, c, 0) # cross over
+                            tree.add_cross_left(tree_pointer[level_s][1], d-1, c, 0) # cross over
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         # alignment error and snp error check
         pointers = tree.pruning(tree_pointer[level_s][0], heter_snp, level_pos, tree_p)
         for x in range(0, len(pointers)):
+            print(x,level_s+x+1)
             tree_pointer[level_s+x+1][0] = pointers[x]
         pointers = tree.pruning(tree_pointer[level_s][1], heter_snp, level_pos, tree_p)
         for x in range(0, len(pointers)):
