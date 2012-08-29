@@ -107,20 +107,19 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         # alignment error and snp error check
-        print(tree_pointer[level_s:level_e])
-        tree.preorder_indent(tree.root())
         pointers = tree.pruning(tree_pointer[level_s][0], heter_snp, level_pos, tree_p)
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
         pointers = tree.pruning(tree_pointer[level_s][1], heter_snp, level_pos, tree_p)
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
-        tree.preorder_indent(tree.root())
         # clean alignment error snps and ambiguous snps
         mis_level = tree.clean(tree_pointer[level_s]) # clean tree
         if mis_level is not None:
+            # delete subtree at and after mis_level
+            tree.delete_depth(tree_pointer[level_s][0], mis_level)
+            tree.delete_depth(tree_pointer[level_s][1], mis_level)
             # alignment error in heter_snp dict
-            print(mis_level)
             heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p)
             tree_pointer.pop(mis_level)
             level_s = mis_level - 1

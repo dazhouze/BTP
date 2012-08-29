@@ -429,7 +429,7 @@ class LinkedBinaryTree(object):
         if not self.is_empty():
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
-                print(other, node.get_element())
+                #print(other, node.get_element())
                 dep = node.get_element().get_depth()  # left child element value
                 if dep == 0: # root
                     continue
@@ -622,34 +622,26 @@ class LinkedBinaryTree(object):
                 self.add_right(other, Marker(dep+1, n, 1))
 
     def clean(self, left_right_p):
-        '''Clean the tree, rm seq/align error and homo snp'''
-        mis_level = None
-        clean_type = 0
+        '''Return the min level of node need to be clean.'''
         for p in left_right_p:
             for other in self.__subtree_preorder(p):
                 mar = self.__validate(other).get_element()
                 dep = mar.get_depth()  # depth of mar
                 clean_type = mar.get_clean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
-                if clean_type == 1 or clean_type == 2:
-                    mis_level = dep
-                    self.delete_subtree(other)
-                    break
-        if clean_type == 1:
-            print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
-        elif clean_type == 2:
-            print('    rm homo/ambiguous-heter SNP at level:%d' % dep)
-        else:
-            mis_level = None
-        return mis_level
-    '''
-    def delete_depth(self, d):
-        #Delete all tree after depth d.
-        for other in self.__subtree_postorder(self.root()):
+                if clean_type == 1:
+                    print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
+                    return dep
+                elif clean_type == 2:
+                    print('    rm homo/ambiguous-heter SNP at level:%d' % dep)
+                    return dep
+
+    def delete_depth(self, p, d):
+        '''Delete all tree after depth d.'''
+        for other in self.__subtree_postorder(p):
             mar = self.__validate(other).get_element()
             dep = mar.get_depth()  # depth of mar
             if dep >= d:
                 self.delete_subtree(other)
-    '''
 
 if __name__ == '__main__':
     import cpuCheck, os
