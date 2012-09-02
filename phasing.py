@@ -19,7 +19,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     '''
     import os.path
     import pysam
-    from PB_Phasing import positional_list, binary_tree, detect_SNP, rm_error_SNP, clustering_SNP, evaluate_read
+    from PB_Phasing import positional_list, binary_tree, detect_SNP, filter_SNP, clustering_SNP, evaluate_read
 
     ##### init output directory #####
     output_dir = os.path.abspath(output)
@@ -28,24 +28,20 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     log = os.path.join(output, 'log') # path of log folder
     if not os.path.exists(log):
         os.makedirs(log)
-    snp_p = os.path.join(log, 'snp.txt') # path of snp.txt
-    tree_p = os.path.join(log, 'tree.txt') # path of snp phasing result tree.txt
-    heter_p = os.path.join(log, 'heter_snp.txt') # path of phased heter snp.txt
-    hit_p = os.path.join(log, 'hit.txt') # path of log.txt
+    snp_p = os.path.join(log, 'prime_snp.txt') # primary result of snps
+    tree_p = os.path.join(log, 'tree_node.txt') # binary tree node linkage and crossover
+    heter_p = os.path.join(log, 'heter_snp.txt') # heter snp in binary tree
+    hit_p = os.path.join(log, 'read_eval.txt') # reads evaluation
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
-    with open(sum_p, 'w') as sum_f:
-        sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\n\
-                    max_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s,\
-                                                         reg_e, max_heter, min_heter))
 
     ##### Entry read information #####
     read_queue = positional_list.PositionalList() # initialize a positional list
     read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input, read_queue)
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp = rm_error_SNP.remove(read_queue, heter_snp, seq_depth, \
-                                  chrom, reg_s, reg_e, max_heter, min_heter, snp_p) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
-    print(heter_snp)
+    # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
+    heter_snp = filter_SNP.remove(read_queue, heter_snp, seq_depth, \
+                                  chrom, reg_s, reg_e, max_heter, min_heter, snp_p) 
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binary_tree.LinkedBinaryTree() # init a heter-snp-marker tree
@@ -69,6 +65,12 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
         for x in phase_1_q:
             out_f.write('%s\n' % x)
 
+    with open(sum_p, 'w') as sum_f:
+        sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\n\
+                    max_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s,\
+                                                         reg_e, max_heter, min_heter))
+        sum_f.write('Detected reads number: %d\nDetected heter-SNPs number: %d\n'\
+                     % (len(read_queue), len(heter_snp)))
     return 0
 
 if __name__ == '__main__': # Run the program.
