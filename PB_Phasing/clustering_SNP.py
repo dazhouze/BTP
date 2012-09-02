@@ -114,10 +114,10 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         # alignment error and snp error check
-        pointers = tree.pruning(tree_pointer[level_s][0], heter_snp, level_pos, tree_p)
+        pointers = tree.pruning(tree_pointer[level_s][0], tree_p)
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
-        pointers = tree.pruning(tree_pointer[level_s][1], heter_snp, level_pos, tree_p)
+        pointers = tree.pruning(tree_pointer[level_s][1], tree_p)
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
         # clean alignment error snps and ambiguous snps
@@ -137,16 +137,6 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     tree.preorder_indent(tree.root())
     phase_0, phase_1 = tree.linkage_result()
     #print(phase_0, phase_1)
-
-    #####
-    tr, fn, fp = 0, 0, 0
-    white_list=[29910357,29910370,29910377,29910537,29910557,29910603,29910699,29910715,29910720,29910729,29910749,29910751,29911055,29911062,29911091,29911148,29911153,29911189,29911197,29911202,29911206,29911224,29911900,29911908,29912086,29912146,29912148,29912325,29912344,29912347,29912372,29913036]
-    for x in white_list:
-        if x in heter_snp:
-            tr += 1
-        else:
-            fn += 1
-    print('True SNP %d, FP:%d FN:%d' % (tr, len(heter_snp)-tr-fn, fn))
 
     # move bak_queue to read_queue
     cursor = bak_queue.first()

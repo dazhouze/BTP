@@ -151,7 +151,7 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
                     #snp_f.write('homo\t%s\t%d\n' % (chrom, k))
                 elif v == 4: # alignment error
                     ae += 1
-                    snp_f.write('align\t%s\t%d\n' % (chrom, k))
+                    snp_f.write('error\t%s\t%d\n' % (chrom, k))
 
         snp_f.write('***\nPrimary SNP result\nHomo SNP: %d\nHeter SNP: %d\n\
                     Seq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n\

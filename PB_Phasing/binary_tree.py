@@ -428,13 +428,11 @@ class LinkedBinaryTree(object):
                 node.set_right(None)
                 other = None
 
-    def pruning(self, p, heter_snp, level_pos, tree_p):
+    def pruning(self, p, tree_p):
         '''Decide the SNP linkage result(based on element value).
         And crop non SNP linkage branch and subtree.
         And return the root of tree or the break point(new root of tree)
         '''
-        #white_list=[29910357,29910370,29910377,29910537,29910557,29910603,29910699,29910715,29910720,29910729,29910749,29910751,29911055,29911062,29911091,29911148,29911153,29911189,29911197,29911202,29911206,29911224,29911900,29911908,29912086,29912146,29912148,29912325,29912344,29912347,29912372,29913036]
-        #black_list = [ 29910418,29910436,29910449,29910459,29910509,29910526,29910556,29910815,29910865,29910891,29910985,29911002,29911018,29911029,29911036,29911118,29911418,29911504,29911684,29911856,29911879,29911944,29912593,29912884,29912889,29912891,29912892,29912895,29912896,29912899,29912900,29913110,29913178,29913265,29913297,29913482]
         pruning_f = open(tree_p, 'a')
         result = [] # result list: tree node Position
         if not self.is_empty():
@@ -456,9 +454,11 @@ class LinkedBinaryTree(object):
                     right_num = right_mar.get_num()  # right child element link num
                     left_cross = left_mar.get_cross() # value + crossover
                     right_cross = right_mar.get_cross() # value + crossover
+                    '''
                     pos = level_pos[dep+1]
                     # heter_snp index of node = dep-1; heter_base: heter snp bases
                     heter_base = heter_snp[pos]
+                    '''
                     # link num directection result, crossover link num directection result
                     num_direct, cross_direct = 0, 0
                     if right_num > left_num:
@@ -466,27 +466,16 @@ class LinkedBinaryTree(object):
                     if right_cross > left_cross:
                         cross_direct = 1
                     com = (num_direct == cross_direct) # compare link num and crossover direction
-                    # test two child if significant
+                    # test two children's linkage number if significant
                     sig_num = self.significant(left_num, right_num)
-                    # test two child if significant
+                    # test two children's crossover if significant
                     sig_cross = self.significant(left_cross, right_cross)
                     # if it is alignment error
-                    AE = self.align_error(num_direct, cross_direct, sig_num, sig_cross, heter_base)
-                    #####
-                    '''
-                    print(heter_snp[level_pos[dep]],'->', heter_snp[pos])
-                    print(left_num, right_num, left_cross, right_cross)
-                    if pos == 29910377:
-                        return 0
-                    if AE is True:
-                        print(dep+1, pos, pos in white_list, pos in black_list)
-                    '''
-                    '''
-                    if com is True and AE is not True:
+                    ae = sig_num is not True and sig_cross is not True
+                    if com is True and ae is not True:
                         pruning_f.write('%d\t%d\t%d\t%d\t%d\t%d\n' % \
                                         (left_num, right_num, left_cross, right_cross, \
                                          max(right_num, left_num), min(right_num, left_num)))
-                    '''
                     if left_num is not None and right_num is not None:
                         # left child element value is larger, delete right child tree
                         if left_num >= right_num:
@@ -495,7 +484,7 @@ class LinkedBinaryTree(object):
                             if com is not True:
                                 # left child element need to clean as homo snp
                                 self.__validate(left_p).get_element().set_clean(2)
-                            if AE is True:
+                            if ae is True:
                                 # left child element need to clean as seq/align error
                                 self.__validate(left_p).get_element().set_clean(1)
                         # right child element value is larger, delete left child tree
@@ -505,7 +494,7 @@ class LinkedBinaryTree(object):
                             if com is not True:
                                 # right child element need to clean as homo snp
                                 self.__validate(right_p).get_element().set_clean(2)
-                            if AE is True:
+                            if ae is True:
                                 # right child element need to clean as seq/align error
                                 self.__validate(right_p).get_element().set_clean(1)
                         elif left_num == right_num == 0: # no link information
@@ -522,24 +511,13 @@ class LinkedBinaryTree(object):
                                 self.delete_subtree(right_p) # rm right subtree (all 2 node in same level)
         return result # result list: tree node Position
 
-
-    def align_error(self, num_direct, cross_direct, sig_num, sig_cross, heter_base):
-        '''Return True if SNP is an alignment error.'''
-        node_base = heter_base[num_direct]
-        cross_base = heter_base[cross_direct]
-        if cross_base == 'R' and sig_cross is True and sig_num is not True:
-            return True
-        if node_base == 'R' and sig_num is True and sig_cross is not True:
-            return True
-        return False
-
     def significant(self, v1, v2):
         '''Return True if SNP(same depth) is significant'''
         min_num = min(v1, v2)
+        max_num = max(v1, v2)
         if min_num == 0:
             return True
-        #return abs(v1-v2)/min_num >= 1
-        return abs(v1-v2)/min_num >= 0.5
+        return max_num > 2*min_num
 
     def add_value_left(self, p, d, n, directect):
         '''Add value=v to all node element in depth=d.
