@@ -31,14 +31,16 @@ def evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e,
                 elif snp_alt != phase_0[ind] and snp_alt != phase_1[ind]:
                     conf_n += 1
 
+        hit_f.write('%d %d %d\n' % (cons_0_n, cons_1_n, conf_n))
         if cons_0_n == cons_1_n == conf_n == 0 and reg_s < (start+end)/2 < reg_e: # no marker
-            phase_0_q.append(qname)
-            phase_1_q.append(qname)
-        if (cons_0_n + cons_1_n + conf_n) > 0.1*len(heter_snp) and (cons_0_n + cons_1_n + conf_n) > 2:
-            if cons_0_n > cons_1_n and (cons_1_n+conf_n) < 0.1*len(heter_snp):
-                phase_0_q.append(qname)
-            if cons_1_n > cons_0_n and (cons_0_n+conf_n) < 0.1*len(heter_snp):
+            #phase_0_q.append(qname)
+            #phase_1_q.append(qname)
+            print('no marker')
+        # one read at lease cover 10% of or 3 heter marker
+        if (cons_0_n + cons_1_n + conf_n) > 0.1*len(heter_snp) or (cons_0_n + cons_1_n + conf_n) > 3:
+            if cons_1_n > 0.9*(cons_0_n + conf_n): # phase 1 read
                 phase_1_q.append(qname)
-            hit_f.write('%d %d %d\n' % (cons_0_n, cons_1_n, conf_n))
+            else:
+                phase_0_q.append(qname)
     hit_f.close()
     return phase_0_q, phase_1_q

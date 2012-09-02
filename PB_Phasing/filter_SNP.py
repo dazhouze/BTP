@@ -110,8 +110,8 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
             heter_snp[x] = 0 # discard
         elif ref_ap > max_heter: # Sequencing Error
             heter_snp[x] = 1
-        elif max(a_ap, c_ap, g_ap, t_ap) > max_heter: # homo snp
-            heter_snp[x] = 3
+        #elif max(a_ap, c_ap, g_ap, t_ap) > max_heter: # homo snp
+        #    heter_snp[x] = 3
         elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
             if 'R' not in max2_bases: # double heter snp
                 heter_snp[x] = 4 # alignment error

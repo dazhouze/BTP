@@ -76,6 +76,14 @@ class Marker(object):
         '''Set if need to be clean informatino info of the class Marker'''
         self.__clean = l
 
+    def delete(self):
+        '''Set all term as None.'''
+        self.__depth = None
+        self.__direct = None
+        self.__num = None
+        self.__cross = None
+        self.__clean = None
+
 class LinkedBinaryTree(object):
     '''Linked representeation of a binary tree structure.'''
     class _Node(object):
@@ -414,6 +422,7 @@ class LinkedBinaryTree(object):
                             raise ValueError('Neighter of left or right child')
                     else:
                         node.set_parent(None)
+                node.get_element().delete() # delete item in class Marker
                 node.set_element(None)
                 node.set_left(None)
                 node.set_right(None)
@@ -424,6 +433,8 @@ class LinkedBinaryTree(object):
         And crop non SNP linkage branch and subtree.
         And return the root of tree or the break point(new root of tree)
         '''
+        #white_list=[29910357,29910370,29910377,29910537,29910557,29910603,29910699,29910715,29910720,29910729,29910749,29910751,29911055,29911062,29911091,29911148,29911153,29911189,29911197,29911202,29911206,29911224,29911900,29911908,29912086,29912146,29912148,29912325,29912344,29912347,29912372,29913036]
+        #black_list = [ 29910418,29910436,29910449,29910459,29910509,29910526,29910556,29910815,29910865,29910891,29910985,29911002,29911018,29911029,29911036,29911118,29911418,29911504,29911684,29911856,29911879,29911944,29912593,29912884,29912889,29912891,29912892,29912895,29912896,29912899,29912900,29913110,29913178,29913265,29913297,29913482]
         pruning_f = open(tree_p, 'a')
         result = [] # result list: tree node Position
         if not self.is_empty():
@@ -445,27 +456,37 @@ class LinkedBinaryTree(object):
                     right_num = right_mar.get_num()  # right child element link num
                     left_cross = left_mar.get_cross() # value + crossover
                     right_cross = right_mar.get_cross() # value + crossover
-
-                    ind = level_pos[dep+1]
+                    pos = level_pos[dep+1]
                     # heter_snp index of node = dep-1; heter_base: heter snp bases
-                    heter_base = heter_snp[ind]
+                    heter_base = heter_snp[pos]
                     # link num directection result, crossover link num directection result
                     num_direct, cross_direct = 0, 0
                     if right_num > left_num:
                         num_direct = 1
                     if right_cross > left_cross:
                         cross_direct = 1
-                    com = (num_direct == cross_direct) # compare link num and crossover
+                    com = (num_direct == cross_direct) # compare link num and crossover direction
                     # test two child if significant
                     sig_num = self.significant(left_num, right_num)
                     # test two child if significant
                     sig_cross = self.significant(left_cross, right_cross)
                     # if it is alignment error
                     AE = self.align_error(num_direct, cross_direct, sig_num, sig_cross, heter_base)
+                    #####
+                    '''
+                    print(heter_snp[level_pos[dep]],'->', heter_snp[pos])
+                    print(left_num, right_num, left_cross, right_cross)
+                    if pos == 29910377:
+                        return 0
+                    if AE is True:
+                        print(dep+1, pos, pos in white_list, pos in black_list)
+                    '''
+                    '''
                     if com is True and AE is not True:
                         pruning_f.write('%d\t%d\t%d\t%d\t%d\t%d\n' % \
                                         (left_num, right_num, left_cross, right_cross, \
                                          max(right_num, left_num), min(right_num, left_num)))
+                    '''
                     if left_num is not None and right_num is not None:
                         # left child element value is larger, delete right child tree
                         if left_num >= right_num:
@@ -517,6 +538,7 @@ class LinkedBinaryTree(object):
         min_num = min(v1, v2)
         if min_num == 0:
             return True
+        #return abs(v1-v2)/min_num >= 1
         return abs(v1-v2)/min_num >= 0.5
 
     def add_value_left(self, p, d, n, directect):
@@ -629,10 +651,10 @@ class LinkedBinaryTree(object):
                 dep = mar.get_depth()  # depth of mar
                 clean_type = mar.get_clean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
                 if clean_type == 1:
-                    print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
+                    print('    rm seq-error/mis-aligned SNP at level:%d' % dep, end=' ')
                     return dep
                 elif clean_type == 2:
-                    print('    rm homo/ambiguous-heter SNP at level:%d' % dep)
+                    print('    rm homo/ambiguous-heter SNP at level:%d' % dep, end=' ')
                     return dep
 
     def delete_depth(self, p, d):

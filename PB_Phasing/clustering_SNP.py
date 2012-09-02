@@ -116,7 +116,6 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         # alignment error and snp error check
         pointers = tree.pruning(tree_pointer[level_s][0], heter_snp, level_pos, tree_p)
         for x in range(0, len(pointers)):
-            print(x,level_s+x+1)
             tree_pointer[level_s+x+1][0] = pointers[x]
         pointers = tree.pruning(tree_pointer[level_s][1], heter_snp, level_pos, tree_p)
         for x in range(0, len(pointers)):
@@ -139,6 +138,16 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     phase_0, phase_1 = tree.linkage_result()
     #print(phase_0, phase_1)
 
+    #####
+    tr, fn, fp = 0, 0, 0
+    white_list=[29910357,29910370,29910377,29910537,29910557,29910603,29910699,29910715,29910720,29910729,29910749,29910751,29911055,29911062,29911091,29911148,29911153,29911189,29911197,29911202,29911206,29911224,29911900,29911908,29912086,29912146,29912148,29912325,29912344,29912347,29912372,29913036]
+    for x in white_list:
+        if x in heter_snp:
+            tr += 1
+        else:
+            fn += 1
+    print('True SNP %d, FP:%d FN:%d' % (tr, len(heter_snp)-tr-fn, fn))
+
     # move bak_queue to read_queue
     cursor = bak_queue.first()
     while cursor != None:
@@ -156,13 +165,14 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         phase_0[k-1] = heter_snp[v][phase_0[k-1]]
         phase_1[k-1] = heter_snp[v][phase_1[k-1]]
 
-    with open(heter_p, 'a') as heter_f:
-        heter_f.write('\n***\nHeterzygous SNP Markers Phaseing Result:\n')
+    with open(heter_p, 'w') as heter_f:
+        heter_f.write('***\nHeterzygous SNP Markers Phaseing Result:\n')
         heter_f.write('Chromosome\tPosition\tPhase_0\tPhase_1\n')
         for x in range(0, len(phase_0)):
             pos = level_pos[x+1]
             heter_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
     print(phase_0, phase_1)
+
     return phase_0, phase_1, pos_level, read_queue, heter_snp
 
 def last_min(pos_level, coor): # pruning level
@@ -210,8 +220,11 @@ def level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p):
         Clean the SNP in heter_snp, pos_level and level_pos.
     '''
     pos = level_pos[mis_level]
+    print('at position: %d' % pos)
+    '''
     with open(heter_p, 'a') as heter_f:
         heter_f.write('mis_align\t%d\n' % pos)
+    '''
     del heter_snp[pos]
     pos_level = None
     level_pos = None
