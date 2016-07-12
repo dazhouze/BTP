@@ -4,20 +4,20 @@ use Getopt::Std;
 
 ########## ########## Get paramter ########## ##########
 my %opts;
-getopts('hto:w:m:p:d:s:f:c:e:', \%opts);
+getopts('hto:w:m:p:d:s:f:c:e:u:', \%opts);
 $opts{m}=0.75 unless ($opts{m});#read overlap with detected region
 $opts{c}=0.5 unless ($opts{c});#coincide SNP proportion when extending.
 $opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
 $opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
-$opts{e} = 0.45 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
-$opts{o} = "./" unless ($opts{o});
+$opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{o} = "." unless ($opts{o});
 
 &help and &info and die if ($opts{h}); 
 &help and die unless ($opts{o} && $opts{m} && @ARGV);
 
-system "mkdir -p $opts{o}";
+system "mkdir -p $opts{o}/";
 system "mkdir -p $opts{o}/TEMP";
 
 open OUT , ">$opts{o}/TEMP/score.temp";
@@ -153,6 +153,10 @@ close PH;
 close MK;
 close HIT;
 system"rm -r $opts{o}/TEMP/" if ($opts{t});
+
+########## ########## Veen check ########## ##########
+&veen;
+
 ########## ########## Functions ########## ##########
 sub detectSnp {
     my $l=0;#line number or say read number
@@ -407,12 +411,13 @@ sub seedInitial{
         my $alt = $read->{SNPALT}[$seed][$j];
         my $qual = $read->{SNPQUAL}[$seed][$j];
         if (exists $filter{$pos}){#same to filtered marker
-            $$phaseSnp{$pos}{$alt} += $qual;
+            #$$phaseSnp{$pos}{$alt} += $qual;
+            $$phaseSnp{$pos}{$alt} += 1;
         }
     }
     for my $z ($read->{START}[$seed] .. $read->{END}[$seed]){
-        if (exists $refSnp{$z}){
-            $$phaseSnp{$z}{"ref"}+=1;
+        if (exists $refSnp{$read->{QNAME}[$seed]}{$z}){
+            $$phaseSnp{$z}{"R"} += 1;
         }
     }
 }
@@ -431,10 +436,12 @@ sub phaseInitial{
                 $$phaseSnp{$pos}{$alt}+=(1/300);
             }
         }
-    }
-    for my $kpos (sort {$a<=>$b} keys %filter){
-        if (exists $refSnp{$kpos}){
-            $$phaseSnp{$kpos}{"ref"}+=(1/300);
+        for my $kpos ($read->{START}[$i] .. $read->{END}[$i]){
+            if (exists $filter{$kpos}){
+                if (exists $refSnp{$read->{QNAME}[$i]}{$kpos}){
+                    $$phaseSnp{$kpos}{"R"}+=(1/300);
+                }
+            }
         }
     }
 }
@@ -497,8 +504,8 @@ sub readExtend{
                     }
                     for my $pos (($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]) .. ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1])){
                     #for my $pos ($read->{START}[$i] .. $read->{END}[$i]){
-                        if (exists $refSnp{$pos}){
-                            my $alt = "ref";
+                        if (exists $refSnp{$read->{QNAME}[$i]}{$pos}){
+                            my $alt = "R";
                             if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
                                 $markYes++;
                             }
@@ -531,7 +538,7 @@ sub readExtend{
                                     }
                                 }
                                 elsif (exists $refSnp{$read->{QNAME}[$i]}{$z}){#this read is ref-allel
-                                    $$phaseSnp{$z}{"ref"}+=1-10**(($refSnp{$read->{QNAME}[$i]}{$z})/(0-10));
+                                    $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$i]}{$z})/(0-10));
                                 }
                                 else{#complex situation
                                 }
@@ -605,7 +612,7 @@ sub scoring{
                         $hS++;
                     }
                 }
-                elsif($phaseSnpFilter{$z} eq "ref"){#there is no read SNP because SNP marker is ref-alt
+                elsif($phaseSnpFilter{$z} eq "R"){#there is no read SNP because SNP marker is ref-alt
                     if (exists $refSnp{$read->{QNAME}[$i]}{$z}){#this read is ref-allel
                         $markYes+=1-10**(($refSnp{$read->{QNAME}[$i]}{$z})/(0-10));
                     }else{
@@ -761,7 +768,7 @@ sub seedSelect{
                 $otherFre += $snpFre{$kpos}{$kalt};
             }
         }
-        if ($refFre/($refFre+$otherFre)>=$opts{e} && $refFre/($refFre+$otherFre)<(1-$opts{e})){
+        if (($refFre/($refFre+$otherFre)) >= $opts{e} && ($refFre/($refFre+$otherFre)) < (1-$opts{e})){
             $selectPos{$kpos}++;
         }
     }
@@ -770,7 +777,9 @@ sub seedSelect{
     for my $ki (keys %iArray){
         my $snpPatten;
         for my $kpos (sort {$a<=>$b} keys %{$iArray{$ki}}){
-            $snpPatten .= "$iArray{$ki}{$kpos},";
+            if (exists $selectPos{$kpos}){
+                $snpPatten .= "$iArray{$ki}{$kpos},";
+            }
         }
         $fre_hash{$snpPatten}++;
         $fre_hash_i{$snpPatten} .= "$ki,";
@@ -846,6 +855,32 @@ sub seedTest{
     $range[1] = $read->{END}[$seed];
     my $extendTime = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test");
     return $extendTime;
+}
+
+sub veen {
+    my $f1 = "$opts{o}/phase.0.qname";
+    my $f2 = "$opts{o}/phase.1.qname";
+    my %hash;
+    my $p0 = 0;
+    my $p1 = 0;
+    my $ol = 0;
+    open IN , "$f1";
+    while(<IN>){
+        my ($qname) = (split /\t/)[0];
+        $hash{$qname}++;
+        $p0++;
+    }
+    close IN;
+    open IN , "$f2";
+    while(<IN>){
+        my ($qname) = (split /\t/)[0];
+        $ol++ if (exists $hash{$qname});
+        $p1++
+    }
+    close IN;
+    print "-- Reads of Phase 0: $p0\n";
+    print "-- Reads of Phase 1: $p1\n";
+    print "-- Same reads between 2 haps:$ol\n";
 }
 
 ########## ########## Help and Information ########## ##########
