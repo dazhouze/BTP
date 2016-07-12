@@ -4,34 +4,21 @@ use Getopt::Std;
 
 ########## ########## Get paramter ########## ##########
 my %opts;
-getopts('hto:w:m:p:d:s:f:', \%opts);
+getopts('hto:w:m:p:d:s:f:c:e:', \%opts);
 $opts{m}=0.75 unless ($opts{m});#read overlap with detected region
-$opts{u}=0.55 unless ($opts{u});#phase 0 cutoff value of scoring
-$opts{w} = 750 unless ($opts{w});#window size = 500 bp
+$opts{c}=0.5 unless ($opts{c});#coincide SNP proportion when extending.
+$opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
+$opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
+$opts{e} = 0.5 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{o} = "./" unless ($opts{o});
 
-if ($opts{o}){
-    system "mkdir -p $opts{o}";
-    system "mkdir -p $opts{o}/TEMP";
-}else{
-    $opts{o}="./";
-    print "Not set the output directory. Auto set:./\n";
-}
-&help and die if ($opts{h});
-die "Phase reads into 2 haplotype, using BAM format files.
-Usage:perl thisScript.pl -o ./ -m $opts{m} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
-\t-h For more information.
-\t-t Delet the TEMP file directory.
-\t-w Window size of seed selection.(default=$opts{w}bp)
-\t-o Output directory.(default=$opts{o})
-\t-m min-overlap between read and detected region: 0.0--1.0.(default=$opts{m})
-\t-u phase_0 > score cutoff: 0.0--1.0 .(default=$opts{u})
-\t-f First seed read NO. 
-\t-s Second seed read NO. 
-\t-p Upper heter snp cutoff, alt fre/seq depth.(default=$opts{p})
-\t-d Lowwer heter snp cutoff, alt fre/seq depth.(default=$opts{d})
-\t*.bamFiles: BAM files for small region\n" unless ($opts{o} && $opts{m} && @ARGV);
+&help and &info and die if ($opts{h}); 
+&help and die unless ($opts{o} && $opts{m} && @ARGV);
+
+system "mkdir -p $opts{o}";
+system "mkdir -p $opts{o}/TEMP";
 
 open OUT , ">$opts{o}/TEMP/score.temp";
 open HIT , ">$opts{o}/TEMP/hit.temp";#read extend marker hit
@@ -655,6 +642,7 @@ sub traverseForSeedRegion{#traverse all reads to figure out high heter and higt 
         $heterNum{$w}++;
     }
     #judice
+    #high seq depth and high heterozygosity region selection
     my $maxSeqDepth = 0;
     for my $k (keys %seqDepth){
         $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
@@ -688,7 +676,7 @@ sub seedSelect{
         }
     }
     #set region marker
-    my %markRegion;#filtered heter-snp-marker in the "region"
+    my %markRegion;#filtered heter-snp-marker in the "region"(sub set of %filter)
     for my $kpos ( keys %filter){
         if ($kpos >= ($bestWin-1)*$opts{w} && $kpos <= ($bestWin+1)*$opts{w}){
             $markRegion{$kpos}++;
@@ -696,12 +684,11 @@ sub seedSelect{
     }
     #traverse all reads for alt allel and ref allel
     my $allRead = 0;#all candidate read
-    my %snpArray;
-    my %halfSnp;
+    my %snpArray;#all alt-allel snp
+    my %iArray;#all alt-allel snp $iArray{i}{pos}
+    my %snpFre;#
     my $ind = 0;#index of @seedRegion
     my %index;#value is index of @seedRegion, key is read NO.
-    my %fre_hash;#the snp patten of the selected SNPs
-    my %fre_hash_i;#the snp patten of the selected SNPs
     for my $i (@seedRegion){#$i is read NO. ordered in 0..100
         $index{"$i"}="$ind";
         $ind++;
@@ -711,48 +698,71 @@ sub seedSelect{
             my $alt = $read->{SNPALT}[$i][$j];
             if (exists $markRegion{$pos}){
                 $snpArray{$pos}{$i} = $alt;
-                $halfSnp{$pos}{$alt}++;
+                $snpFre{$pos}{$alt}++;
+                $iArray{$i}{$pos} = $alt;
             }
         }
         for my $kpos (keys %markRegion){
             unless(exists $snpArray{$kpos}{$i}){
-                $snpArray{$kpos}{$i} = "R";#ref allel
-                $halfSnp{$kpos}{"R"}++;
+                $snpArray{$kpos}{$i} = "R";#ref allel but ignore indels
+                $snpFre{$kpos}{"R"}++;#ref allel but ignore indels. It is not exactly
+                $iArray{$i}{$kpos} = "R";
             }
         }
+    }
+    #cutoff of SNP
+    my %selectPos;#ref:alt allel > cufoff && <(1-cutoff)
+    for my $kpos (keys %snpFre){
+        my $refFre = 0;
+        my $otherFre = 0;
+        for my $kalt (keys %{$snpFre{$kpos}}){
+            if ($kalt eq "R"){
+                $refFre+=$snpFre{$kpos}{$kalt};
+            }else{
+                $otherFre += $snpFre{$kpos}{$kalt};
+            }
+        }
+        if ($refFre/($refFre+$otherFre)>$opts{e} && $refFre/($refFre+$otherFre)<(1-$opts{e})){
+            $selectPos{$kpos}++;
+        }
+    }
+    my %fre_hash;#the snp pattern of the selected SNPs
+    my %fre_hash_i;#the snp pattern of the selected SNPs (value is read NO)
+    for my $ki (keys %iArray){
         my $snpPatten;
-        for my $kpos (sort {$a<=>$b} keys %snpArray){
-            $snpPatten .= "$snpArray{$kpos}{$i},";
+        for my $kpos (sort {$a<=>$b} keys %{$iArray{$ki}}){
+            $snpPatten .= "$iArray{$ki}{$kpos},";
         }
         $fre_hash{$snpPatten}++;
-        $fre_hash_i{$snpPatten} .= "$i,";
+        $fre_hash_i{$snpPatten} .= "$ki,";
     }
+
     my $maxPatten;
     my $maxFre = 0;
     my @clu0;
     my @clu1;
-    for my $kpatten (sort keys %fre_hash){
-        my $fre = $fre_hash{$kpatten};
+    for my $kpattern (sort keys %fre_hash){
+        my $fre = $fre_hash{$kpattern};
         if ($fre > $maxFre){
-            $maxPatten = $kpatten;
+            $maxPatten = $kpattern;
             $maxFre = $fre;
-            @clu0 = split /,/,$fre_hash_i{$kpatten};
+            @clu0 = split /,/,$fre_hash_i{$kpattern};
         }
-        print "-- $kpatten : $fre_hash{$kpatten}\n";
-        print PT "$kpatten : $fre_hash{$kpatten}\n";
+        print "-- $kpattern : $fre_hash{$kpattern}\n";
+        print PT "$kpattern : $fre_hash{$kpattern}\n";
     }
     delete $fre_hash{$maxPatten};
-    print "-- Phase 0 candidate reads patten: $maxPatten NO:$fre_hash_i{$maxPatten}\n";
+    print "-- Phase 0 candidate reads pattern: $maxPatten NO:$fre_hash_i{$maxPatten}\n";
     $maxFre = 0;
-    for my $kpatten (sort keys %fre_hash){
-        my $fre = $fre_hash{$kpatten};
+    for my $kpattern (sort keys %fre_hash){
+        my $fre = $fre_hash{$kpattern};
         if ($fre > $maxFre){
-            $maxPatten = $kpatten;
+            $maxPatten = $kpattern;
             $maxFre = $fre;
-            @clu1 = split /,/,$fre_hash_i{$kpatten};
+            @clu1 = split /,/,$fre_hash_i{$kpattern};
         }
     }
-    print "-- Phase 1 candidate reads patten: $maxPatten NO:$fre_hash_i{$maxPatten}\n";
+    print "-- Phase 1 candidate reads pattern: $maxPatten NO:$fre_hash_i{$maxPatten}\n";
 
     my $s = 0;
     my $minLen;
@@ -813,14 +823,31 @@ sub homoNum{
 }
 
 ########## ########## End ########## ##########
-
 sub help{
+print "*** Phase reads into 2 haplotype, using BAM format files.
+Usage:perl thisScript.pl -o $opts{o} -m $opts{m} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
+\t-h For more information.
+\t-t Delet the TEMP file directory.
+\t-c Coincide SNP proportion.(default=$opts{c})
+\t-w Window size of seed selection.(default=$opts{w}bp)
+\t-o Output directory.(default=$opts{o})
+\t-m Min-overlap between read and detected region. 0.0--1.0(default=$opts{m})
+\t-u Phase 0 and 1 > score cutoff. 0.0--1.0(default=$opts{u})
+\t-f First seed read NO. 
+\t-s Second seed read NO. 
+\t-p Upper heter snp cutoff, alt fre/seq depth.(default=$opts{p})
+\t-d Lowwer heter snp cutoff, alt fre/seq depth.(default=$opts{d})
+\t*.bamFiles: BAM files for small region
+";
+}
+
+sub info{
 print "
-** Describe: This script is designed for 100% covered (well seqenced) region PacBio CCS reads two haplotypes (diploid) phasing. For example, applying HLA/MHC region capture sequencing and then using this script for HLA-A gene region CCS reads phasing. This script performs better than SAMtools phase espcially when 2 haplotypes are in unbalanced sequencing coverage fold.And print out QNAME of each read.Some abnormity long read with little overlap with this region will be discarded.
-** Sugestion(1): Candidate reads patten:R is ref allel. If the length of patten is not long enough. You need to set -w larger.
-** Sugestion(2): If the \"extend times\" is too less than half of all read number. You need to set seed read NO. by -f -s.
-** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, I try to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
-** Email: zhouze\@genomics.cn
+*** Describe: This script is designed for 100% covered (well seqenced) region PacBio CCS reads two haplotypes (diploid) phasing. For example, applying HLA/MHC region capture sequencing and then using this script for HLA-A gene region CCS reads phasing. This script performs better than SAMtools phase espcially when 2 haplotypes are in unbalanced sequencing coverage fold.And print out QNAME of each read.Some abnormity long read with little overlap with this region will be discarded.
+*** Sugestion(1): Candidate reads pattern:R is ref allel. If the length of pattern is not long enough. You need to set -w larger. If there is no 2 siginificent high value in all value of pattern.
+***Sugestion(2): If the \"extend times\" is too less than half of all read number. You need to set seed read NO. by -f -s.
+*** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, I try to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
+*** Email: zhouze\@genomics.cn
   _________  _________ 
   | __|__ |  |___|___| 
   |___|___|  |___|___| 
