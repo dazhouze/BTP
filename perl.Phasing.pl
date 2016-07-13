@@ -278,7 +278,7 @@ sub detectSnp {
                                             delete $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"M"};
                                             $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"Mis"}="$ref"; 
                                         }
-                                        print"Script error:$ksp $krp $kt == M\n" if($kt eq "I");
+                                        die "Script error:$ksp $krp $kt == M\n" if($kt eq "I");
                                     }
                                 }
                             }
@@ -300,7 +300,7 @@ sub detectSnp {
                         for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
                             for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
                                 my $kr=$seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt};
-                                print"Script error:$krp\t$ksp\t$kb\t$kt\t$kr\n" if ($kt eq "Mis" && $kb eq $kr);
+                                die "Script error:$krp\t$ksp\t$kb\t$kt\t$kr\n" if ($kt eq "Mis" && $kb eq $kr);
                                 ########## important ########## 
                                 if ($kt eq "Mis" && $_[0] eq "mismatch"){
                                     push @line_snp_pos , $krp; 
@@ -811,7 +811,7 @@ sub seedSelect{
                 $$s0[$si] = $temp[$si];
             }
         }
-        print "-- $kpattern : $fre_hash{$kpattern}\n";
+        #print "-- $kpattern : $fre_hash{$kpattern}\n";
         print PT "$kpattern : $fre_hash{$kpattern}\n";
     }
     delete $fre_hash{$maxPatten};
@@ -894,7 +894,7 @@ sub veen {
     close IN;
     print "-- Reads of Phase 0: $p0\n";
     print "-- Reads of Phase 1: $p1\n";
-    print "-- Same reads between 2 haps:$ol\n";
+    print "-- Same reads between 2 phase:$ol\n";
 }
 
 ########## ########## Help and Information ########## ##########
