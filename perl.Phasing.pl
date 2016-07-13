@@ -88,7 +88,7 @@ for my $seed (@seed0){
         $bestSeed0 = $seed;
     }
 }
-print "-- Best seed of phase 0: $bestSeed0. Extend length (bp):$maxExtend\n";
+#print "-- Best seed of phase 0: $bestSeed0. Extend times:$maxExtend\n";
 $maxExtend = 0;
 my $bestSeed1;
 for my $seed (@seed1){
@@ -98,7 +98,7 @@ for my $seed (@seed1){
         $bestSeed1 = $seed;
     }
 }
-print "-- Best seed of phase 1: $bestSeed1. Extend length (bp):$maxExtend\n";
+#print "-- Best seed of phase 1: $bestSeed1. Extend times:$maxExtend\n";
 
 
 $bestSeed0 = $opts{f} if ($opts{f});
@@ -128,6 +128,7 @@ sub Phase{
     my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c}, $opts{m});
     $step++;
     print "-- Phase $pha seed: read NO.$seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print PT "-- Phase $pha seed: read NO.$seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
     print " - Finish ($step/16) phase $pha heter-SNP-marker tree growth.\n";
 
     ########## ########## Filter phase_0 heter SNP markers ########## ##########
@@ -465,7 +466,9 @@ sub readExtend{
     $ovl = 1;
     while ($maxredo){
         $maxredo--;
-        last if ( ((keys %readConsider)-1) == $#{$read->{QNAME}} );#all read been considered
+        my $rC = keys %readConsider;#read been considered
+        last if ( ($rC-1) == $#{$read->{QNAME}} );#all read been considered
+        #print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
         for my $i (0 .. $#{$read->{QNAME}}){
             if (exists $readConsider{$i}) { # skip phased read
                 next;
@@ -483,28 +486,31 @@ sub readExtend{
                 my $rS = 0;#SNP is heterzogous one is snp one is ref
                 my %readSnp;
                 my %readSnp0;
+
                 for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
                     my $pos = $read->{SNPPOS}[$i][$j];
                     my $alt = $read->{SNPALT}[$i][$j];
                     my $qual = $read->{SNPQUAL}[$i][$j];
                     $readSnp{$pos}{$alt}=$qual;
                     $readSnp0{$pos}=$alt;
-                    if(exists $filter{$pos}){
-                        if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
-                            $markYes++;
+                    if ($pos>=$range[0] && $pos <=$range[1]){#only consider the overlap part SNP
+                        if(exists $filter{$pos}){
+                            if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
+                                $markYes++;
+                            }
+                            else{#ref-allel
+                                $markNo++;
+                            }
                         }
-                        else{#ref-allel
-                            $markNo++;
+                        elsif(exists $seqError{$pos}{$alt}){
+                            $sE++;
                         }
-                    }
-                    elsif(exists $seqError{$pos}{$alt}){
-                        $sE++;
-                    }
-                    elsif(exists $homoSnp{$pos}{$alt}){
-                        $hS++;
-                    }
-                    else{
-                        $otherSnp++;
+                        elsif(exists $homoSnp{$pos}{$alt}){
+                            $hS++;
+                        }
+                        else{
+                            $otherSnp++;
+                        }
                     }
                 }
                 for my $pos (($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]) .. ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1])){
@@ -552,8 +558,8 @@ sub readExtend{
             }
         }
         if ($pre_p0r == $p0r){
-            $ovl -= 0.05;
-            last if ($ovl < 0.06);
+            $ovl -= 0.01;
+            last if ($ovl < 0.02);
         }
         $pre_p0r = $p0r;
     }
@@ -862,7 +868,7 @@ sub seedTest{
     $range[0] = $read->{START}[$seed];
     $range[1] = $read->{END}[$seed];
     my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test", $opts{c}, $opts{m});
-    return $extendLen;
+    return $extendTime;
 }
 
 sub veen {
