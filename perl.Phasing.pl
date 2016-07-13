@@ -70,7 +70,6 @@ print " - Finish ($step/16) ref-allel SNP detection.\n";
 my $bestWin = &traverseForSeedRegion(\%filter);
 $step++;
 print " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
-print "-- Candidate seeds array selection hash.\n-- Key : Value\n";
 
 my @seed0;
 my @seed1;
