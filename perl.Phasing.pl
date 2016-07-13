@@ -4,8 +4,7 @@ use Getopt::Std;
 
 ########## ########## Get paramter ########## ##########
 my %opts;
-getopts('hto:w:m:p:d:s:f:c:e:u:', \%opts);
-$opts{m}=0.75 unless ($opts{m});#read overlap with detected region
+getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
 $opts{c}=0.95 unless ($opts{c});#coincide SNP proportion when extending.
 $opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
 $opts{w} = 500 unless ($opts{w});#window size of seed region selection
@@ -15,7 +14,7 @@ $opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
 $opts{o} = "." unless ($opts{o});
 
 &help and &info and die if ($opts{h}); 
-&help and die unless ($opts{o} && $opts{m} && @ARGV);
+&help and die unless ($opts{o} && @ARGV);
 
 system "mkdir -p $opts{o}/";
 system "mkdir -p $opts{o}/TEMP";
@@ -124,7 +123,7 @@ sub Phase{
     my @range;#detect range of genome [0]:start pos, [1]:end pos
     $range[0] = $read->{START}[$seed];
     $range[1] = $read->{END}[$seed];
-    my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c}, $opts{m});
+    my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
     $step++;
     print "-- Phase $pha seed: read NO.$seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
     print PT "-- Phase $pha seed: read NO.$seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
@@ -448,7 +447,7 @@ sub phaseInitial{
 }
 
 sub readExtend{
-    my ($a, $b, $c, $d, $e, $f, $g, $pha, $cor, $ovl) = @_;
+    my ($a, $b, $c, $d, $e, $f, $g, $pha, $cor) = @_;
     my $seed = $a;
     my @range = @$b;
     my $phaseSnp = $c;
@@ -462,7 +461,7 @@ sub readExtend{
     my $pre_p0r = -1;#previous p0r
     my %readConsider;# read been considered
     $readConsider{$seed}++;# read been considered
-    $ovl = 1;
+    my $ovl = 1;#initial overlap proportion 1 to 0.05 by -= 0.01
     while ($maxredo){
         $maxredo--;
         my $rC = keys %readConsider;#read been considered
@@ -866,7 +865,7 @@ sub seedTest{
     my @range;#detect range of genome [0]:start pos, [1]:end pos
     $range[0] = $read->{START}[$seed];
     $range[1] = $read->{END}[$seed];
-    my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test", $opts{c}, $opts{m});
+    my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test", $opts{c});
     return $extendTime;
 }
 
@@ -899,13 +898,12 @@ sub veen {
 ########## ########## Help and Information ########## ##########
 sub help{
 print "*** Phase reads into 2 haplotype, using BAM format files.
-Usage:perl thisScript.pl -o $opts{o} -m $opts{m} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
+Usage:perl thisScript.pl -o $opts{o} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
 \t-h For more information.
 \t-t Delet the TEMP file directory.
 \t-c Coincide SNP proportion.(default=$opts{c})
 \t-w Window size of seed selection.(default=$opts{w}bp)
 \t-o Output directory.(default=$opts{o})
-\t-m Min-overlap between read and detected region. 0.0--1.0(default=$opts{m})
 \t-u Phase 0 and 1 > score cutoff. 0.0--1.0(default=$opts{u})
 \t-f First seed read NO. 
 \t-s Second seed read NO. 
