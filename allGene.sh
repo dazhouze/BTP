@@ -69,8 +69,8 @@ samtools view -Sb DQA1/DQA1.1.fastq.sam | samtools sort > DQA1/DQA1.1.fastq.bam
 samtools view -Sb DQA1/DQA1.0.fastq.sam | samtools sort > DQA1/DQA1.0.fastq.bam
 samtools index DQA1/DQA1.0.fastq.bam
 samtools index DQA1/DQA1.1.fastq.bam
-canu  useGrid=false -p A -d DQA1/DQA1_0 genomesize=6000 -pacbio-raw  DQA1/phase.0.qname.fastq
-canu  useGrid=false -p A -d DQA1/DQA1_1 genomesize=6000 -pacbio-raw  DQA1/phase.1.qname.fastq
+canu  useGrid=false -p DQA1 -d DQA1/DQA1_0 genomesize=6000 -pacbio-raw  DQA1/phase.0.qname.fastq
+canu  useGrid=false -p DQA1 -d DQA1/DQA1_1 genomesize=6000 -pacbio-raw  DQA1/phase.1.qname.fastq
 bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DQA1/DQA1_0/DQA1.consensus.fasta > DQA1/DQA1.0.contig.sam
 bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DQA1/DQA1_1/DQA1.consensus.fasta > DQA1/DQA1.1.contig.sam
 samtools view -Sb DQA1/DQA1.1.contig.sam | samtools sort > DQA1/DQA1.1.contig.bam
@@ -87,8 +87,8 @@ samtools view -Sb DQB1/DQB1.1.fastq.sam | samtools sort > DQB1/DQB1.1.fastq.bam
 samtools view -Sb DQB1/DQB1.0.fastq.sam | samtools sort > DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.1.fastq.bam
-canu  useGrid=false -p A -d DQB1/DQB1_0 genomesize=6000 -pacbio-raw  DQB1/phase.0.qname.fastq
-canu  useGrid=false -p A -d DQB1/DQB1_1 genomesize=6000 -pacbio-raw  DQB1/phase.1.qname.fastq
+canu  useGrid=false -p DQB1 -d DQB1/DQB1_0 genomesize=6000 -pacbio-raw  DQB1/phase.0.qname.fastq
+canu  useGrid=false -p DQB1 -d DQB1/DQB1_1 genomesize=6000 -pacbio-raw  DQB1/phase.1.qname.fastq
 bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DQB1/DQB1_0/DQB1.consensus.fasta > DQB1/DQB1.0.contig.sam
 bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DQB1/DQB1_1/DQB1.consensus.fasta > DQB1/DQB1.1.contig.sam
 samtools view -Sb DQB1/DQB1.1.contig.sam | samtools sort > DQB1/DQB1.1.contig.bam
