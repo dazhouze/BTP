@@ -541,6 +541,7 @@ sub readExtend{
                                     $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$i]}{$z})/(0-10));
                                 }
                                 else{#complex situation
+                                #indels
                                 }
                             }
                         }
@@ -549,7 +550,6 @@ sub readExtend{
             }
         }
     }
-    undef %readConsider;
     return $p0r;
 }
 
@@ -629,7 +629,8 @@ sub scoring{
             $markYes=$markYes/$numMark; 
             $markNo=$markNo/$numMark;
         }else{
-            $markYes=1;#if there is no heter SNP, which means can not judge, consider this read belongs to all 2 hap 
+            #$markYes=1;#if there is no heter SNP, which means can not judge, consider this read belongs to all 2 hap 
+            $markYes=0;#if there is no heter SNP, which means can not judge, consider this read belongs to no hap 
         }
         push @$markerVal , $markYes;
         $$qnameMark{$read->{QNAME}[$i]}=$markYes;
