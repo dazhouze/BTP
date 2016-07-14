@@ -2,4 +2,4 @@
 
 - PacBio reads haplotype phasing program.
 
-- Better than Samtools phase.
+- Perform better than Samtools phase on PacBio extra long reads.

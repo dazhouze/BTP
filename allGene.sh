@@ -3,7 +3,8 @@ rm -r B
 rm -r C
 rm -r DQA1
 rm -r DQB1
-rm -r DPAB1
+rm -r DPA1
+rm -r DPB1
 rm -r DRB1
 perl perl.Phasing.pl  -o A ../../6_filtered_result/output/BAM/A.sort.bam
 perl perl.qname2fastq.pl A/phase.0.qname
@@ -95,23 +96,41 @@ samtools view -Sb DQB1/DQB1.0.contig.sam | samtools sort > DQB1/DQB1.0.contig.ba
 samtools index DQB1/DQB1.0.contig.bam
 samtools index DQB1/DQB1.1.contig.bam
 
-perl perl.Phasing.pl  -o DPAB1 ../../6_filtered_result/output/BAM/DPAB1.sort.bam
-perl perl.qname2fastq.pl DPAB1/phase.0.qname
-perl perl.qname2fastq.pl DPAB1/phase.1.qname
-bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPAB1/phase.0.qname.fastq > DPAB1/DPAB1.0.fastq.sam
-bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPAB1/phase.1.qname.fastq > DPAB1/DPAB1.1.fastq.sam
-samtools view -Sb DPAB1/DPAB1.1.fastq.sam | samtools sort > DPAB1/DPAB1.1.fastq.bam
-samtools view -Sb DPAB1/DPAB1.0.fastq.sam | samtools sort > DPAB1/DPAB1.0.fastq.bam
-samtools index DPAB1/DPAB1.0.fastq.bam
-samtools index DPAB1/DPAB1.1.fastq.bam
-canu  useGrid=false -p DPAB1 -d DPAB1/DPAB1_0 genomesize=6000 -pacbio-raw  DPAB1/phase.0.qname.fastq
-canu  useGrid=false -p DPAB1 -d DPAB1/DPAB1_1 genomesize=6000 -pacbio-raw  DPAB1/phase.1.qname.fastq
-bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPAB1/DPAB1_0/DPAB1.consensus.fasta > DPAB1/DPAB1.0.contig.sam
-bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPAB1/DPAB1_1/DPAB1.consensus.fasta > DPAB1/DPAB1.1.contig.sam
-samtools view -Sb DPAB1/DPAB1.1.contig.sam | samtools sort > DPAB1/DPAB1.1.contig.bam
-samtools view -Sb DPAB1/DPAB1.0.contig.sam | samtools sort > DPAB1/DPAB1.0.contig.bam
-samtools index DPAB1/DPAB1.0.contig.bam
-samtools index DPAB1/DPAB1.1.contig.bam
+perl perl.Phasing.pl  -o DPA1 ../../6_filtered_result/output/BAM/DPA1.sort.bam
+perl perl.qname2fastq.pl DPA1/phase.0.qname
+perl perl.qname2fastq.pl DPA1/phase.1.qname
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPA1/phase.0.qname.fastq > DPA1/DPA1.0.fastq.sam
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPA1/phase.1.qname.fastq > DPA1/DPA1.1.fastq.sam
+samtools view -Sb DPA1/DPA1.1.fastq.sam | samtools sort > DPA1/DPA1.1.fastq.bam
+samtools view -Sb DPA1/DPA1.0.fastq.sam | samtools sort > DPA1/DPA1.0.fastq.bam
+samtools index DPA1/DPA1.0.fastq.bam
+samtools index DPA1/DPA1.1.fastq.bam
+canu  useGrid=false -p DPA1 -d DPA1/DPA1_0 genomesize=6000 -pacbio-raw  DPA1/phase.0.qname.fastq
+canu  useGrid=false -p DPA1 -d DPA1/DPA1_1 genomesize=6000 -pacbio-raw  DPA1/phase.1.qname.fastq
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPA1/DPA1_0/DPA1.consensus.fasta > DPA1/DPA1.0.contig.sam
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPA1/DPA1_1/DPA1.consensus.fasta > DPA1/DPA1.1.contig.sam
+samtools view -Sb DPA1/DPA1.1.contig.sam | samtools sort > DPA1/DPA1.1.contig.bam
+samtools view -Sb DPA1/DPA1.0.contig.sam | samtools sort > DPA1/DPA1.0.contig.bam
+samtools index DPA1/DPA1.0.contig.bam
+samtools index DPA1/DPA1.1.contig.bam
+
+perl perl.Phasing.pl  -o DPB1 ../../6_filtered_result/output/BAM/DPB1.sort.bam
+perl perl.qname2fastq.pl DPB1/phase.0.qname
+perl perl.qname2fastq.pl DPB1/phase.1.qname
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPB1/phase.0.qname.fastq > DPB1/DPB1.0.fastq.sam
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPB1/phase.1.qname.fastq > DPB1/DPB1.1.fastq.sam
+samtools view -Sb DPB1/DPB1.1.fastq.sam | samtools sort > DPB1/DPB1.1.fastq.bam
+samtools view -Sb DPB1/DPB1.0.fastq.sam | samtools sort > DPB1/DPB1.0.fastq.bam
+samtools index DPB1/DPB1.0.fastq.bam
+samtools index DPB1/DPB1.1.fastq.bam
+canu  useGrid=false -p DPB1 -d DPB1/DPB1_0 genomesize=6000 -pacbio-raw  DPB1/phase.0.qname.fastq
+canu  useGrid=false -p DPB1 -d DPB1/DPB1_1 genomesize=6000 -pacbio-raw  DPB1/phase.1.qname.fastq
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPB1/DPB1_0/DPB1.consensus.fasta > DPB1/DPB1.0.contig.sam
+bwa mem ~/team/dataBase/hg19_chr6/chr6.fa DPB1/DPB1_1/DPB1.consensus.fasta > DPB1/DPB1.1.contig.sam
+samtools view -Sb DPB1/DPB1.1.contig.sam | samtools sort > DPB1/DPB1.1.contig.bam
+samtools view -Sb DPB1/DPB1.0.contig.sam | samtools sort > DPB1/DPB1.0.contig.bam
+samtools index DPB1/DPB1.0.contig.bam
+samtools index DPB1/DPB1.1.contig.bam
 
 perl perl.Phasing.pl  -o DRB1 ../../6_filtered_result/output/BAM/DRB1.sort.bam
 perl perl.qname2fastq.pl DRB1/phase.0.qname
