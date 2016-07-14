@@ -11,7 +11,6 @@ $opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
 $opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
-#$opts{o} = "." unless ($opts{o});
 
 &help and &info and die if ($opts{h}); 
 &help and die unless ($opts{o} && @ARGV);
@@ -456,16 +455,14 @@ sub readExtend{
     my %seqError = %$f;
     my %homoSnp = %$g;
 
-    my $maxredo = $#{$read->{QNAME}}+1;#read number
     my $p0r = 0;#read number determined as phase_0
     my $pre_p0r = -1;#previous p0r
     my %readConsider;# read been considered
     $readConsider{$seed}++;# read been considered
-    my $ovl = 1;#initial overlap proportion 1 to 0.05 by -= 0.01
-    while ($maxredo){
-        $maxredo--;
-        my $rC = keys %readConsider;#read been considered
-        last if ( ($rC-1) == $#{$read->{QNAME}} );#all read been considered
+    my $rC = 1;#read been considered
+    for  (my $ovl=1; $ovl>0.2;){#initial overlap proportion 1 to 0.05 by -= 0.01
+        my %accordantRead;#reads can be add to "detect region" {consistency}{i}
+        last if ($ovl < 0.2);#the overlap is too low
         #print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
         for my $i (0 .. $#{$read->{QNAME}}){
             if (exists $readConsider{$i}) { # skip phased read
@@ -473,7 +470,8 @@ sub readExtend{
             }
             else{
                 next if (&range_overlap($range[0],$range[1],$read->{START}[$i],$read->{END}[$i])<=($ovl*$read->{LEN}[$i]));
-                $readConsider{$i}++;
+                $readConsider{$i}++;#
+                $rC++;
                 my $ft_re_num = 0;#filtered SNP marker number overlap with read snp
                 my $numMark = &range_marker(($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]), ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1]));# marker alt should be detect
                 my $markYes = 0;#SNP is same to phase_0 marker alt (position and alt-allel)
@@ -484,7 +482,6 @@ sub readExtend{
                 my $rS = 0;#SNP is heterzogous one is snp one is ref
                 my %readSnp;
                 my %readSnp0;
-
                 for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
                     my $pos = $read->{SNPPOS}[$i][$j];
                     my $alt = $read->{SNPALT}[$i][$j];
@@ -522,34 +519,45 @@ sub readExtend{
                         }
                     }
                 }
-                #judgement of phase_0/phase_1
-                my $xAxis=-1;
-                my $yAxis=-1;
-                #print "other phase seed index $i $read->{LEN}[$i]\n";
-                if ($markYes+$markNo+$sE){
-                    $xAxis=$markYes/($markYes+$markNo+$sE+$hS);
-                    $yAxis=$markNo/($markYes+$markNo+$sE+$hS);
+                my $xy = 0;#($markYes/($markYes+$markNo))
+                if($markYes+$markNo){
+                    $xy = $markYes/($markYes+$markNo);
                 }
-                print HIT "$pha\t$i\t$read->{LEN}[$i]\t$numMark\t$markYes\t$markNo\t$sE\t$hS\n";
-                if($xAxis*(1-$cor) >= $yAxis*$cor){#phase0
-                    $p0r++;
-                    $range[0]=($range[0]<$read->{START}[$i]?$range[0]:$read->{START}[$i]);#re-new start of range
-                    $range[1]=($range[1]>$read->{END}[$i]?$range[1]:$read->{END}[$i]);#re-new end of range
-                    for my $z ($read->{START}[$i] .. $read->{END}[$i]){#z is position from read start to end
-                        if (exists $filter{$z}){#there should be SNP marker
-                            if (exists $readSnp{$z}){#there is read SNP
-                                for my $kalt (keys %{$readSnp{$z}}){
-                                    #SNP base qual -10log10{Pr}
-                                    my $kqual = 1-10**($readSnp{$z}{$kalt}/(0-10));#base qual of SNP (<1)
-                                    $$phaseSnp{$z}{$kalt}+=$kqual;
-                                }
+                if($xy >= $cor){#phase0
+                    $accordantRead{$xy}{$i}++;#reads can be add to "detect region" {consistency}{i}
+                }
+            }
+        }
+        #after traverse all read
+        for my $kxy (sort {$c<=>$d} keys %accordantRead){#reads can be add to "detect region" {consistency}{i}
+            for my $ki (sort keys %{$accordantRead{$kxy}}){
+                $p0r++;
+                $range[0]=($range[0]<$read->{START}[$ki]?$range[0]:$read->{START}[$ki]);#re-new start of range
+                $range[1]=($range[1]>$read->{END}[$ki]?$range[1]:$read->{END}[$ki]);#re-new end of range
+                #print HIT "$pha\t$ki\t$read->{LEN}[$ki]\t$numMark\t$markYes\t$markNo\t$sE\t$hS\n";
+                my %readSnp;
+                my %readSnp0;
+                for my $j (0 ..$#{$read->{SNPPOS}[$ki]}){
+                    my $pos = $read->{SNPPOS}[$ki][$j];
+                    my $alt = $read->{SNPALT}[$ki][$j];
+                    my $qual = $read->{SNPQUAL}[$ki][$j];
+                    $readSnp{$pos}{$alt}=$qual;
+                    $readSnp0{$pos}=$alt;
+                }
+                for my $z ($read->{START}[$ki] .. $read->{END}[$ki]){#z is position from read start to end
+                    if (exists $filter{$z}){#there should be SNP marker
+                        if (exists $readSnp{$z}){#there is read SNP
+                            for my $kalt (keys %{$readSnp{$z}}){
+                                #SNP base qual -10log10{Pr}
+                                my $kqual = 1-10**($readSnp{$z}{$kalt}/(0-10));#base qual of SNP (<1)
+                                $$phaseSnp{$z}{$kalt}+=$kqual;
                             }
-                            elsif (exists $refSnp{$read->{QNAME}[$i]}{$z}){#this read is ref-allel
-                                $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$i]}{$z})/(0-10));
-                            }
-                            else{#complex situation
-                            #indels
-                            }
+                        }
+                        elsif (exists $refSnp{$read->{QNAME}[$ki]}{$z}){#this read is ref-allel
+                            $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$ki]}{$z})/(0-10));
+                        }
+                        else{#complex situation
+                        #indels
                         }
                     }
                 }
@@ -557,7 +565,6 @@ sub readExtend{
         }
         if ($pre_p0r == $p0r){
             $ovl -= 0.01;
-            last if ($ovl < 0.02);
         }
         $pre_p0r = $p0r;
     }
@@ -656,10 +663,6 @@ sub printResult{
     my $count = @markerVal;
     my $p0=0;#reads number of phase_0
     my $p1=0;#reads number of phase_1
-    #my $markerCutOff0 = $sortMarkerVal[0]*0.45;#phase0 > 
-    #my $markerCutOff1 = $sortMarkerVal[0]*0.20;#phase0 > 
-    #my $markerCutOff1 = $sortMarkerVal[0]*0.20;#phase1 <
-    #my @reSortMarkerVal = reverse sort @markerVal;#from small to large
     my @sortMarkerVal =  sort @markerVal;#from small to large
     my $markerCutOff0 = $sortMarkerVal[int($opts{u}*($count))];#small
     print "-- Marker hit cutoff value: $markerCutOff0\n";
