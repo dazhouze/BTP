@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<smrtpipeSettings>
+  <protocol id="RS_ReadsOfInsert.1" version="2.3.0" editable="false">
+  <application>Reference-based</application>
+    <param name="name" label="Protocol Name" >
+      <value>RS_ReadsOfInsert_Mapping</value>
+      <input type="text" />
+      <rule required="true" />
+    </param>
+    <param name="description" >
+      <value>Generates consensus sequences from single molecules and maps them to a reference for concordance and length statistics.</value>
+      <textarea />
+    </param>
+    <param name="version" hidden="true" >
+      <value>1</value>
+      <input type="text" />
+      <rule required="true" type="digits" min="1" />
+    </param>
+    <param name="state" >
+      <value>active</value>
+      <input type="radio" value="active" />
+      <input type="radio" value="inactive" />
+    </param>
+	
+    <param name="reference" editableInJob="true">
+      <value>/ifs1/ST_IM/USER/zhouze/dataBase/smrt/ucsc_hg19</value>
+	</param>
+    <param name="control" hidden="true">
+      <value></value>
+    </param>
+    <param name="fetch" hidden="true">
+      <value>common/protocols/preprocessing/Fetch.1.xml</value>
+    </param>
+    
+	<param name="filtering" >
+      <value>common/protocols/consensus/ReadsOfInsert.1.xml</value>
+      <select multiple="true">
+        <import contentType="text/directory" extension="xml">common/protocols/consensus</import>
+      </select>
+	</param>
+  </protocol>
+  
+<module id="P_Fetch" label="Fetch v1" editableInJob="true" >
+    <description>Sets up inputs</description>
+</module>
+
+<module label="Reads Of Insert" id="P_CCS" editableInJob="true" >
+    <description>Generates consensus sequences from single molecules.</description>
+    <param name='minFullPasses' label="Minimum Full Passes">
+      <title>The minimum number of full-length passes over the insert DNA for the read to be included.</title>
+      <value>0</value>	
+      <input type="text"/>
+      <rule type="digits" min="0" max="10" message="Value must be an integer between 0 and 10" />
+    </param>
+    <param name='minPredictedAccuracy' label="Minimum Predicted Accuracy">
+      <title>The minimum predicted accuracy (in %) of the Reads of Insert emitted.</title>
+      <value>75</value>
+      <input type="text"/>
+      <rule type="digits" min="70" max="100" message="Value must be between 70 and 100" />
+    </param>
+    <param name='minLength' label="Minimum Read Length of Insert (in bases)">
+      <title>The Minimum Read Length of Insert (in bases). Default: No Minimum Length
+      </title>
+      <!-- <value>90</value> -->
+      <input type="text"/>
+      <rule type="digits" min="1" message="Value must be greater than 0" />
+    </param>
+    <param name='maxLength' label="Maximum Read Length of Insert (in bases)">
+      <title>The Maximum Read Length of Insert (in bases). Default: No Limit</title>
+      <input type="text"/>
+      <rule type="digits" min="1" message="Value must be greater than 0" />
+    </param>
+</module>
+
+</smrtpipeSettings>

@@ -6,7 +6,7 @@ use Getopt::Std;
 my %opts;
 getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
 $opts{c}=0.95 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{u}=0.5 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
+$opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
 $opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
@@ -896,6 +896,9 @@ sub veen {
     print "-- Reads of Phase 0: $p0\n";
     print "-- Reads of Phase 1: $p1\n";
     print "-- Same reads between 2 phase:$ol\n";
+    print PT "-- Reads of Phase 0: $p0\n";
+    print PT "-- Reads of Phase 1: $p1\n";
+    print PT "-- Same reads between 2 phase:$ol\n";
 }
 
 ########## ########## Help and Information ########## ##########
