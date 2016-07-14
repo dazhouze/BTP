@@ -6,12 +6,12 @@ use Getopt::Std;
 my %opts;
 getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
 $opts{c}=0.95 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
+$opts{u}=0.45 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
 $opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
 $opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
-$opts{o} = "." unless ($opts{o});
+#$opts{o} = "." unless ($opts{o});
 
 &help and &info and die if ($opts{h}); 
 &help and die unless ($opts{o} && @ARGV);
@@ -812,6 +812,8 @@ sub seedSelect{
         #print "-- $kpattern : $fre_hash{$kpattern}\n";
         print PT "$kpattern : $fre_hash{$kpattern}\n";
     }
+    die "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" if ($maxFre == 0);
+    die "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" if ($maxFre == 1);
     delete $fre_hash{$maxPatten};
     $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
@@ -825,6 +827,7 @@ sub seedSelect{
             }
         }
     }
+    die "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" if ($maxFre == 1);
 }
 
 sub errorNum{
