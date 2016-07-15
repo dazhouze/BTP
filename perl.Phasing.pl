@@ -61,8 +61,7 @@ print " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination
 print LOG " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
 
 ########## ########## Detect ref-allel SNP in all read ########## ##########
-my %refSnp;
-
+my %refSnp;#ref-allel snp {qname}{pos}
 &detectSnp("match");
 $step++;
 print " - Finish ($step/16) ref-allel SNP detection.\n";
@@ -74,6 +73,7 @@ $step++;
 print " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
 print LOG " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
 
+#seed arrays setting
 my @seed0;
 my @seed1;
 &seedSelect($bestWin, \%filter, \%seqError, \%homoSnp, \@seed0, \@seed1);#return 2 seed array in diff hap as seed.
@@ -85,51 +85,15 @@ $step++;
 print " - Finish ($step/16) candidate seeds array selection.\n";
 print LOG " - Finish ($step/16) candidate seeds array selection.\n";
 
-#artificial seed or say region seed
+#artificial seed or say region seed setting
 my %seed0Snp;
 my %seed1Snp;
 my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
 &artSeed(\@seed1, \%seed1Snp, \%filter);
 print " - Finish ($step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
 print LOG " - Finish ($step/16) two artificial region seeds setting.\n";
-sub artSeed {
-    my ($X, $Y, $Z) = @_;
-    my @seed = @$X;
-    my $seedSnp = $Y;
-    my %filter = %$Z;
-    my %tempSnp;
-    my $artMark = 0;#markers num in artificial region
-    for my $s (@seed){
-        for my $j (0 ..$#{$read->{SNPPOS}[$s]}){
-            my $pos = $read->{SNPPOS}[$s][$j];
-            my $alt = $read->{SNPALT}[$s][$j];
-            my $qual = $read->{SNPQUAL}[$s][$j];
-            if ($pos > ($bestWin-1)*$opts{w} && $pos <= ($bestWin+1)*$opts{w}){
-                $tempSnp{$pos}{$alt} += $qual;
-            }
-        }
-        for my $pos ( (($bestWin-1)*$opts{w}) .. (($bestWin+1)*$opts{w})){
-            if (exists $refSnp{$read->{QNAME}[$s]}{$pos}){#this read is ref-allel
-                 $tempSnp{$pos}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$s]}{$pos})/(0-10));
-            }
-        }
-    }
-    for my $kpos (keys %tempSnp){
-        my $maxV = 0;
-        my $maxAlt = "NA";
-        next if (!exists $filter{$kpos});
-        for my $kalt (keys %{$tempSnp{$kpos}}){
-            if ($tempSnp{$kpos}{$kalt} > $maxV){
-                $maxAlt = $kalt;
-                $maxV = $tempSnp{$kpos}{$kalt};
-                $artMark++;
-            }
-        }
-        $$seedSnp{$kpos} = $maxAlt;
-    }
-    return $artMark;
-}
 
+#phasing
 &Phase(\%seed0Snp, "phase.0", 0);
 &Phase(\%seed1Snp, "phase.1", 1);
 
@@ -138,7 +102,6 @@ sub Phase{
     my %seedSnp = %$X;
     my $allRead = $#{$read->{LEN}} + 1;
     ########## ########## Initialize phase_0 SNP ########## ##########
-    #my %seedSnp;# snp of seed read
     my %phaseSnp;
 
     &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
@@ -188,6 +151,7 @@ system"rm -r $opts{o}/TEMP/" if ($opts{t});
 
 ########## ########## Veen check ########## ##########
 &veen;
+
 
 ########## ########## Functions ########## ##########
 sub detectSnp {
@@ -473,7 +437,6 @@ sub phaseInitial{
 
 sub readExtend{
     my ($A, $B, $C, $D, $E, $F, $pha, $cor) = @_;
-    #my $seed = $A;
     my @range = @$A;
     my $phaseSnp = $B;
     my %filter = %$C;
@@ -488,7 +451,9 @@ sub readExtend{
     my $rC = 1;#read been considered number
     for (my $maxRedo=1+$#{$read->{LEN}}; $maxRedo; $maxRedo--){
         my %accordantRead;#reads can be add to "detect region" {consistency}{i}
-        last if ($ovl < 0.2);#the overlap is too low
+        last if ($ovl < 0.1);#the overlap is too low
+        $rC = keys %readConsider;
+        last if ($rC == (1+$#{$read->{LEN}}));
         print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
         for my $i (0 .. $#{$read->{QNAME}}){
             if (exists $readConsider{$i}) { # skip phased read
@@ -497,17 +462,14 @@ sub readExtend{
             else{
                 next if (&range_overlap($range[0],$range[1],$read->{START}[$i],$read->{END}[$i])<=($ovl*$read->{LEN}[$i]));
                     $readConsider{$i}++;#
-                    $rC++;
-                #my %conReadSnp;#read been considered snps
                 my %conReadSnp0;
                 for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
                     my $pos = $read->{SNPPOS}[$i][$j];
                     my $alt = $read->{SNPALT}[$i][$j];
                     my $qual = $read->{SNPQUAL}[$i][$j];
-                    #$conReadSnp{$i}{$pos}{$alt}=$qual;
                     $conReadSnp0{$i}{$pos}=$alt;
                 }
-                my $xy = &markValue($i, \%conReadSnp0, \%refSnp, \%filter, \@range, $phaseSnp);
+                my $xy = &markValue($i, \%conReadSnp0, \%refSnp, \%filter, \@range, $B);#%phaseSnp=%$B
                 if($xy >= $cor){#phase0
                     $accordantRead{$xy}{$i}++;#reads can be add to "detect region" {consistency}{i}
                 }else{
@@ -518,11 +480,10 @@ sub readExtend{
         }
         for my $kxy (reverse sort {$a<=>$b} keys %accordantRead){#reads can be add to "detect region"
             for my $ki (sort keys %{$accordantRead{$kxy}}){
-                $p0r += &extendBestRead($ki, $D, $A, $B);#@range = @$b; $phaseSnp = $c;
+                $p0r += &extendBestRead($ki, \%refSnp, \@range, $B);#@range = @$A; $phaseSnp = $B;
                 $readConsider{$ki}++;#
                 $rC++;
             }
-            last;
         }
         if ($pre_p0r == $p0r){
             $ovl -= 0.01;
@@ -917,21 +878,6 @@ sub homoNum{
     return $hS;
 }
 
-#sub seedTest{
-#   my $seed = $_[0];
-#   ########## ########## Initialize phase_0 SNP ########## ##########
-#   my %seedSnp;# snp of seed read
-#   my %phaseSnp;
-#   &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
-#   &seedInitial(\%phaseSnp, \%filter, \%refSnp, $seed);#initial seed to phase 0
-#   ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
-#   my @range;#detect range of genome [0]:start pos, [1]:end pos
-#   $range[0] = $read->{START}[$seed];
-#   $range[1] = $read->{END}[$seed];
-#   my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test", $opts{c});
-#   return $extendTime;
-#}
-
 sub veen {
     my $f1 = "$opts{o}/phase.0.qname";
     my $f2 = "$opts{o}/phase.1.qname";
@@ -959,6 +905,44 @@ sub veen {
     print PT "-- Reads of Phase 0: $p0\n";
     print PT "-- Reads of Phase 1: $p1\n";
     print PT "-- Same reads between 2 phase:$ol\n";
+}
+
+sub artSeed {
+    my ($X, $Y, $Z) = @_;
+    my @seed = @$X;
+    my $seedSnp = $Y;
+    my %filter = %$Z;
+    my %tempSnp;
+    my $artMark = 0;#markers num in artificial region
+    for my $s (@seed){
+        for my $j (0 ..$#{$read->{SNPPOS}[$s]}){
+            my $pos = $read->{SNPPOS}[$s][$j];
+            my $alt = $read->{SNPALT}[$s][$j];
+            my $qual = $read->{SNPQUAL}[$s][$j];
+            if ($pos > ($bestWin-1)*$opts{w} && $pos <= ($bestWin+1)*$opts{w}){
+                $tempSnp{$pos}{$alt} += $qual;
+            }
+        }
+        for my $pos ( (($bestWin-1)*$opts{w}) .. (($bestWin+1)*$opts{w})){
+            if (exists $refSnp{$read->{QNAME}[$s]}{$pos}){#this read is ref-allel
+                 $tempSnp{$pos}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$s]}{$pos})/(0-10));
+            }
+        }
+    }
+    for my $kpos (keys %tempSnp){
+        my $maxV = 0;
+        my $maxAlt = "NA";
+        next if (!exists $filter{$kpos});
+        for my $kalt (keys %{$tempSnp{$kpos}}){
+            if ($tempSnp{$kpos}{$kalt} > $maxV){
+                $maxAlt = $kalt;
+                $maxV = $tempSnp{$kpos}{$kalt};
+                $artMark++;
+            }
+        }
+        $$seedSnp{$kpos} = $maxAlt;
+    }
+    return $artMark;
 }
 
 ########## ########## Help and Information ########## ##########
