@@ -5,8 +5,8 @@ use Getopt::Std;
 ########## ########## Get paramter ########## ##########
 my %opts;
 getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
-$opts{c}=0.95 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
+$opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
+$opts{u} = 0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
 $opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
@@ -112,7 +112,7 @@ sub Phase{
 
     ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
     my @range;#detect range of genome [0]:start pos, [1]:end pos
-    $range[0] = ($bestWin-1)*$opts{w};
+    $range[0] = ($bestWin-2)*$opts{w};
     $range[1] = ($bestWin+1)*$opts{w};
     my ($extendTime, $extendLen) = &readExtend(\@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
     $step++;
