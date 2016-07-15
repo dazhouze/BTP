@@ -48,6 +48,7 @@ my @bam = @ARGV;
 &detectSnp("mismatch");
 $step++;
 print " - Finish ($step/16) BAM file SNP detection.\n";
+print LOG " - Finish ($step/16) BAM file SNP detection.\n";
 
 ########## ########## Identify heterozygous SNP marker, seq error and homo SNP ########## ##########
 my %filter;#filtered marker hash
@@ -57,6 +58,7 @@ my %homoSnp;#read snp that seem to be homozygous snp
 my $heterSnpNum = &traverseSnp(\%filter, \%seqError, \%homoSnp);
 $step++;
 print " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+print LOG " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
 
 ########## ########## Detect ref-allel SNP in all read ########## ##########
 my %refSnp;
@@ -64,69 +66,96 @@ my %refSnp;
 &detectSnp("match");
 $step++;
 print " - Finish ($step/16) ref-allel SNP detection.\n";
+print LOG " - Finish ($step/16) ref-allel SNP detection.\n";
 
 ########## ########## Set seed ########## ##########
 my $bestWin = &traverseForSeedRegion(\%filter);
 $step++;
 print " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
+print LOG " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
 
 my @seed0;
 my @seed1;
-&seedSelect($bestWin, \%filter, \%seqError, \%homoSnp, \@seed0, \@seed1);#return 2 shortest read in diff hap as seed.
+&seedSelect($bestWin, \%filter, \%seqError, \%homoSnp, \@seed0, \@seed1);#return 2 seed array in diff hap as seed.
 print "-- Phase 0 seeds array (NO): @seed0.\n";
 print "-- Phase 1 seeds array (NO): @seed1.\n";
+print LOG "-- Phase 0 seeds array (NO): @seed0.\n";
+print LOG "-- Phase 1 seeds array (NO): @seed1.\n";
 $step++;
 print " - Finish ($step/16) candidate seeds array selection.\n";
-my $maxExtend = 0;
-my $bestSeed0;
-for my $seed (@seed0){
-    my $extendTime = &seedTest($seed); 
-    if ($extendTime > $maxExtend){
-        $maxExtend = $extendTime;
-        $bestSeed0 = $seed;
+print LOG " - Finish ($step/16) candidate seeds array selection.\n";
+
+#artificial seed or say region seed
+my %seed0Snp;
+my %seed1Snp;
+my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
+&artSeed(\@seed1, \%seed1Snp, \%filter);
+print " - Finish ($step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
+print LOG " - Finish ($step/16) two artificial region seeds setting.\n";
+sub artSeed {
+    my ($X, $Y, $Z) = @_;
+    my @seed = @$X;
+    my $seedSnp = $Y;
+    my %filter = %$Z;
+    my %tempSnp;
+    my $artMark = 0;#markers num in artificial region
+    for my $s (@seed){
+        for my $j (0 ..$#{$read->{SNPPOS}[$s]}){
+            my $pos = $read->{SNPPOS}[$s][$j];
+            my $alt = $read->{SNPALT}[$s][$j];
+            my $qual = $read->{SNPQUAL}[$s][$j];
+            if ($pos > ($bestWin-1)*$opts{w} && $pos <= ($bestWin+1)*$opts{w}){
+                $tempSnp{$pos}{$alt} += $qual;
+            }
+        }
+        for my $pos ( (($bestWin-1)*$opts{w}) .. (($bestWin+1)*$opts{w})){
+            if (exists $refSnp{$read->{QNAME}[$s]}{$pos}){#this read is ref-allel
+                 $tempSnp{$pos}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$s]}{$pos})/(0-10));
+            }
+        }
     }
-}
-#print "-- Best seed of phase 0: $bestSeed0. Extend times:$maxExtend\n";
-$maxExtend = 0;
-my $bestSeed1;
-for my $seed (@seed1){
-    my $extendTime = &seedTest($seed); 
-    if ($extendTime > $maxExtend){
-        $maxExtend = $extendTime;
-        $bestSeed1 = $seed;
+    for my $kpos (keys %tempSnp){
+        my $maxV = 0;
+        my $maxAlt = "NA";
+        next if (!exists $filter{$kpos});
+        for my $kalt (keys %{$tempSnp{$kpos}}){
+            if ($tempSnp{$kpos}{$kalt} > $maxV){
+                $maxAlt = $kalt;
+                $maxV = $tempSnp{$kpos}{$kalt};
+                $artMark++;
+            }
+        }
+        $$seedSnp{$kpos} = $maxAlt;
     }
+    return $artMark;
 }
-#print "-- Best seed of phase 1: $bestSeed1. Extend times:$maxExtend\n";
 
-
-$bestSeed0 = $opts{f} if ($opts{f});
-$bestSeed1 = $opts{s} if ($opts{s});
-$step++;
-print " - Finish ($step/16) seeds extendsion tests and two seeds setting.\n";
-
-&Phase($bestSeed0, "phase.0", 0);
-&Phase($bestSeed1, "phase.1", 1);
+&Phase(\%seed0Snp, "phase.0", 0);
+&Phase(\%seed1Snp, "phase.1", 1);
 
 sub Phase{
-    my ($seed, $fileName, $pha) = @_;
+    my ($X, $fileName, $pha) = @_;
+    my %seedSnp = %$X;
     my $allRead = $#{$read->{LEN}} + 1;
     ########## ########## Initialize phase_0 SNP ########## ##########
-    my %seedSnp;# snp of seed read
+    #my %seedSnp;# snp of seed read
     my %phaseSnp;
 
     &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
-    &seedInitial(\%phaseSnp, \%filter, \%refSnp, $seed);#initial seed to phase 0
+    &seedInitial(\%phaseSnp, \%filter, \%refSnp, $X);#initial seed to phase 0
     $step++;
     print " - Finish ($step/16) phase $pha SNPs initialization.\n";
+    print LOG " - Finish ($step/16) phase $pha SNPs initialization.\n";
 
     ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
     my @range;#detect range of genome [0]:start pos, [1]:end pos
-    $range[0] = $read->{START}[$seed];
-    $range[1] = $read->{END}[$seed];
-    my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
+    $range[0] = ($bestWin-1)*$opts{w};
+    $range[1] = ($bestWin+1)*$opts{w};
+    my ($extendTime, $extendLen) = &readExtend(\@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
     $step++;
-    print "-- Phase $pha seed: read NO.$seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
-    print PT "-- Phase $pha seed: read NO.$seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print LOG "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print PT "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
     print " - Finish ($step/16) phase $pha heter-SNP-marker tree growth.\n";
 
     ########## ########## Filter phase_0 heter SNP markers ########## ##########
@@ -134,6 +163,7 @@ sub Phase{
     &markerFilter(\%phaseSnp, \%phaseSnpFilter, $pha);
     $step++;
     print " - Finish ($step/16) phase $pha heter SNP markers filtering.\n";
+    print LOG " - Finish ($step/16) phase $pha heter SNP markers filtering.\n";
 
     ########## ########## Scoring all reads ########## ##########
     my %qnameMark;#hash of qname and markYes(hit marker) value
@@ -141,11 +171,13 @@ sub Phase{
     &scoring(\%phaseSnpFilter, \@markerVal, \%qnameMark, \%filter, \%seqError, \%homoSnp, \%refSnp, $pha);
     $step++;
     print " - Finish ($step/16) all reads scoring.\n";
+    print LOG " - Finish ($step/16) all reads scoring.\n";
 
     ########## ########## Determine 2 haplotype ########## ##########
     &printResult(\@markerVal, \%qnameMark, "$fileName.qname");
     $step++;
     print " - Finish ($step/16) phase $pha result printing.\n";
+    print LOG " - Finish ($step/16) phase $pha result printing.\n";
 }
 
 close OUT;
@@ -403,23 +435,15 @@ sub traverseSnp{#traverse all reads to figure out heter-SNP
 }
 
 sub seedInitial{
-    my ($x, $y, $z, $seed) = @_;
-    my $phaseSnp = $x;
-    my %filter = %$y; 
-    my %refSnp = %$z;
-    for my $j (0 ..$#{$read->{SNPPOS}[$seed]}){
-        my $pos = $read->{SNPPOS}[$seed][$j];
-        my $alt = $read->{SNPALT}[$seed][$j];
-        my $qual = $read->{SNPQUAL}[$seed][$j];
-        if (exists $filter{$pos}){#same to filtered marker
-            #$$phaseSnp{$pos}{$alt} += $qual;
-            $$phaseSnp{$pos}{$alt} += 1;
-        }
-    }
-    for my $z ($read->{START}[$seed] .. $read->{END}[$seed]){
-        if (exists $refSnp{$read->{QNAME}[$seed]}{$z}){
-            $$phaseSnp{$z}{"R"} += 1;
-        }
+    my ($X, $Y, $Z, $W) = @_;
+    my $phaseSnp = $X;
+    my %filter = %$Y; 
+    my %refSnp = %$Z;
+    my %seedSnp = %$W;
+    for my $pos (keys %seedSnp){
+        my $alt = $seedSnp{$pos};
+        print "436L:$pos\t$alt\n";
+        $$phaseSnp{$pos}{$alt} += 1;
     }
 }
 
@@ -448,122 +472,57 @@ sub phaseInitial{
 }
 
 sub readExtend{
-    my ($a, $b, $c, $d, $e, $f, $g, $pha, $cor) = @_;
-    my $seed = $a;
-    my @range = @$b;
-    my $phaseSnp = $c;
-    my %filter = %$d;
-    my %refSnp = %$e;
-    my %seqError = %$f;
-    my %homoSnp = %$g;
+    my ($A, $B, $C, $D, $E, $F, $pha, $cor) = @_;
+    #my $seed = $A;
+    my @range = @$A;
+    my $phaseSnp = $B;
+    my %filter = %$C;
+    my %refSnp = %$D;
+    my %seqError = %$E;
+    my %homoSnp = %$F;
 
     my $p0r = 0;#read number determined as phase_0
     my $pre_p0r = -1;#previous p0r
     my %readConsider;# read been considered
-    $readConsider{$seed}++;# read been considered
-    my $rC = 1;#read been considered
-    for  (my $ovl=1; $ovl>0.2;){#initial overlap proportion 1 to 0.05 by -= 0.01
+    my $ovl = 1; 
+    my $rC = 1;#read been considered number
+    for (my $maxRedo=1+$#{$read->{LEN}}; $maxRedo; $maxRedo--){
         my %accordantRead;#reads can be add to "detect region" {consistency}{i}
         last if ($ovl < 0.2);#the overlap is too low
-        #print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
+        print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
         for my $i (0 .. $#{$read->{QNAME}}){
             if (exists $readConsider{$i}) { # skip phased read
                 next;
             }
             else{
                 next if (&range_overlap($range[0],$range[1],$read->{START}[$i],$read->{END}[$i])<=($ovl*$read->{LEN}[$i]));
-                $readConsider{$i}++;#
-                $rC++;
-                my $ft_re_num = 0;#filtered SNP marker number overlap with read snp
-                my $numMark = &range_marker(($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]), ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1]));# marker alt should be detect
-                my $markYes = 0;#SNP is same to phase_0 marker alt (position and alt-allel)
-                my $markNo = 0;#SNP is different to phase_0 marker alt (ref-allel or other base)
-                my $sE = 0; #sequencing error
-                my $hS = 0; #homo snp 
-                my $otherSnp = 0;#SNP is not exist in marker alt
-                my $rS = 0;#SNP is heterzogous one is snp one is ref
-                my %readSnp;
-                my %readSnp0;
+                    $readConsider{$i}++;#
+                    $rC++;
+                #my %conReadSnp;#read been considered snps
+                my %conReadSnp0;
                 for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
                     my $pos = $read->{SNPPOS}[$i][$j];
                     my $alt = $read->{SNPALT}[$i][$j];
                     my $qual = $read->{SNPQUAL}[$i][$j];
-                    $readSnp{$pos}{$alt}=$qual;
-                    $readSnp0{$pos}=$alt;
-                    if ($pos>=$range[0] && $pos <=$range[1]){#only consider the overlap part SNP
-                        if(exists $filter{$pos}){
-                            if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
-                                $markYes++;
-                            }
-                            else{#ref-allel
-                                $markNo++;
-                            }
-                        }
-                        elsif(exists $seqError{$pos}{$alt}){
-                            $sE++;
-                        }
-                        elsif(exists $homoSnp{$pos}{$alt}){
-                            $hS++;
-                        }
-                        else{
-                            $otherSnp++;
-                        }
-                    }
+                    #$conReadSnp{$i}{$pos}{$alt}=$qual;
+                    $conReadSnp0{$i}{$pos}=$alt;
                 }
-                for my $pos (($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]) .. ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1])){
-                    if (exists $refSnp{$read->{QNAME}[$i]}{$pos}){
-                        my $alt = "R";
-                        if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
-                            $markYes++;
-                        }
-                        else{#ref-allel
-                            $markNo++;
-                        }
-                    }
-                }
-                my $xy = 0;#($markYes/($markYes+$markNo))
-                if($markYes+$markNo){
-                    $xy = $markYes/($markYes+$markNo);
-                }
+                my $xy = &markValue($i, \%conReadSnp0, \%refSnp, \%filter, \@range, $phaseSnp);
                 if($xy >= $cor){#phase0
                     $accordantRead{$xy}{$i}++;#reads can be add to "detect region" {consistency}{i}
+                }else{
+                    #$readConsider{$i}++;#
+                    #$rC++;
                 }
             }
         }
-        #after traverse all read
-        for my $kxy (reverse sort {$c<=>$d} keys %accordantRead){#reads can be add to "detect region" {consistency}{i}
+        for my $kxy (reverse sort {$a<=>$b} keys %accordantRead){#reads can be add to "detect region"
             for my $ki (sort keys %{$accordantRead{$kxy}}){
-                $p0r++;
-                $range[0]=($range[0]<$read->{START}[$ki]?$range[0]:$read->{START}[$ki]);#re-new start of range
-                $range[1]=($range[1]>$read->{END}[$ki]?$range[1]:$read->{END}[$ki]);#re-new end of range
-                #print HIT "$pha\t$ki\t$read->{LEN}[$ki]\t$numMark\t$markYes\t$markNo\t$sE\t$hS\n";
-                my %readSnp;
-                my %readSnp0;
-                for my $j (0 ..$#{$read->{SNPPOS}[$ki]}){
-                    my $pos = $read->{SNPPOS}[$ki][$j];
-                    my $alt = $read->{SNPALT}[$ki][$j];
-                    my $qual = $read->{SNPQUAL}[$ki][$j];
-                    $readSnp{$pos}{$alt}=$qual;
-                    $readSnp0{$pos}=$alt;
-                }
-                for my $z ($read->{START}[$ki] .. $read->{END}[$ki]){#z is position from read start to end
-                    if (exists $filter{$z}){#there should be SNP marker
-                        if (exists $readSnp{$z}){#there is read SNP
-                            for my $kalt (keys %{$readSnp{$z}}){
-                                #SNP base qual -10log10{Pr}
-                                my $kqual = 1-10**($readSnp{$z}{$kalt}/(0-10));#base qual of SNP (<1)
-                                $$phaseSnp{$z}{$kalt}+=$kqual;
-                            }
-                        }
-                        elsif (exists $refSnp{$read->{QNAME}[$ki]}{$z}){#this read is ref-allel
-                            $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$ki]}{$z})/(0-10));
-                        }
-                        else{#complex situation
-                        #indels
-                        }
-                    }
-                }
+                $p0r += &extendBestRead($ki, $D, $A, $B);#@range = @$b; $phaseSnp = $c;
+                $readConsider{$ki}++;#
+                $rC++;
             }
+            last;
         }
         if ($pre_p0r == $p0r){
             $ovl -= 0.01;
@@ -571,6 +530,101 @@ sub readExtend{
         $pre_p0r = $p0r;
     }
     return $p0r, ($range[1]-$range[0]);
+}
+
+sub markValue{#belong to readExtend part
+    my ($i, $X, $Y, $Z, $R, $phaseSnp) = @_;
+    my %readSnp0 = %$X;
+    my %refSnp = %$Y;
+    my %filter = %$Z;
+    my @range = @$R;
+    my $numMark = &range_marker(($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]), ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1]));# marker alt should be detect
+    my $markYes = 0;#SNP is same to phase_0 marker alt (position and alt-allel)
+    my $markNo = 0;#SNP is different to phase_0 marker alt (ref-allel or other base)
+    my $sE = 0; #sequencing error
+    my $hS = 0; #homo snp 
+    my $otherSnp = 0;#SNP is not exist in marker alt
+    #my $rS = 0;#SNP is heterzogous one is snp one is ref
+    for my $ki (keys %readSnp0){
+        for my $pos (keys %{$readSnp0{$ki}}){
+            my $alt = $readSnp0{$ki}{$pos};
+            if ($pos>=$range[0] && $pos <=$range[1]){#only consider the overlap part SNP
+                if(exists $filter{$pos}){
+                    if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
+                        $markYes++;
+                    }
+                    else{#ref-allel
+                        $markNo++;
+                    }
+                }
+                elsif(exists $seqError{$pos}{$alt}){
+                    $sE++;
+                }
+                elsif(exists $homoSnp{$pos}{$alt}){
+                    $hS++;
+                }
+                else{
+                    $otherSnp++;
+                }
+            }
+        }
+    }
+    for my $pos (($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]) .. ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1])){
+        if (exists $refSnp{$read->{QNAME}[$i]}{$pos}){
+            my $alt = "R";
+            if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
+                $markYes++;
+            }
+            else{#ref-allel
+                $markNo++;
+            }
+        }
+    }
+    my $xy = 0;#($markYes/($markYes+$markNo))
+    if($markYes+$markNo){
+        $xy = $markYes/($markYes+$markNo);
+    }
+    return $xy;
+}
+
+
+sub extendBestRead{#after traverse all read, add the highest read only
+    my ($X, $Y, $Z, $W) = @_;
+    my $ki = $X;
+    my $refSnp = %$Y;
+    my $range = $Z;
+    my $phaseSnp = $W;
+
+    $$range[0]=($$range[0]<$read->{START}[$ki]?$$range[0]:$read->{START}[$ki]);#re-new start of range
+    $$range[1]=($$range[1]>$read->{END}[$ki]?$$range[1]:$read->{END}[$ki]);#re-new end of range
+    #print HIT "$pha\t$ki\t$read->{LEN}[$ki]\t$numMark\t$markYes\t$markNo\t$sE\t$hS\n";
+    my %readSnp;
+    my %readSnp0;
+    for my $j (0 ..$#{$read->{SNPPOS}[$ki]}){
+        my $pos = $read->{SNPPOS}[$ki][$j];
+        my $alt = $read->{SNPALT}[$ki][$j];
+        my $qual = $read->{SNPQUAL}[$ki][$j];
+        $readSnp{$pos}{$alt}=$qual;
+        $readSnp0{$pos}=$alt;
+    }
+    for my $z ($read->{START}[$ki] .. $read->{END}[$ki]){#z is position from read start to end
+        if (exists $filter{$z}){#there should be SNP marker
+            if (exists $readSnp{$z}){#there is read SNP
+                for my $kalt (keys %{$readSnp{$z}}){
+                    #SNP base qual -10log10{Pr}
+                    my $kqual = 1-10**($readSnp{$z}{$kalt}/(0-10));#base qual of SNP (<1)
+                    $$phaseSnp{$z}{$kalt}+=$kqual;
+                }
+            }
+            elsif (exists $refSnp{$read->{QNAME}[$ki]}{$z}){#this read is ref-allel
+                $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$ki]}{$z})/(0-10));
+            }
+            else{#complex situation
+            #indels
+            }
+        }
+    }
+    return 1;
 }
 
 sub markerFilter{
@@ -592,14 +646,14 @@ sub markerFilter{
 }
 
 sub scoring{
-    my ($a, $b, $c, $d, $e, $f, $g, $pha) = @_;
-    my %phaseSnpFilter = %$a;
-    my $markerVal = $b;
-    my $qnameMark = $c;
-    my %filter = %$d;
-    my %seqError = %$e;
-    my %homoSnp = %$f;
-    my %refSnp = %$g;
+    my ($A, $B, $C, $D, $E, $F, $G, $pha) = @_;
+    my %phaseSnpFilter = %$A;
+    my $markerVal = $B;
+    my $qnameMark = $C;
+    my %filter = %$D;
+    my %seqError = %$E;
+    my %homoSnp = %$F;
+    my %refSnp = %$G;
 
     for my $i (0 .. $#{$read->{QNAME}}){
         my $numMark = &range_marker($read->{START}[$i], $read->{END}[$i]);
@@ -658,9 +712,9 @@ sub scoring{
 }
 
 sub printResult{
-    my ($a, $b, $fileName) = @_;
-    my @markerVal = @$a;
-    my %qnameMark = %$b;
+    my ($A, $B, $fileName) = @_;
+    my @markerVal = @$A;
+    my %qnameMark = %$B;
 
     my $count = @markerVal;
     my $p0=0;#reads number of phase_0
@@ -672,7 +726,7 @@ sub printResult{
     open OUT0 , ">$opts{o}/$fileName";
     for my $kq (keys %qnameMark){
         my $markYes = $qnameMark{$kq};
-        if ($markYes >= $markerCutOff0){#phase0
+        if ($markYes > $markerCutOff0){#phase0
             print OUT0"$kq\t$fileName\n";
             $p0++;
         }
@@ -816,6 +870,7 @@ sub seedSelect{
         }
         #print "-- $kpattern : $fre_hash{$kpattern}\n";
         print PT "$kpattern : $fre_hash{$kpattern}\n";
+        print LOG "$kpattern : $fre_hash{$kpattern}\n";
     }
     print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
     print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
@@ -862,20 +917,20 @@ sub homoNum{
     return $hS;
 }
 
-sub seedTest{
-    my $seed = $_[0];
-    ########## ########## Initialize phase_0 SNP ########## ##########
-    my %seedSnp;# snp of seed read
-    my %phaseSnp;
-    &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
-    &seedInitial(\%phaseSnp, \%filter, \%refSnp, $seed);#initial seed to phase 0
-    ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
-    my @range;#detect range of genome [0]:start pos, [1]:end pos
-    $range[0] = $read->{START}[$seed];
-    $range[1] = $read->{END}[$seed];
-    my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test", $opts{c});
-    return $extendTime;
-}
+#sub seedTest{
+#   my $seed = $_[0];
+#   ########## ########## Initialize phase_0 SNP ########## ##########
+#   my %seedSnp;# snp of seed read
+#   my %phaseSnp;
+#   &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
+#   &seedInitial(\%phaseSnp, \%filter, \%refSnp, $seed);#initial seed to phase 0
+#   ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
+#   my @range;#detect range of genome [0]:start pos, [1]:end pos
+#   $range[0] = $read->{START}[$seed];
+#   $range[1] = $read->{END}[$seed];
+#   my ($extendTime, $extendLen) = &readExtend($seed, \@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, "test", $opts{c});
+#   return $extendTime;
+#}
 
 sub veen {
     my $f1 = "$opts{o}/phase.0.qname";
