@@ -23,6 +23,7 @@ open HIT , ">$opts{o}/TEMP/hit.temp";#read extend marker hit
 open MK , ">$opts{o}/TEMP/markerSNP.temp";#marker SNP
 open PT , ">$opts{o}/TEMP/seedSelect.temp";
 open PH , ">$opts{o}/TEMP/phaseSNP.temp";#phase 0 SNP
+open LOG , ">$opts{o}/log.txt";#log file
 
 print MK "Pos\tAlt\tFre\n";
 print PH "Phase\tPos\tMaxAlt\n";
@@ -184,7 +185,7 @@ sub detectSnp {
             my ($qname,$chr,$pos,$cigar,$seq,$qual)=(split /\t/,$bestHit{$kq}{$AS[0]})[0,2,3,5,9,10];
             $bestHit{$kq}{$AS[0]}=~/MD:Z:(.*?)\t/;
             my $md="$1";
-            die "No MD field was found in SAM/BAM file." unless($md);
+            print LOG "No MD field was found in SAM/BAM file." and die unless($md);
             my $now_ci=$cigar;
             my $now_md=$md;
             my $now_pos=$pos;#position in reference genome
@@ -233,7 +234,8 @@ sub detectSnp {
                     }
                 }elsif ($type eq "H"){
                 }else{
-                    die "Unknow Cigar character.\n";
+                    print LOG "Unknow Cigar character.\n";
+                    die;
                 }
             }
             #use MD field to figure out reference sequence
@@ -275,7 +277,7 @@ sub detectSnp {
                                             delete $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"M"};
                                             $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"Mis"}="$ref"; 
                                         }
-                                        die "Script error:$ksp $krp $kt == M\n" if($kt eq "I");
+                                        print LOG "Script error:$ksp $krp $kt == M\n" and die if($kt eq "I");
                                     }
                                 }
                             }
@@ -297,7 +299,7 @@ sub detectSnp {
                         for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
                             for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
                                 my $kr=$seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt};
-                                die "Script error:$krp\t$ksp\t$kb\t$kt\t$kr\n" if ($kt eq "Mis" && $kb eq $kr);
+                                print LOG "Script error:$krp\t$ksp\t$kb\t$kt\t$kr\n" and die if ($kt eq "Mis" && $kb eq $kr);
                                 ########## important ########## 
                                 if ($kt eq "Mis" && $_[0] eq "mismatch"){
                                     push @line_snp_pos , $krp; 
@@ -529,7 +531,7 @@ sub readExtend{
             }
         }
         #after traverse all read
-        for my $kxy (sort {$c<=>$d} keys %accordantRead){#reads can be add to "detect region" {consistency}{i}
+        for my $kxy (reverse sort {$c<=>$d} keys %accordantRead){#reads can be add to "detect region" {consistency}{i}
             for my $ki (sort keys %{$accordantRead{$kxy}}){
                 $p0r++;
                 $range[0]=($range[0]<$read->{START}[$ki]?$range[0]:$read->{START}[$ki]);#re-new start of range
@@ -815,8 +817,8 @@ sub seedSelect{
         #print "-- $kpattern : $fre_hash{$kpattern}\n";
         print PT "$kpattern : $fre_hash{$kpattern}\n";
     }
-    die "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" if ($maxFre == 0);
-    die "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" if ($maxFre == 1);
+    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
+    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
     delete $fre_hash{$maxPatten};
     $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
@@ -830,7 +832,7 @@ sub seedSelect{
             }
         }
     }
-    die "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" if ($maxFre == 1);
+    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
 }
 
 sub errorNum{
