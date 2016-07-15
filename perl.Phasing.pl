@@ -406,7 +406,6 @@ sub seedInitial{
     my %seedSnp = %$W;
     for my $pos (keys %seedSnp){
         my $alt = $seedSnp{$pos};
-        print "436L:$pos\t$alt\n";
         $$phaseSnp{$pos}{$alt} += 1;
     }
 }
