@@ -5,9 +5,9 @@ use Getopt::Std;
 ########## ########## Get paramter ########## ##########
 my %opts;
 getopts('ho:w:e:c:', \%opts);
-$opts{c} = 0.5 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{w} = 500 unless ($opts{w});#window size of seed region selection
-$opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
+$opts{w} = 1000 unless ($opts{w});#window size of seed region selection
+$opts{e} = 0.4 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
 
 &help and &info and die if ($opts{h}); 
 &help and die unless ($opts{o} && @ARGV);
@@ -17,8 +17,9 @@ open LOG , ">$opts{o}/log.txt";#log file
 open RES , ">$opts{o}/result.txt";#result file
 print RES "NO.\tChr\tStart\tEnd\n";
 
-my $BUFF = 30;
+my $BUFF = 50;
 my @buffer;
+
 =from
      $start;
      $end;
@@ -27,35 +28,150 @@ my @buffer;
      [ @line_snp_alt ];
      [ @line_snp_qual ];
 =cut
+
 my $if_start = 1;#if start select two seeds 
 #best hit read only
-open IN , "samtools view $ARGV[0] |" ;
+open FN , "samtools view $ARGV[0] |" ;
+while (1) {
+    my @lines ;#content of each line
+    #loop end check
+    last if  (&if_EOF(*FH));
 
-while (<IN>){
-    next if (/^@/);
-    chomp;
-    my $con = $_;
-    if ($if_start){
+    if ($if_start){# begin of a porces local *FH file handle willnot change it
+
         $if_start = 0;
-        my @seedRange = &seedDetermine($con);#every heter snp pos of seed region
-        &seedSelect(\@buffer, \@seedRange);  
+        ########## ########## put candidate reads in buffer ########## ##########
+        &dataAccess((*FH), \@buffer);
+        #print "buffer: $buffer[20][2]\n";
+
+        ########## ########## figure out heter-snp pos of artifical seed ########## ##########
+        my @seedRange;
+        &seedPosDetermine(\@buffer, \@seedRange);#every heter snp pos of seed region
+        print "select pos:@seedRange\n";
+        die;
+
+        ########## ########## construct artifical seed ########## ##########
+        my @seed0;
+        my @seed1;
+        &seedSelect(\@buffer, \@seedRange, \@seed0, \@seed1);  
+        print "seed 0 :@seed0 seed1:@seed1\n";
         &readExtend(\@buffer);  
     }
-    die;
     #buffer array read extension
     ########## ########## Read extension ########## ##########
     ########## ########## Read extension ########## ##########
 }
 my $read;
 
-close IN;
+close FH;
 close LOG;
 close RES;
 
 ########## ########## Functions ########## ##########
+sub seedPosDetermine{
+    my ($X, $Y) = @_;
+    my @buffer = @$X;
+    my @seedRange = @$Y;
+    ########## ########## Seed finding ########## ##########
+    my %seedSnpFre;#hash for detect seed snp frequence
+    my %seedMark;#heter-snp marker of seed selection
+    #alt-allel initialization
+    for my $i (0 .. $#buffer){
+        for my $j (0 .. $#{$buffer[$i][3]}){
+            my $pos = $buffer[$i][3][$j]; 
+            my $alt = $buffer[$i][4][$j]; 
+            my $qua = $buffer[$i][5][$j]; 
+            $seedSnpFre{$pos}{$alt}++;
+        }
+    }
+    #ref-allel initialization (indels are ignore)
+    for my $i (0 .. $#buffer){
+        my $start = $buffer[$i][0];
+        my $end = $buffer[$i][1];
+        #my $qname = $buffer[$i][2];
+        #print "$i,$buffer[$i][0],$buffer[$i][1]\n";
+        my %readSnpPos;
+        for my $j (0 .. $#{$buffer[$i][3]}){
+            my $pos = $buffer[$i][3][$j]; 
+            $readSnpPos{$pos}++;
+        }
+        for my $p ($start .. $end){
+            if (exists $seedSnpFre{$p} && !exists $readSnpPos{$p}){# !exists $readSnpPos{$p} it is not a alt-allel but need to add to all hash to determin frequency
+                $seedSnpFre{$p}{"R"}++;
+            }
+        }
+    }
+    #figure out heter-snp marker
+    for my $kpos (sort {$a<=>$b} keys %seedSnpFre){#qname 
+        my $allFre = 0;
+        for my $kalt (keys %{$seedSnpFre{$kpos}}){#pos 
+            $allFre++;
+        }
+        #print "$kpos $allFre\n";
+#############
+        next if( $allFre <= (0.45*($#buffer)));
+############# reads in the beginning of BAM file always has no overlap
+        if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} >($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"}<($allFre*(1-$opts{e}))){
+            $seedMark{$kpos}++;
+            print "$kpos is heter-snp pos\n";
+        }
+    }
+    #artificial seed
+    @seedRange = sort {$a<=>$b} keys %seedMark;
+    return @seedRange;
+}
+
+sub ifMHC {
+    my $con = shift;
+    my ($qname,$chr,$pos,$cigar,$seq,$qual)=(split /\t/, $con)[0,2,3,5,9,10];
+    my $len = length $seq;
+    if ($chr eq "chr6"){
+        unless ($pos>33448354 ){
+            unless (($pos+$len)<28477797){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+sub if_EOF{
+    local (*FH) = shift;
+    return 1 if (eof(*FN));
+    return 0;
+}
+
+sub read_text{
+    local (*FH) = shift;
+    my $con = <FN>;
+    chomp($con);
+    if (&ifMHC($con)) {
+        #@$lines = split /\t/, $con;
+        return $con;
+    }
+    return undef;
+}
+
+sub dataAccess { 
+    local (*FH) =  shift;
+    my $X = shift;#my @buffer = @$X;
+    my $lineNum = 0;
+    ########## ########## Candidate reads(left most 30 reads) ########## ##########
+    for (; $lineNum < $BUFF; ){
+        my $con = &read_text(*FH);
+        if ($con){
+            #print "$lineNum\n";
+            $lineNum++;
+            my @line_snp = &detectSnp($con);#$start $end $qname @line_snp_pos @line_snp_alt @line_snp_qual
+            #print "@line_snp\n";
+            $$X[$lineNum] =[ @line_snp ];
+        }
+    }
+}
+
 sub detectSnp {
     my $con = $_[0];
-    chomp($con);
+    #chomp($con);
     my %seq_hash;#sequence based (start from 1) hash {ref_pos}{base N.O}{ref}{alt}
     my @line_snp;#all information
     my @line_snp_pos;
@@ -198,123 +314,40 @@ sub detectSnp {
     return @line_snp;
 }
 
-sub seedDetermine{
-    my ($con) = @_;
-    my $lineNum = 0;
-    ########## ########## Candidate reads(left most 30 reads) ########## ##########
-    for (; $lineNum < $BUFF; $lineNum++){
-        my @line_snp = &detectSnp($con);#$start $end $qname @line_snp_pos @line_snp_alt @line_snp_qual
-        push @buffer, [ @line_snp ];
-        $con = <IN>;
-    }
-    ########## ########## Seed finding ########## ##########
-    my %seedSnpFre;#hash for detect seed snp frequence
-    my %seedMark;#heter-snp marker of seed selection
-    #alt-allel initialization
-    for my $i (0 .. $#buffer){
-        for my $j (0 .. $#{$buffer[$i][3]}){
-            my $pos = $buffer[$i][3][$j]; 
-            my $alt = $buffer[$i][4][$j]; 
-            my $qua = $buffer[$i][5][$j]; 
-            $seedSnpFre{$pos}{$alt}++;
-        }
-    }
-    #ref-allel initialization (indels are ignore)
-    for my $i (0 .. $#buffer){
-        my $start = $buffer[$i][0];
-        my $end = $buffer[$i][1];
-        #my $qname = $buffer[$i][2];
-        my %readSnpPos;
-        for my $j (0 .. $#{$buffer[$i][3]}){
-            my $pos = $buffer[$i][3][$j]; 
-            $readSnpPos{$pos}++;
-        }
-        for my $p ($start .. $end){
-            if (exists $seedSnpFre{$p} && !exists $readSnpPos{$p}){
-                $seedSnpFre{$p}{"R"}++;
-            }
-        }
-    }
-    #figure out heter-snp marker
-    for my $kpos (sort {$a<=>$b} keys %seedSnpFre){#qname 
-        my $allFre = 0;
-        for my $kalt (keys %{$seedSnpFre{$kpos}}){#pos 
-            $allFre++;
-        }
-        if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} >($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"}<($allFre*(1-$opts{e}))){
-            $seedMark{$kpos}++;
-            #print "$kpos is heter-snp pos\n";
-        }
-    }
-    #artificial seed
-    my @seedRange = reverse sort {$a<=>$b} keys %seedMark;#$seedRange[0] is start and seedRange[1] is end
-    return @seeRange;
+=from
+
+
+sub windowDetermine{
+
 }
 
 
+
 sub seedSelect{
-    my ($X, $Y) = @_;#$s0 is \@seed0 $s1 is \@seed1;
+    my ($X, $Y, $s0, $s1) = @_;#$s0 is \@seed0 $s1 is \@seed1;
     my @buffer = @$X;
     my @seedRange = @$Y;
 
     #find reads in the "region"
     #set region marker
-    my %markRegion;#filtered heter-snp-marker in the "region"(sub set of %filter)
+    my %selectPos;#filtered heter-snp-marker in the "region"(sub set of %filter)
     for my $kpos (@seedRange){
-        $markRegion{$kpos}++;
+        $selectPos{$kpos}++;
     }
-    #traverse all reads for alt allel and ref allel
-    my %snpArray;#all alt-allel snp
-    my %iArray;#all alt-allel snp $iArray{i}{pos}
-    my %snpFre;#
-    my $ind = 0;#index of @buffer
-    my %index;#value is index of @buffer, key is read NO.
+    my %fre_hash;
+    my %fre_hash_i;
     for my $i (0 .. $#buffer){#$i is read NO. ordered in 0..100
+        my $snpPatten;
         for my $j (0 .. $#{$buffer[$i][3]}){
             my $pos = $buffer[$i][3][$j]; 
             my $alt = $buffer[$i][4][$j]; 
-            $readSnpPos{$pos}++;
-            if (exists $markRegion{$pos}){
-                $snpArray{$pos}{$i} = $alt;
-                $snpFre{$pos}{$alt}++;
-                $iArray{$i}{$pos} = $alt;
-            }
-        }
-        for my $kpos (keys %markRegion){
-            unless(exists $snpArray{$kpos}{$i}){
-                $snpArray{$kpos}{$i} = "R";#ref allel but ignore indels
-                $snpFre{$kpos}{"R"}++;#ref allel but ignore indels. It is not exactly
-                $iArray{$i}{$kpos} = "R";
-            }
-        }
-    }
-    #cutoff of SNP
-    my %selectPos;#ref:alt allel > cufoff && <(1-cutoff)
-    for my $kpos (keys %snpFre){
-        my $refFre = 0;
-        my $otherFre = 0;
-        for my $kalt (keys %{$snpFre{$kpos}}){
-            if ($kalt eq "R"){
-                $refFre+=$snpFre{$kpos}{$kalt};
-            }else{
-                $otherFre += $snpFre{$kpos}{$kalt};
-            }
-        }
-        if (($refFre/($refFre+$otherFre)) >= $opts{e} && ($refFre/($refFre+$otherFre)) < (1-$opts{e})){
-            $selectPos{$kpos}++;
-        }
-    }
-    my %fre_hash;#the snp pattern of the selected SNPs
-    my %fre_hash_i;#the snp pattern of the selected SNPs (value is read NO)
-    for my $ki (keys %iArray){
-        my $snpPatten;
-        for my $kpos (sort {$a<=>$b} keys %{$iArray{$ki}}){
-            if (exists $selectPos{$kpos}){
-                $snpPatten .= "$iArray{$ki}{$kpos},";
+            #print "pos:$pos alt:$alt\n";
+            if (exists $selectPos{$pos}){
+                $snpPatten .= "$alt,";
             }
         }
         $fre_hash{$snpPatten}++;
-        $fre_hash_i{$snpPatten} .= "$ki,";
+        $fre_hash_i{$snpPatten} .= "$i,";
     }
 
     my $maxPatten;
@@ -329,11 +362,11 @@ sub seedSelect{
                 $$s0[$si] = $temp[$si];
             }
         }
-        #print "-- $kpattern : $fre_hash{$kpattern}\n";
+        print "-- $kpattern : $fre_hash{$kpattern}\n";
         print LOG "$kpattern : $fre_hash{$kpattern}\n";
     }
-    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
-    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
     delete $fre_hash{$maxPatten};
     $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
@@ -347,7 +380,7 @@ sub seedSelect{
             }
         }
     }
-    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
 }
 
 sub range_marker{
@@ -372,7 +405,6 @@ sub max_alt{
     return $maxAlt;
 }
 
-=from
 
 sub readExtend{
     my ($A, $B, $C, $D, $E, $F, $pha, $cor) = @_;
@@ -554,12 +586,12 @@ sub homoNum{
     }
     return $hS;
 }
-=cut
 
+=cut
 ########## ########## Help and Information ########## ##########
 sub help{
 print "*** Phase reads into 2 haplotype, using BAM format files.
-Usage:perl thisScript.pl -o $opts{o} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
+Usage:perl thisScript.pl -o $opts{o} -w $opts{w} *.bam
 \t-h For more information.
 \t-w Window size of seed selection.(default=$opts{w}bp)
 \t-o Output directory.(default=$opts{o})

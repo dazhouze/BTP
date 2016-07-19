@@ -967,7 +967,7 @@ print "
 *** Describe: This script is designed for 100% covered (well seqenced) region PacBio CCS reads two haplotypes (diploid) phasing. For example, applying HLA/MHC region capture sequencing and then using this script for HLA-A gene region CCS reads phasing. This script performs better than SAMtools phase espcially when 2 haplotypes are in unbalanced sequencing coverage fold.And print out QNAME of each read.Some abnormity long read with little overlap with this region will be discarded.
 *** Sugestion(1): Candidate reads pattern:R is ref allel. If the length of pattern is not long enough. You need to set -w larger. If there is no 2 siginificent high value in all value of pattern.
 ***Sugestion(2): If the \"extend times\" is too less than half of all read number. You need to set seed read NO. by -f -s.
-*** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, I try to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
+*** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, from April 2016 to July 2016, I am trying to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
 *** Email: zhouze\@genomics.cn
   _________  _________ 
   | __|__ |  |___|___| 
