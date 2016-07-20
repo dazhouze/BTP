@@ -68,28 +68,45 @@ close LOG;
 close RES;
 
 ########## ########## Functions ########## ##########
-sub seedPosDetermine{
+
+sub seedPosDetermine{#detect apropriate seed snps pos
     my ($X, $Y) = @_;
     my @buffer = @$X;
     my @seedRange = @$Y;
-    ########## ########## Seed finding ########## ##########
+
     my %seedSnpFre;#hash for detect seed snp frequence
     my %seedMark;#heter-snp marker of seed selection
+    my %seqDepth;#sequencing depth of each window
     #alt-allel initialization
     for my $i (0 .. $#buffer){
+        ########## ########## Snp finding ########## ##########
         for my $j (0 .. $#{$buffer[$i][3]}){
             my $pos = $buffer[$i][3][$j]; 
             my $alt = $buffer[$i][4][$j]; 
             my $qua = $buffer[$i][5][$j]; 
             $seedSnpFre{$pos}{$alt}++;
         }
+        ########## ########## Seq Depth ########## ##########
+        my $start = $buffer[$i][0];
+        my $end = $buffer[$i][1];
+        my $s = int($start/$opts{w})+1;
+        my $sr = ($start % $opts{w})/$opts{w};
+        my $e = int($end/$opts{w});
+        my $er = ($end % $opts{w})/$opts{w};
+        for my $w ($s .. $e){
+            $seqDepth{$w}++;
+        }
+        my $w = $s - 1;
+        $seqDepth{$w} += $sr;
+        $w = $e + 1;
+        $seqDepth{$w} += $er;
     }
     #ref-allel initialization (indels are ignore)
     for my $i (0 .. $#buffer){
         my $start = $buffer[$i][0];
         my $end = $buffer[$i][1];
         #my $qname = $buffer[$i][2];
-        #print "$i,$buffer[$i][0],$buffer[$i][1]\n";
+        print "$i,$buffer[$i][0],$buffer[$i][1]\n";
         my %readSnpPos;
         for my $j (0 .. $#{$buffer[$i][3]}){
             my $pos = $buffer[$i][3][$j]; 
@@ -101,6 +118,26 @@ sub seedPosDetermine{
             }
         }
     }
+    #judice
+    #high seq depth and high heterozygosity region selection
+    my $maxSeqDepth = 0;
+    for my $k (keys %seqDepth){
+        $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
+    }
+    my $maxHeterNum = 0;
+    my $maxHNWin;
+    for my $kwin (keys %heterNum){
+        next if ($seqDepth{$kwin} < 0.4*$maxSeqDepth);
+        next if (!exists $heterNum{($kwin+1)} || !exists $heterNum{($kwin-1)});
+        my $tri = $heterNum{$kwin}+$heterNum{($kwin+1)}+$heterNum{($kwin-1)};#three neighbor windows heter SNP num
+        if ($tri > $maxHeterNum){
+            $maxHeterNum = $tri;
+            $maxHNWin = $kwin;
+            #print "heterNum\t$kwin\t$tri\n";
+        }
+    }
+    return $maxHNWin;
+
     #figure out heter-snp marker
     for my $kpos (sort {$a<=>$b} keys %seedSnpFre){#qname 
         my $allFre = 0;
@@ -108,9 +145,11 @@ sub seedPosDetermine{
             $allFre++;
         }
         #print "$kpos $allFre\n";
+
 #############
-        next if( $allFre <= (0.45*($#buffer)));
+        next if( $allFre <= (0.4*($#buffer)));
 ############# reads in the beginning of BAM file always has no overlap
+
         if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} >($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"}<($allFre*(1-$opts{e}))){
             $seedMark{$kpos}++;
             print "$kpos is heter-snp pos\n";
@@ -145,7 +184,7 @@ sub read_text{
     local (*FH) = shift;
     my $con = <FN>;
     chomp($con);
-    if (&ifMHC($con)) {
+    if (&ifMHC($con)) {#only covered MHC region
         #@$lines = split /\t/, $con;
         return $con;
     }
@@ -161,10 +200,10 @@ sub dataAccess {
         my $con = &read_text(*FH);
         if ($con){
             #print "$lineNum\n";
-            $lineNum++;
             my @line_snp = &detectSnp($con);#$start $end $qname @line_snp_pos @line_snp_alt @line_snp_qual
             #print "@line_snp\n";
             $$X[$lineNum] =[ @line_snp ];
+            $lineNum++;
         }
     }
 }
