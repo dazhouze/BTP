@@ -4,10 +4,11 @@ use Getopt::Std;
 
 ########## ########## Get paramter ########## ##########
 my %opts;
-getopts('ho:w:e:c:', \%opts);
+getopts('ho:w:e:c:d:', \%opts);
 $opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{w} = 1000 unless ($opts{w});#window size of seed region selection
-$opts{e} = 0.4 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+#$opts{w} = 500 unless ($opts{w});#window size of seed region selection
+$opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{d} = 0.5 unless ($opts{d});#depth cutoff value of seed position selection
 
 &help and &info and die if ($opts{h}); 
 &help and die unless ($opts{o} && @ARGV);
@@ -17,7 +18,7 @@ open LOG , ">$opts{o}/log.txt";#log file
 open RES , ">$opts{o}/result.txt";#result file
 print RES "NO.\tChr\tStart\tEnd\n";
 
-my $BUFF = 50;
+my $BUFF = 100;
 my @buffer;
 
 =from
@@ -33,7 +34,7 @@ my $if_start = 1;#if start select two seeds
 #best hit read only
 open FN , "samtools view $ARGV[0] |" ;
 while (1) {
-    my @lines ;#content of each line
+    ##my @lines ;#content of each line
     #loop end check
     last if  (&if_EOF(*FH));
 
@@ -47,16 +48,22 @@ while (1) {
         ########## ########## figure out heter-snp pos of artifical seed ########## ##########
         my @seedRange;
         &seedPosDetermine(\@buffer, \@seedRange);#every heter snp pos of seed region
-        print "select pos:@seedRange\n";
-        die;
+        #print "select pos:@seedRange\n";
 
+        ########## ########## candidate seed reads selection ########## ##########
+        my @seed0;#read NO. array
+        my @seed1;#read NO. array
+        &readDetermine(\@buffer, \@seedRange, \@seed0, \@seed1); 
+        print "seed 0 :@seed0\nseed 1:@seed1\n";
         ########## ########## construct artifical seed ########## ##########
-        my @seed0;
-        my @seed1;
-        &seedSelect(\@buffer, \@seedRange, \@seed0, \@seed1);  
-        print "seed 0 :@seed0 seed1:@seed1\n";
-        &readExtend(\@buffer);  
+        my @seed0Snp;#artifical seed read and snp [pos][alt]
+        my @seed1Snp;#artifical seed read and snp [pos][alt]
+        &artificialSeed(\@seed0, \@seed0Snp, \@seedRange, "s0"); 
+        &artificialSeed(\@seed1, \@seed1Snp, \@seedRange, "s1"); 
+        print "seed 0 :@seed0Snp\nseed 1:@seed1Snp\n";
+        die;
     }
+        &readExtend(\@buffer);  
     #buffer array read extension
     ########## ########## Read extension ########## ##########
     ########## ########## Read extension ########## ##########
@@ -69,10 +76,139 @@ close RES;
 
 ########## ########## Functions ########## ##########
 
+sub max_alt{
+    my ($X, $Y) = @_;
+    my $hash = $X;
+    my $key = $Y; 
+
+    my $maxAlt = "0";
+    my $max = 0;
+    for my $kalt (keys %{$$hash{$key}}){
+        if ($$hash{$key}{$kalt} > $max){
+        $max = $$hash{$key}{$kalt};
+        $maxAlt = $kalt;
+        }
+    }
+    return $maxAlt;
+}
+
+sub artificialSeed{
+    my ($X, $Y, $Z, $W) = @_;#\@seed0, \@seed1Snp \@seedRange $seed_name
+    my @seed = @$X;
+    #my $seed_name = $W;
+    my %pos_hash;
+    my @seedRange = @$Z;
+    for my $pos (@$Z){#@seedRange = @$Z;#positions of SNPs
+        $pos_hash{$pos}++;
+    }
+    my %allReadSnp;
+    for my $i (0 .. $#seed){#$i is read NO. ordered in 0..100
+        my %readSnp;#singel read SNP
+        for my $j (0 .. $#{$buffer[$i][3]}){
+            my $pos = $buffer[$i][3][$j]; 
+            my $alt = $buffer[$i][4][$j]; 
+            $readSnp{$pos}{$alt}++;
+        }
+        for my $kpos (keys %pos_hash){
+            if(!exists $readSnp{$kpos}){
+                $readSnp{$kpos}{"R"}++;
+            }
+        } 
+        for my $kpos (keys %readSnp){
+            for my $kalt (keys %{$readSnp{$kpos}}){
+                $allReadSnp{$kpos}{$kalt}++;
+            }
+        }
+    }
+
+    $$Y[0] = $seedRange[0]; 
+    $$Y[1] = $seedRange[($#seedRange)]; 
+    $$Y[2] = $W; 
+    my @line_snp_pos;
+    my @line_snp_alt;
+    my @line_snp_qual;
+    for my $pos (@$Z){#@seedRange
+        push @line_snp_pos, $pos;
+        push @line_snp_alt, &max_alt(\%allReadSnp, $pos);
+        push @line_snp_qual, 1;
+    }
+    $$Y[3] = [@line_snp_pos]; 
+    $$Y[4] = [@line_snp_alt]; 
+    $$Y[5] = [@line_snp_qual]; 
+}
+sub readDetermine{
+    my ($X, $Y, $s0, $s1) = @_;#$s0 is \@seed0 $s1 is \@seed1;
+    my @buffer = @$X;
+    my @seedRange = @$Y;
+
+    #find reads in the "region"
+    #set region marker
+    my %selectPos;#filtered heter-snp-marker in the "region"(sub set of %filter)
+    for my $kpos (@seedRange){
+        $selectPos{$kpos}++;
+    }
+    my %fre_hash;
+    my %fre_hash_i;
+    for my $i (0 .. $#buffer){#$i is read NO. ordered in 0..100
+        my $snpPatten;
+        my %readSnp;
+        for my $j (0 .. $#{$buffer[$i][3]}){
+            my $pos = $buffer[$i][3][$j]; 
+            my $alt = $buffer[$i][4][$j]; 
+            my $qua = $buffer[$i][5][$j]; 
+            $readSnp{$pos}=$alt;
+        }
+        for my $kpos (@seedRange){
+            #print "pos:$pos alt:$alt\n";
+            if (exists $readSnp{$kpos}){
+                $snpPatten .= "$readSnp{$kpos},";
+            }
+            else{#
+                $snpPatten .= "R,";
+            }
+        }
+        $fre_hash{$snpPatten}++;
+        $fre_hash_i{$snpPatten} .= "$i,";
+    }
+
+    my $maxPatten;
+    my $maxFre = 0;
+    for my $kpattern (sort keys %fre_hash){
+        my $fre = $fre_hash{$kpattern};
+        if ($fre > $maxFre){
+            $maxPatten = $kpattern;
+            $maxFre = $fre;
+            my @temp = split /,/,$fre_hash_i{$kpattern};
+            for (my $si=0; $si<= $#temp; $si++){
+                $$s0[$si] = $temp[$si];
+            }
+        }
+        #print "-- $kpattern : $fre_hash{$kpattern}\n";
+        print LOG "$kpattern : $fre_hash{$kpattern}\n";
+    }
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
+    delete $fre_hash{$maxPatten};
+    $maxFre = 0;
+    for my $kpattern (sort keys %fre_hash){
+        my $fre = $fre_hash{$kpattern};
+        if ($fre > $maxFre){
+            $maxPatten = $kpattern;
+            $maxFre = $fre;
+            my @temp = split /,/,$fre_hash_i{$kpattern};
+            for (my $si=0; $si<= $#temp; $si++){
+                $$s1[$si] = $temp[$si];
+            }
+        }
+    }
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
+}
+
+
 sub seedPosDetermine{#detect apropriate seed snps pos
     my ($X, $Y) = @_;
     my @buffer = @$X;
-    my @seedRange = @$Y;
+    #my @seedRange = @$Y;
 
     my %seedSnpFre;#hash for detect seed snp frequence
     my %seedMark;#heter-snp marker of seed selection
@@ -86,27 +222,30 @@ sub seedPosDetermine{#detect apropriate seed snps pos
             my $qua = $buffer[$i][5][$j]; 
             $seedSnpFre{$pos}{$alt}++;
         }
-        ########## ########## Seq Depth ########## ##########
-        my $start = $buffer[$i][0];
-        my $end = $buffer[$i][1];
-        my $s = int($start/$opts{w})+1;
-        my $sr = ($start % $opts{w})/$opts{w};
-        my $e = int($end/$opts{w});
-        my $er = ($end % $opts{w})/$opts{w};
-        for my $w ($s .. $e){
-            $seqDepth{$w}++;
-        }
-        my $w = $s - 1;
-        $seqDepth{$w} += $sr;
-        $w = $e + 1;
-        $seqDepth{$w} += $er;
+       ############ ########## Seq Depth ########## ##########
+       #my $start = $buffer[$i][0];
+       #my $end = $buffer[$i][1];
+       #my $s = int($start/$opts{w})+1;
+       #my $sr = ($start % $opts{w})/$opts{w};
+       #my $e = int($end/$opts{w});
+       #my $er = ($end % $opts{w})/$opts{w};
+       #for my $w ($s .. $e){
+       #    $seqDepth{$w}++;
+       #}
+       #my $w = $s - 1;
+       #$seqDepth{$w} += $sr;
+       #$w = $e + 1;
+       #$seqDepth{$w} += $er;
+    }
+    for my $kw (sort {$a<=>$b} keys %seqDepth){
+        #print "$kw,$seqDepth{$kw}\n";
     }
     #ref-allel initialization (indels are ignore)
     for my $i (0 .. $#buffer){
         my $start = $buffer[$i][0];
         my $end = $buffer[$i][1];
         #my $qname = $buffer[$i][2];
-        print "$i,$buffer[$i][0],$buffer[$i][1]\n";
+        #print "$i,$buffer[$i][0],$buffer[$i][1]\n";
         my %readSnpPos;
         for my $j (0 .. $#{$buffer[$i][3]}){
             my $pos = $buffer[$i][3][$j]; 
@@ -120,44 +259,36 @@ sub seedPosDetermine{#detect apropriate seed snps pos
     }
     #judice
     #high seq depth and high heterozygosity region selection
-    my $maxSeqDepth = 0;
-    for my $k (keys %seqDepth){
-        $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
-    }
-    my $maxHeterNum = 0;
+    #my $maxSeqDepth = 0;
+    #for my $k (keys %seqDepth){
+    #    $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
+    #}
+    my $maxHeterNum = $BUFF;
     my $maxHNWin;
-    for my $kwin (keys %heterNum){
-        next if ($seqDepth{$kwin} < 0.4*$maxSeqDepth);
-        next if (!exists $heterNum{($kwin+1)} || !exists $heterNum{($kwin-1)});
-        my $tri = $heterNum{$kwin}+$heterNum{($kwin+1)}+$heterNum{($kwin-1)};#three neighbor windows heter SNP num
-        if ($tri > $maxHeterNum){
-            $maxHeterNum = $tri;
-            $maxHNWin = $kwin;
-            #print "heterNum\t$kwin\t$tri\n";
-        }
-    }
-    return $maxHNWin;
+    #return $maxHNWin;
 
     #figure out heter-snp marker
     for my $kpos (sort {$a<=>$b} keys %seedSnpFre){#qname 
         my $allFre = 0;
         for my $kalt (keys %{$seedSnpFre{$kpos}}){#pos 
-            $allFre++;
+            $allFre += $seedSnpFre{$kpos}{$kalt};
         }
+
+        next if( $allFre <= ($opts{d}*($BUFF)));
         #print "$kpos $allFre\n";
 
-#############
-        next if( $allFre <= (0.4*($#buffer)));
-############# reads in the beginning of BAM file always has no overlap
-
-        if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} >($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"}<($allFre*(1-$opts{e}))){
+        if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} > ($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"}<($allFre*(1-$opts{e}))){
             $seedMark{$kpos}++;
-            print "$kpos is heter-snp pos\n";
+            #print "$kpos is heter-snp pos\n";
         }
     }
     #artificial seed
-    @seedRange = sort {$a<=>$b} keys %seedMark;
-    return @seedRange;
+    my $y = 0;#index of @seedRengion
+    for my $kpos (sort {$a<=>$b} keys %seedMark){
+        $$Y[$y]=$kpos; 
+        $y++;
+    }
+    return 0;
 }
 
 sub ifMHC {
@@ -353,75 +484,8 @@ sub detectSnp {
     return @line_snp;
 }
 
+
 =from
-
-
-sub windowDetermine{
-
-}
-
-
-
-sub seedSelect{
-    my ($X, $Y, $s0, $s1) = @_;#$s0 is \@seed0 $s1 is \@seed1;
-    my @buffer = @$X;
-    my @seedRange = @$Y;
-
-    #find reads in the "region"
-    #set region marker
-    my %selectPos;#filtered heter-snp-marker in the "region"(sub set of %filter)
-    for my $kpos (@seedRange){
-        $selectPos{$kpos}++;
-    }
-    my %fre_hash;
-    my %fre_hash_i;
-    for my $i (0 .. $#buffer){#$i is read NO. ordered in 0..100
-        my $snpPatten;
-        for my $j (0 .. $#{$buffer[$i][3]}){
-            my $pos = $buffer[$i][3][$j]; 
-            my $alt = $buffer[$i][4][$j]; 
-            #print "pos:$pos alt:$alt\n";
-            if (exists $selectPos{$pos}){
-                $snpPatten .= "$alt,";
-            }
-        }
-        $fre_hash{$snpPatten}++;
-        $fre_hash_i{$snpPatten} .= "$i,";
-    }
-
-    my $maxPatten;
-    my $maxFre = 0;
-    for my $kpattern (sort keys %fre_hash){
-        my $fre = $fre_hash{$kpattern};
-        if ($fre > $maxFre){
-            $maxPatten = $kpattern;
-            $maxFre = $fre;
-            my @temp = split /,/,$fre_hash_i{$kpattern};
-            for (my $si=0; $si<= $#temp; $si++){
-                $$s0[$si] = $temp[$si];
-            }
-        }
-        print "-- $kpattern : $fre_hash{$kpattern}\n";
-        print LOG "$kpattern : $fre_hash{$kpattern}\n";
-    }
-    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
-    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
-    delete $fre_hash{$maxPatten};
-    $maxFre = 0;
-    for my $kpattern (sort keys %fre_hash){
-        my $fre = $fre_hash{$kpattern};
-        if ($fre > $maxFre){
-            $maxPatten = $kpattern;
-            $maxFre = $fre;
-            my @temp = split /,/,$fre_hash_i{$kpattern};
-            for (my $si=0; $si<= $#temp; $si++){
-                $$s1[$si] = $temp[$si];
-            }
-        }
-    }
-    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
-}
-
 sub range_marker{
     my ($read_s , $read_e) = @_;#read start pos and end pos
     my $s = 0;#counter
@@ -429,20 +493,6 @@ sub range_marker{
     return $s;
 }
 
-sub max_alt{
-    my $phaseSnp = shift;
-    my $kpos = shift;
-
-    my $maxAlt = "NA";
-    my $max = 0;
-    for my $kalt (keys %{$$phaseSnp{$kpos}}){
-        if ($$phaseSnp{$kpos}{$kalt} > $max){
-        $max = $$phaseSnp{$kpos}{$kalt};
-        $maxAlt = $kalt;
-        }
-    }
-    return $maxAlt;
-}
 
 
 sub readExtend{
