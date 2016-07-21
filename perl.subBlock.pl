@@ -19,7 +19,7 @@ open RES , ">$opts{o}/result.txt";#result file
 print RES "NO.\tChr\tStart\tEnd\n";
 
 my $BUFF = 100;
-my @buffer;
+my @buffer;#stack
 
 =from
      $start;
@@ -32,7 +32,8 @@ my @buffer;
 
 my $if_start = 1;#if start select two seeds 
 #best hit read only
-open FN , "samtools view $ARGV[0] |" ;
+open FH , "samtools view $ARGV[0] |" ;
+my $l = 0;
 while (1) {
     ##my @lines ;#content of each line
     #loop end check
@@ -42,7 +43,15 @@ while (1) {
 
         $if_start = 0;
         ########## ########## put candidate reads in buffer ########## ##########
-        &dataAccess((*FH), \@buffer);
+        for (my $lineNum = 0; $lineNum < $BUFF; $lineNum++){
+            my $con = &read_text(*FH);
+            if ($con eq "Not_MHC"){
+                $lineNum--; 
+                next;
+            }
+            my @line_snp = &detectSnp($con);#$start $end $qname @line_snp_pos @line_snp_alt @line_snp_qual
+            push @buffer, [ @line_snp ];
+        }
         #print "buffer: $buffer[20][2]\n";
 
         ########## ########## figure out heter-snp pos of artifical seed ########## ##########
@@ -60,13 +69,25 @@ while (1) {
         my @seed1Snp;#artifical seed read and snp [pos][alt]
         &artificialSeed(\@seed0, \@seed0Snp, \@seedRange, "s0"); 
         &artificialSeed(\@seed1, \@seed1Snp, \@seedRange, "s1"); 
-        print "seed 0 :@seed0Snp\nseed 1:@seed1Snp\n";
+        #print "seed 0 :@seed0Snp\nseed 1:@seed1Snp\n";
+
+        ########## ########## Read extension ########## ##########
         die;
+        #&readExtend(\@seed0Snp, @seed1Snp, \@buffer);  
     }
-        &readExtend(\@buffer);  
-    #buffer array read extension
-    ########## ########## Read extension ########## ##########
-    ########## ########## Read extension ########## ##########
+    #else {#
+    #    ########## ########## Read extension ########## ##########
+    #    #buffer array read extension
+    #    &dataAccess((*FH), \@buffer);
+    #    my $con = &read_text(*FH);
+    #    $l++;
+    #    #print "$qname\n";
+    #    die if ($l>10);
+    #    #if(){
+    #    #   $if_start = 1;#meet break point of a hap
+    #    #   next;
+    #    #}
+    #}
 }
 my $read;
 
@@ -136,6 +157,7 @@ sub artificialSeed{
     $$Y[4] = [@line_snp_alt]; 
     $$Y[5] = [@line_snp_qual]; 
 }
+
 sub readDetermine{
     my ($X, $Y, $s0, $s1) = @_;#$s0 is \@seed0 $s1 is \@seed1;
     my @buffer = @$X;
@@ -186,8 +208,8 @@ sub readDetermine{
         #print "-- $kpattern : $fre_hash{$kpattern}\n";
         print LOG "$kpattern : $fre_hash{$kpattern}\n";
     }
-    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
-    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -d more close to d (now=$opts{d})" and die if ($maxFre == 0);
+    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -d more close to d (now=$opts{d})" and die if ($maxFre == 1);
     delete $fre_hash{$maxPatten};
     $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
@@ -201,9 +223,9 @@ sub readDetermine{
             }
         }
     }
-    #print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
+    print "Error! Plase set -w larger (now=$opts{w}) and -d more close to 0.5 (now=$opts{d})" and die if ($maxFre == 1);
+    print LOG "Error! Plase set -w larger (now=$opts{w}) and -d more close to 0.5 (now=$opts{d})" and die if ($maxFre == 1);
 }
-
 
 sub seedPosDetermine{#detect apropriate seed snps pos
     my ($X, $Y) = @_;
@@ -307,36 +329,21 @@ sub ifMHC {
 
 sub if_EOF{
     local (*FH) = shift;
-    return 1 if (eof(*FN));
+    return 1 if (eof(*FH));
     return 0;
 }
 
 sub read_text{
     local (*FH) = shift;
-    my $con = <FN>;
+    my $con = <FH>;
     chomp($con);
     if (&ifMHC($con)) {#only covered MHC region
         #@$lines = split /\t/, $con;
         return $con;
     }
-    return undef;
-}
-
-sub dataAccess { 
-    local (*FH) =  shift;
-    my $X = shift;#my @buffer = @$X;
-    my $lineNum = 0;
-    ########## ########## Candidate reads(left most 30 reads) ########## ##########
-    for (; $lineNum < $BUFF; ){
-        my $con = &read_text(*FH);
-        if ($con){
-            #print "$lineNum\n";
-            my @line_snp = &detectSnp($con);#$start $end $qname @line_snp_pos @line_snp_alt @line_snp_qual
-            #print "@line_snp\n";
-            $$X[$lineNum] =[ @line_snp ];
-            $lineNum++;
-        }
-    }
+    else{
+        return "Not_MHC";
+    }   
 }
 
 sub detectSnp {
@@ -484,8 +491,6 @@ sub detectSnp {
     return @line_snp;
 }
 
-
-=from
 sub range_marker{
     my ($read_s , $read_e) = @_;#read start pos and end pos
     my $s = 0;#counter
@@ -493,16 +498,9 @@ sub range_marker{
     return $s;
 }
 
-
-
+=from
 sub readExtend{
-    my ($A, $B, $C, $D, $E, $F, $pha, $cor) = @_;
-    my @range = @$A;
-    my $phaseSnp = $B;
-    my %filter = %$C;
-    my %refSnp = %$D;
-    my %seqError = %$E;
-    my %homoSnp = %$F;
+    my ($X, $Y, $Z) = @_;#\@seed0Snp, @seed1Snp, \@buffer
 
     my $p0r = 0;#read number determined as phase_0
     my $pre_p0r = -1;#previous p0r
