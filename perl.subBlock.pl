@@ -21,27 +21,27 @@ print RES "NO.\tChr\tStart\tEnd\n";
 my $BUFF = 100;
 my @buffer;#stack
 
-=from
-     $start;
-     $end;
-     $qname;
-     [ @line_snp_pos ];
-     [ @line_snp_alt ];
-     [ @line_snp_qual ];
-=cut
+#data struct
+#$start;
+#$end;
+#$qname;
+#[ @line_snp_pos ];
+#[ @line_snp_alt ];
+#[ @line_snp_qual ];
 
-my $if_start = 1;#if start select two seeds 
+my @phase0;#reads NO.
+my @phase1;#reads NO.
+
+my $read_status = 1;#1:need to select two seeds. 0:no need to select seeds. 2:undeiside 
 #best hit read only
 open FH , "samtools view $ARGV[0] |" ;
 my $l = 0;
 while (1) {
     ##my @lines ;#content of each line
-    #loop end check
-    last if  (&if_EOF(*FH));
 
-    if ($if_start){# begin of a porces local *FH file handle willnot change it
+    if ($read_status){# begin of a porces local *FH file handle willnot change it
 
-        $if_start = 0;
+        $read_status = 0;
         ########## ########## put candidate reads in buffer ########## ##########
         for (my $lineNum = 0; $lineNum < $BUFF; $lineNum++){
             my $con = &read_text(*FH);
@@ -64,6 +64,7 @@ while (1) {
         my @seed1;#read NO. array
         &readDetermine(\@buffer, \@seedRange, \@seed0, \@seed1); 
         print "seed 0 :@seed0\nseed 1:@seed1\n";
+
         ########## ########## construct artifical seed ########## ##########
         my @seed0Snp;#artifical seed read and snp [pos][alt]
         my @seed1Snp;#artifical seed read and snp [pos][alt]
@@ -71,9 +72,10 @@ while (1) {
         &artificialSeed(\@seed1, \@seed1Snp, \@seedRange, "s1"); 
         #print "seed 0 :@seed0Snp\nseed 1:@seed1Snp\n";
 
-        ########## ########## Read extension ########## ##########
+        ########## ########## Read extension (extend the first buffer arrya)########## ##########
+        #&readExtend(\@seed0Snp, \@phase0 \@buffer);  
+        #&readExtend(\@seed0Snp, \@phase1 \@buffer);  
         die;
-        #&readExtend(\@seed0Snp, @seed1Snp, \@buffer);  
     }
     #else {#
     #    ########## ########## Read extension ########## ##########
@@ -84,10 +86,13 @@ while (1) {
     #    #print "$qname\n";
     #    die if ($l>10);
     #    #if(){
-    #    #   $if_start = 1;#meet break point of a hap
+    #    #   $read_status = 1;#meet break point of a hap
     #    #   next;
     #    #}
     #}
+
+    #loop end check
+    last if  (&ifEOF(*FH));
 }
 my $read;
 
@@ -327,7 +332,7 @@ sub ifMHC {
     return 0;
 }
 
-sub if_EOF{
+sub ifEOF{
     local (*FH) = shift;
     return 1 if (eof(*FH));
     return 0;
