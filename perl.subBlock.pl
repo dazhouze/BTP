@@ -7,7 +7,7 @@ my %opts;
 getopts('ho:w:e:c:d:', \%opts);
 $opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
 #$opts{w} = 500 unless ($opts{w});#window size of seed region selection
-$opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{e} = 0.4 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
 $opts{d} = 0.5 unless ($opts{d});#depth cutoff value of seed position selection
 
 &help and &info and die if ($opts{h}); 
@@ -58,6 +58,7 @@ while (1) {
         my @seedRange;
         &seedPosDetermine(\@buffer, \@seedRange);#every heter snp pos of seed region
         #print "select pos:@seedRange\n";
+        print "seed range: ",$seedRange[$#seedRange]-$seedRange[0],"\n";
 
         ########## ########## candidate seed reads selection ########## ##########
         my @seed0;#read NO. array
@@ -177,25 +178,28 @@ sub readDetermine{
     my %fre_hash;
     my %fre_hash_i;
     for my $i (0 .. $#buffer){#$i is read NO. ordered in 0..100
-        my $snpPatten;
-        my %readSnp;
-        for my $j (0 .. $#{$buffer[$i][3]}){
-            my $pos = $buffer[$i][3][$j]; 
-            my $alt = $buffer[$i][4][$j]; 
-            my $qua = $buffer[$i][5][$j]; 
-            $readSnp{$pos}=$alt;
-        }
-        for my $kpos (@seedRange){
-            #print "pos:$pos alt:$alt\n";
-            if (exists $readSnp{$kpos}){
-                $snpPatten .= "$readSnp{$kpos},";
+        #$start = $buffer[$i][0][$j]; $end = $buffer[$i][1][$j];
+        if ($seedRange[0] >= $buffer[$i][0] && $seedRange[1] <= $buffer[$i][1]){#only consider seed range covered reads 
+            my $snpPatten;
+            my %readSnp;
+            for my $j (0 .. $#{$buffer[$i][3]}){
+                my $pos = $buffer[$i][3][$j]; 
+                my $alt = $buffer[$i][4][$j]; 
+                my $qua = $buffer[$i][5][$j]; 
+                $readSnp{$pos}=$alt;
             }
-            else{#
-                $snpPatten .= "R,";
+            for my $kpos (@seedRange){#seedRange 
+                #print "pos:$pos alt:$alt\n";
+                if (exists $readSnp{$kpos}){
+                    $snpPatten .= "$readSnp{$kpos},";
+                }
+                else{#ref-allel
+                    $snpPatten .= "R,";
+                }
             }
+            $fre_hash{$snpPatten}++;
+            $fre_hash_i{$snpPatten} .= "$i,";
         }
-        $fre_hash{$snpPatten}++;
-        $fre_hash_i{$snpPatten} .= "$i,";
     }
 
     my $maxPatten;
@@ -249,24 +253,10 @@ sub seedPosDetermine{#detect apropriate seed snps pos
             my $qua = $buffer[$i][5][$j]; 
             $seedSnpFre{$pos}{$alt}++;
         }
-       ############ ########## Seq Depth ########## ##########
-       #my $start = $buffer[$i][0];
-       #my $end = $buffer[$i][1];
-       #my $s = int($start/$opts{w})+1;
-       #my $sr = ($start % $opts{w})/$opts{w};
-       #my $e = int($end/$opts{w});
-       #my $er = ($end % $opts{w})/$opts{w};
-       #for my $w ($s .. $e){
-       #    $seqDepth{$w}++;
-       #}
-       #my $w = $s - 1;
-       #$seqDepth{$w} += $sr;
-       #$w = $e + 1;
-       #$seqDepth{$w} += $er;
     }
-    for my $kw (sort {$a<=>$b} keys %seqDepth){
-        #print "$kw,$seqDepth{$kw}\n";
-    }
+    #for my $kw (sort {$a<=>$b} keys %seqDepth){
+    #    #print "$kw,$seqDepth{$kw}\n";
+    #}
     #ref-allel initialization (indels are ignore)
     for my $i (0 .. $#buffer){
         my $start = $buffer[$i][0];
@@ -284,17 +274,7 @@ sub seedPosDetermine{#detect apropriate seed snps pos
             }
         }
     }
-    #judice
-    #high seq depth and high heterozygosity region selection
-    #my $maxSeqDepth = 0;
-    #for my $k (keys %seqDepth){
-    #    $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
-    #}
-    my $maxHeterNum = $BUFF;
-    my $maxHNWin;
-    #return $maxHNWin;
-
-    #figure out heter-snp marker
+    #judice #figure out heter-snp marker
     for my $kpos (sort {$a<=>$b} keys %seedSnpFre){#qname 
         my $allFre = 0;
         for my $kalt (keys %{$seedSnpFre{$kpos}}){#pos 
@@ -304,12 +284,12 @@ sub seedPosDetermine{#detect apropriate seed snps pos
         next if( $allFre <= ($opts{d}*($BUFF)));
         #print "$kpos $allFre\n";
 
-        if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} > ($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"}<($allFre*(1-$opts{e}))){
+        if( exists $seedSnpFre{$kpos}{"R"} && $seedSnpFre{$kpos}{"R"} >= ($opts{e}*$allFre) && $seedSnpFre{$kpos}{"R"} <= ($allFre*(1-$opts{e}))){
             $seedMark{$kpos}++;
             #print "$kpos is heter-snp pos\n";
         }
     }
-    #artificial seed
+    #add pos in seedRange array
     my $y = 0;#index of @seedRengion
     for my $kpos (sort {$a<=>$b} keys %seedMark){
         $$Y[$y]=$kpos; 
@@ -400,7 +380,7 @@ sub detectSnp {
                 $now_base+=0;
                 $now_pos++;
                 my $bQua = "NA";
-                $seq_hash{$now_pos}{$now_base}{"NA"}{$bQua}{"D"}="delet";
+                $seq_hash{$now_pos}{$now_base}{"D"}{$bQua}{"D"}="delet";
             }
         }elsif ($type eq "S"){
             for my $i (1 .. $num){
