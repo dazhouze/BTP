@@ -7,8 +7,8 @@ my %opts;
 getopts('ho:w:e:c:d:', \%opts);
 $opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
 #$opts{w} = 500 unless ($opts{w});#window size of seed region selection
-$opts{e} = 0.4 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
-$opts{d} = 0.5 unless ($opts{d});#depth cutoff value of seed position selection
+$opts{e} = 0.45 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{d} = 0.6 unless ($opts{d});#depth cutoff value of seed position selection
 
 &help and &info and die if ($opts{h}); 
 &help and die unless ($opts{o} && @ARGV);
@@ -31,6 +31,8 @@ my @buffer;#stack
 
 my @phase0;#reads NO.
 my @phase1;#reads NO.
+my @range0;#detect range of phase0
+my @range1;#detect range of phase1
 
 my $read_status = 1;#1:need to select two seeds. 0:no need to select seeds. 2:undeiside 
 #best hit read only
@@ -58,7 +60,7 @@ while (1) {
         my @seedRange;
         &seedPosDetermine(\@buffer, \@seedRange);#every heter snp pos of seed region
         #print "select pos:@seedRange\n";
-        print "seed range: ",$seedRange[$#seedRange]-$seedRange[0],"\n";
+        print "seed range: ", $seedRange[$#seedRange]-$seedRange[0], "bp\n";
 
         ########## ########## candidate seed reads selection ########## ##########
         my @seed0;#read NO. array
@@ -74,8 +76,8 @@ while (1) {
         #print "seed 0 :@seed0Snp\nseed 1:@seed1Snp\n";
 
         ########## ########## Read extension (extend the first buffer arrya)########## ##########
-        #&readExtend(\@seed0Snp, \@phase0 \@buffer);  
-        #&readExtend(\@seed0Snp, \@phase1 \@buffer);  
+        &readExtend(\@seed0Snp, \@phase0, \@buffer, \@range0);  
+        &readExtend(\@seed0Snp, \@phase1, \@buffer, \@range1);  
         die;
     }
     #else {#
@@ -477,39 +479,40 @@ sub detectSnp {
 }
 
 sub range_marker{
+    #my $numMark = &range_marker(($buffer[$i][0]>$range[0]?$buffer[$i][0]:$range[0]), ($buffer[$i][1]<$range[1]?$buffer[$i][1]:$range[1]));# marker alt should be detect
     my ($read_s , $read_e) = @_;#read start pos and end pos
     my $s = 0;#counter
 
     return $s;
 }
 
-=from
 sub readExtend{
-    my ($X, $Y, $Z) = @_;#\@seed0Snp, @seed1Snp, \@buffer
+    my ($X, $Y, $Z, $W) = @_;#\@seed0Snp, @seed1Snp, \@buffer
+    my @range = @$W;
 
     my $p0r = 0;#read number determined as phase_0
     my $pre_p0r = -1;#previous p0r
     my %readConsider;# read been considered
     my $ovl = 1; 
     my $rC = 1;#read been considered number
-    for (my $maxRedo=1+$#{$read->{LEN}}; $maxRedo; $maxRedo--){
+    for (my $maxRedo=1+$#buffer; $maxRedo; $maxRedo--){
         my %accordantRead;#reads can be add to "detect region" {consistency}{i}
         last if ($ovl < 0.1);#the overlap is too low
         $rC = keys %readConsider;
-        last if ($rC == (1+$#{$read->{LEN}}));
+        last if ($rC == (1+$#buffer));
         print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
-        for my $i (0 .. $#{$read->{QNAME}}){
+        for my $i (0 .. $#buffer){
             if (exists $readConsider{$i}) { # skip phased read
                 next;
             }
             else{
-                next if (&range_overlap($range[0],$range[1],$read->{START}[$i],$read->{END}[$i])<=($ovl*$read->{LEN}[$i]));
-                    $readConsider{$i}++;#
+                next if (&range_overlap($range[0],$range[1],$buffer[$i][0],$buffer[$i][1])<=($ovl*($buffer[$i][1]-$buffer[$i][0])));
+                $readConsider{$i}++;#
                 my %conReadSnp0;
-                for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
-                    my $pos = $read->{SNPPOS}[$i][$j];
-                    my $alt = $read->{SNPALT}[$i][$j];
-                    my $qual = $read->{SNPQUAL}[$i][$j];
+                for my $j (0 .. $#{$buffer[$i][3]}){
+                    my $pos = $buffer[$i][3][$j]; 
+                    my $alt = $buffer[$i][4][$j]; 
+                    my $qua = $buffer[$i][5][$j]; 
                     $conReadSnp0{$i}{$pos}=$alt;
                 }
                 my $xy = &markValue($i, \%conReadSnp0, \%refSnp, \%filter, \@range, $B);#%phaseSnp=%$B
@@ -539,7 +542,7 @@ sub readExtend{
         my ($i, $X, $Y, $Z, $R, $phaseSnp) = @_;
         my %readSnp0 = %$X;
         my @range = @$R;
-        my $numMark = &range_marker(($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]), ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1]));# marker alt should be detect
+        my $numMark = &range_marker(($buffer[$i][0]>$range[0]?$buffer[$i][0]:$range[0]), ($buffer[$i][1]<$range[1]?$buffer[$i][1]:$range[1]));# marker alt should be detect
         my $markYes = 0;#SNP is same to phase_0 marker alt (position and alt-allel)
         my $markNo = 0;#SNP is different to phase_0 marker alt (ref-allel or other base)
         for my $ki (keys %readSnp0){
@@ -557,17 +560,18 @@ sub readExtend{
                 }
             }
         }
-        for my $pos (($read->{START}[$i]>$range[0]?$read->{START}[$i]:$range[0]) .. ($read->{END}[$i]<$range[1]?$read->{END}[$i]:$range[1])){
-            if (exists $refSnp{$read->{QNAME}[$i]}{$pos}){
-                my $alt = "R";
-                if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
-                    $markYes++;
-                }
-                else{#ref-allel
-                    $markNo++;
-                }
-            }
-        }
+        #ref-allel ???????????????????????????????
+        #for my $pos (($buffer[$i][0]>$range[0]?$buffer[$i][0]:$range[0]) .. ($buffer[$i][1]<$range[1]?$buffer[$i][1]:$range[1])){
+        #    if (exists $refSnp{$read->{QNAME}[$i]}{$pos}){
+        #        my $alt = "R";
+        #        if ($alt eq &max_alt($phaseSnp, $pos)){#pos and alt is same(alt-allel)
+        #            $markYes++;
+        #        }
+        #        else{#ref-allel
+        #            $markNo++;
+        #        }
+        #    }
+        #}
         my $xy = 0;#($markYes/($markYes+$markNo))
         if($markYes+$markNo){
             $xy = $markYes/($markYes+$markNo);
@@ -582,19 +586,19 @@ sub readExtend{
         my $range = $Z;
         my $phaseSnp = $W;
         
-        $$range[0]=($$range[0]<$read->{START}[$ki]?$$range[0]:$read->{START}[$ki]);#re-new start of range
-        $$range[1]=($$range[1]>$read->{END}[$ki]?$$range[1]:$read->{END}[$ki]);#re-new end of range
+        $$range[0]=($$range[0]<$buffer[$ki][0]?$$range[0]:$buffer[$ki][0]);#re-new start of range
+        $$range[1]=($$range[1]>$buffer[$ki][1]?$$range[1]:$buffer[$ki][1]);#re-new end of range
         #print HIT "$pha\t$ki\t$read->{LEN}[$ki]\t$numMark\t$markYes\t$markNo\t$sE\t$hS\n";
         my %readSnp;
         my %readSnp0;
-        for my $j (0 ..$#{$read->{SNPPOS}[$ki]}){
-            my $pos = $read->{SNPPOS}[$ki][$j];
-            my $alt = $read->{SNPALT}[$ki][$j];
-            my $qual = $read->{SNPQUAL}[$ki][$j];
+        for my $j (0 .. $#{$buffer[$i][3]}){
+            my $pos = $buffer[$ki][3][$j]; 
+            my $alt = $buffer[$ki][4][$j]; 
+            my $qua = $buffer[$ki][5][$j]; 
             $readSnp{$pos}{$alt}=$qual;
             $readSnp0{$pos}=$alt;
         }
-        for my $z ($read->{START}[$ki] .. $read->{END}[$ki]){#z is position from read start to end
+        for my $z ($buffer[$ki][0] .. $buffer[$ki][1]){#z is position from read start to end
             if (exists $filter{$z}){#there should be SNP marker
                 if (exists $readSnp{$z}){#there is read SNP
                     for my $kalt (keys %{$readSnp{$z}}){
@@ -603,9 +607,10 @@ sub readExtend{
                         $$phaseSnp{$z}{$kalt}+=$kqual;
                     }
                 }
-                elsif (exists $refSnp{$read->{QNAME}[$ki]}{$z}){#this read is ref-allel
-                    $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$ki]}{$z})/(0-10));
-                }
+                # ref-allel ?????????????????????????
+                #elsif (exists $refSnp{$read->{QNAME}[$ki]}{$z}){#this read is ref-allel
+                #    $$phaseSnp{$z}{"R"}+=1-10**(($refSnp{$read->{QNAME}[$ki]}{$z})/(0-10));
+                #}
                 else{#complex situation
                 #indels
                 }
@@ -635,9 +640,9 @@ sub errorNum{
     my ($i, $x) = @_;
     my %seqError = %$x;
     my $sE = 0;
-    for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
-        my $pos = $read->{SNPPOS}[$i][$j];
-        my $alt = $read->{SNPALT}[$i][$j];
+    for my $j (0 .. $#{$buffer[$i][3]}){
+        my $pos = $buffer[$i][3][$j]; 
+        my $alt = $buffer[$i][4][$j]; 
         if(exists $seqError{$pos}{$alt}){
             $sE++;
         }
@@ -649,9 +654,9 @@ sub homoNum{
     my ($i, $x) = @_;
     my %homoSnp = %$x;
     my $hS = 0;
-    for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
-        my $pos = $read->{SNPPOS}[$i][$j];
-        my $alt = $read->{SNPALT}[$i][$j];
+    for my $j (0 .. $#{$buffer[$i][3]}){
+        my $pos = $buffer[$i][3][$j]; 
+        my $alt = $buffer[$i][4][$j]; 
         if(exists $homoSnp{$pos}{$alt}){
             $hS++;
         }
@@ -659,7 +664,6 @@ sub homoNum{
     return $hS;
 }
 
-=cut
 ########## ########## Help and Information ########## ##########
 sub help{
 print "*** Phase reads into 2 haplotype, using BAM format files.

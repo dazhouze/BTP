@@ -460,7 +460,7 @@ sub readExtend{
             }
             else{
                 next if (&range_overlap($range[0],$range[1],$read->{START}[$i],$read->{END}[$i])<=($ovl*$read->{LEN}[$i]));
-                    $readConsider{$i}++;#
+                $readConsider{$i}++;#
                 my %conReadSnp0;
                 for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
                     my $pos = $read->{SNPPOS}[$i][$j];
