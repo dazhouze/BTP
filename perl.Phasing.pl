@@ -30,6 +30,7 @@ print PH "Phase\tPos\tMaxAlt\n";
 print PT "Pattern:Fre\n";
 print OUT "Phase\tReadNO\tLen\tMarkerNum\tMarkerYes\tMarkerNo\tSeqError\tHomoSnp\n";
 print HIT "Phase\tReadNO\tLen\tMarkerNum\tMarkerYes\tMarkerNo\tSeqError\tHomoSnp\n";
+my $time;# = localtime()
 
 ########## ########## Data structure ########## ##########
 my $read= {#data format likly to language C struct format
@@ -47,8 +48,9 @@ my $step = 0;
 my @bam = @ARGV;
 &detectSnp("mismatch");
 $step++;
-print " - Finish ($step/16) BAM file SNP detection.\n";
-print LOG " - Finish ($step/16) BAM file SNP detection.\n";
+$time = localtime();
+print " - Finish ( $time $step/16) BAM file SNP detection.\n";
+print LOG " - Finish ( $time $step/16) BAM file SNP detection.\n";
 
 ########## ########## Identify heterozygous SNP marker, seq error and homo SNP ########## ##########
 my %filter;#filtered marker hash
@@ -57,21 +59,24 @@ my %homoSnp;#read snp that seem to be homozygous snp
 
 my $heterSnpNum = &traverseSnp(\%filter, \%seqError, \%homoSnp);
 $step++;
-print " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
-print LOG " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+$time = localtime();
+print " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+print LOG " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
 
 ########## ########## Detect ref-allel SNP in all read ########## ##########
 my %refSnp;#ref-allel snp {qname}{pos}
 &detectSnp("match");
 $step++;
-print " - Finish ($step/16) ref-allel SNP detection.\n";
-print LOG " - Finish ($step/16) ref-allel SNP detection.\n";
+$time = localtime();
+print " - Finish ( $time $step/16) ref-allel SNP detection.\n";
+print LOG " - Finish ( $time $step/16) ref-allel SNP detection.\n";
 
 ########## ########## Set seed ########## ##########
 my $bestWin = &traverseForSeedRegion(\%filter);
 $step++;
-print " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
-print LOG " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
+$time = localtime();
+print " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
+print LOG " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
 
 #seed arrays setting
 my @seed0;
@@ -82,16 +87,19 @@ print "-- Phase 1 seeds array (NO): @seed1.\n";
 print LOG "-- Phase 0 seeds array (NO): @seed0.\n";
 print LOG "-- Phase 1 seeds array (NO): @seed1.\n";
 $step++;
-print " - Finish ($step/16) candidate seeds array selection.\n";
-print LOG " - Finish ($step/16) candidate seeds array selection.\n";
+$time = localtime();
+print " - Finish ( $time $step/16) candidate seeds array selection.\n";
+print LOG " - Finish ( $time $step/16) candidate seeds array selection.\n";
 
 #artificial seed or say region seed setting
 my %seed0Snp;
 my %seed1Snp;
 my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
 &artSeed(\@seed1, \%seed1Snp, \%filter);
-print " - Finish ($step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
-print LOG " - Finish ($step/16) two artificial region seeds setting.\n";
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
+print LOG " - Finish ( $time $step/16) two artificial region seeds setting.\n";
 
 #phasing
 &Phase(\%seed0Snp, "phase.0", 0);
@@ -107,8 +115,9 @@ sub Phase{
     &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
     &seedInitial(\%phaseSnp, \%filter, \%refSnp, $X);#initial seed to phase 0
     $step++;
-    print " - Finish ($step/16) phase $pha SNPs initialization.\n";
-    print LOG " - Finish ($step/16) phase $pha SNPs initialization.\n";
+    $time = localtime();
+    print " - Finish ( $time $step/16) phase $pha SNPs initialization.\n";
+    print LOG " - Finish ( $time $step/16) phase $pha SNPs initialization.\n";
 
     ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
     my @range;#detect range of genome [0]:start pos, [1]:end pos
@@ -116,31 +125,35 @@ sub Phase{
     $range[1] = ($bestWin+1)*$opts{w};
     my ($extendTime, $extendLen) = &readExtend(\@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
     $step++;
+    $time = localtime();
     print "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
     print LOG "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
     print PT "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
-    print " - Finish ($step/16) phase $pha heter-SNP-marker tree growth.\n";
+    print " - Finish ( $time $step/16) phase $pha heter-SNP-marker tree growth.\n";
 
     ########## ########## Filter phase_0 heter SNP markers ########## ##########
     my %phaseSnpFilter;
     &markerFilter(\%phaseSnp, \%phaseSnpFilter, $pha);
     $step++;
-    print " - Finish ($step/16) phase $pha heter SNP markers filtering.\n";
-    print LOG " - Finish ($step/16) phase $pha heter SNP markers filtering.\n";
+    $time = localtime();
+    print " - Finish ( $time $step/16) phase $pha heter SNP markers filtering.\n";
+    print LOG " - Finish ( $time $step/16) phase $pha heter SNP markers filtering.\n";
 
     ########## ########## Scoring all reads ########## ##########
     my %qnameMark;#hash of qname and markYes(hit marker) value
     my @markerVal;#arrary of marker Yes(hit) value for midium caculation
     &scoring(\%phaseSnpFilter, \@markerVal, \%qnameMark, \%filter, \%seqError, \%homoSnp, \%refSnp, $pha);
     $step++;
-    print " - Finish ($step/16) all reads scoring.\n";
-    print LOG " - Finish ($step/16) all reads scoring.\n";
+    $time = localtime();
+    print " - Finish ( $time $step/16) all reads scoring.\n";
+    print LOG " - Finish ( $time $step/16) all reads scoring.\n";
 
     ########## ########## Determine 2 haplotype ########## ##########
     &printResult(\@markerVal, \%qnameMark, "$fileName.qname");
     $step++;
-    print " - Finish ($step/16) phase $pha result printing.\n";
-    print LOG " - Finish ($step/16) phase $pha result printing.\n";
+    $time = localtime();
+    print " - Finish ( $time $step/16) phase $pha result printing.\n";
+    print LOG " - Finish ( $time $step/16) phase $pha result printing.\n";
 }
 
 close OUT;
