@@ -1,2 +1,4 @@
 *.txt
 */
+shell.sh
+temp.sh
