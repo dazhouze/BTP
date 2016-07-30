@@ -63,6 +63,31 @@ $time = localtime();
 print " - Finish ($time) ref-allel SNP detection.\n";
 print LOG " - Finish ($time) ref-allel SNP detection.\n";
 
+#find the start and end of the block
+my $blockS = $read->{START}[0];;#block start position coordinate
+my $blockE = $read->{END}[0];#block end position coordinate
+for my $i (1 .. $#{$read->{QNAME}}){
+    #my $start = $read->{START}[$i];
+    #my $end = $read->{END}[$i];
+    #my $qname = $read->{QNAME}[$i];
+    1;
+    $blockS>$read->{START}[$i]?$blockS=$read->{START}[$i]:1;
+    $blockE<$read->{START}[$i]?$blockE=$read->{END}[$i]:1;
+}
+print "$blockS $blockE\n";
+#while (){}
+    my ($subBS, $subBE) = &sub_run(\%filter, \%seqError, \%homoSnp);
+    $step++;
+    $time = localtime();
+    print " - Finish ($time) detecting sub-block: $subBS - $subBE.\n";
+    print LOG " - Finish ($time) detecting sub-block: $subBS - $subBE.\n";
+
+sub sub_run {
+    my ($X, $Y, $Z) = @_;
+    #\%filter, \%seqError, \%homoSnp;
+    my %filter = %$X;
+    my %seqError = %$Y;
+    my %homoSnp = %$Z;
 
     ########## ########## Set seed ########## ##########
     my $bestWin = &traverseForSeedRegion(\%filter);
@@ -75,20 +100,17 @@ print LOG " - Finish ($time) ref-allel SNP detection.\n";
     #artificial seed or say region seed setting
     my %seed0Snp;
     my %seed1Snp;
-    my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
-    &artSeed(\@seed1, \%seed1Snp, \%filter);
+    my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter, $bestWin);
+    &artSeed(\@seed1, \%seed1Snp, \%filter, $bestWin);
 
     #phasing
     my ($s0s, $s0e) = &subBlock(\%seed0Snp, "phase.0", 0, $bestWin);
     my ($s1s, $s1e) = &subBlock(\%seed1Snp, "phase.1", 1, $bestWin);
     my $subBS = $s0s>$s1s?$s0s:$s1s;
     my $subBE = $s0e<$s1e?$s0e:$s1e;
-
-$step++;
-$time = localtime();
-print " - Finish ($time) detecting sub-block: $subBS - $subBE.\n";
-print LOG " - Finish ($time) detecting sub-block: $subBS - $subBE.\n";
-
+    
+    return $subBS, $subBE;#sub-block start and end position coordinate
+}
 
 close LOG;
 
@@ -870,7 +892,7 @@ sub seedSelect{
     #}
 
 sub artSeed {
-    my ($X, $Y, $Z) = @_;
+    my ($X, $Y, $Z, $bestWin) = @_;
     my @seed = @$X;
     my $seedSnp = $Y;
     my %filter = %$Z;
