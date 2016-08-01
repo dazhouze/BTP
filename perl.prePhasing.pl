@@ -70,20 +70,58 @@ for my $i (1 .. $#{$read->{QNAME}}){
     #my $start = $read->{START}[$i];
     #my $end = $read->{END}[$i];
     #my $qname = $read->{QNAME}[$i];
-    1;
     $blockS>$read->{START}[$i]?$blockS=$read->{START}[$i]:1;
     $blockE<$read->{START}[$i]?$blockE=$read->{END}[$i]:1;
 }
-print "$blockS $blockE\n";
-#while (){}
+
+# windows between block start and end 
+my @subBlockSum;
+my %arrayKey;# to test if already detected sub-block
+my $index = 0;
+for (my $i = int($blockS/$opts{w}); $i <= (int($blockE/$opts{w})+1); $i++){
+    $arrayKey{$i}=$index;
+    @subBlockSum[$index] = 1;
+    $index++;
+}
+
+while (1){
+    my $restWin = &restWinNum(\@subBlockSum); 
+    print "-- rest window:$restWin\n";
+    #last if ($restWin < (($blockS - $blockE/$opts{w}))/100);
+
     my ($subBS, $subBE) = &sub_run(\%filter, \%seqError, \%homoSnp);
+    for (my $i = int($subBS/$opts{w}); $i <= (int($subBE/$opts{w})+1); $i++){
+    last if ($restWin < (($blockS - $blockE/$opts{w}))/10);
+        $subBlockSum[($arrayKey{$i})] = 0;
+    }
+
     $step++;
     $time = localtime();
     print " - Finish ($time) detecting sub-block: $subBS - $subBE.\n";
     print LOG " - Finish ($time) detecting sub-block: $subBS - $subBE.\n";
+}
+
+sub restWinNum{
+    my $X = $_[0];
+    my @subBlockSum = @$X;
+    my $n = 0;
+    for my $i (@subBlockSum){
+        $n++ if ($i == 1);
+    }
+    return $n;
+}
+
+sub ifAlreadyDetect {
+    my $mid = $_[0];
+    my $win = int($mid/$opts{w});
+    if ($subBlockSum[($arrayKey{$win})] == 1){
+        return 0;
+    }
+    return 1;
+}
 
 sub sub_run {
-    my ($X, $Y, $Z) = @_;
+    my ($X, $Y, $Z, $W) = @_;
     #\%filter, \%seqError, \%homoSnp;
     my %filter = %$X;
     my %seqError = %$Y;
@@ -91,6 +129,10 @@ sub sub_run {
 
     ########## ########## Set seed ########## ##########
     my $bestWin = &traverseForSeedRegion(\%filter);
+    $step++;
+    $time = localtime();
+    print " --Finish ($time) detecting best seed window: $bestWin.\n";
+    print LOG " --Finish ($time) detecting best seed window: $bestWin.\n";
 
     #seed arrays setting
     my @seed0;
@@ -473,7 +515,7 @@ sub readExtend{
         }
         $pre_p0r = $p0r;
     }
-    return $p0r, $range[1], $range[0];
+    return $p0r, $range[0], $range[1];
 }
 
 sub markValue{#belong to readExtend part
@@ -679,13 +721,14 @@ sub markerFilter{
     #}
 
 sub traverseForSeedRegion{#traverse all reads to figure out high heter and higt coverage region
-    my ($x) = @_;
-    my %filter = %$x; 
+    my ($X) = @_;
+    my %filter = %$X; 
     my %seqDepth;#sequencing depth of each window
     my %heterNum;#heter-snp-marker num of each window
     for my $i (0 .. $#{$read->{QNAME}}){
         my $start = $read->{START}[$i];
         my $end = $read->{END}[$i];
+        next if (&ifAlreadyDetect((($start+$end)/2)));# skip already detected sub-block read window
         my $s = int($start/$opts{w})+1;
         my $sr = ($start % $opts{w})/$opts{w};
         my $e = int($end/$opts{w});
