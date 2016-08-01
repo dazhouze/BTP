@@ -73,12 +73,13 @@ for my $i (1 .. $#{$read->{QNAME}}){
     $blockS=$read->{START}[$i] if ($blockS>$read->{START}[$i]);
     $blockE=$read->{END}[$i] if   ($blockE<$read->{END}[$i]);
 }
+print "Block: $blockS $blockE\n";
 
 # windows between block start and end 
 my @subBlockSum;
 my %arrayKey;# to test if already detected sub-block
 my $index = 0;
-print int($blockS/$opts{w}),"\t",(int($blockE/$opts{w})+1), "\n";
+#print int($blockS/$opts{w}),"\t",(int($blockE/$opts{w})+1), "\n";
 for (my $i = int($blockS/$opts{w}); $i <= (int($blockE/$opts{w})+1); $i++){
     $arrayKey{$i}=$index;
     @subBlockSum[$index] = 1;
@@ -88,7 +89,7 @@ for (my $i = int($blockS/$opts{w}); $i <= (int($blockE/$opts{w})+1); $i++){
 while (1){
     my $restWin = &restWinNum(\@subBlockSum); 
     print "-- rest window:$restWin\n";
-    #last if ($restWin < (($blockS - $blockE/$opts{w}))/100);
+    last if ($restWin < (($blockS - $blockE)/$opts{w}/10) );
 
     my ($subBS, $subBE) = &sub_run(\%filter, \%seqError, \%homoSnp);
     for (my $i = int($subBS/$opts{w}); $i <= (int($subBE/$opts{w})+1); $i++){
@@ -113,13 +114,12 @@ sub restWinNum{
 }
 
 sub ifAlreadyDetect {
-    my $mid = $_[0];
-    my $win = int($mid/$opts{w});
+    my $win = $_[0];
     #print "win: $win\n";
-    if ($subBlockSum[($arrayKey{$win})] == 1){
-        return 0;
+    if ($subBlockSum[($arrayKey{$win})] == 0){
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 sub sub_run {
@@ -131,7 +131,7 @@ sub sub_run {
 
     ########## ########## Set seed ########## ##########
     my $bestWin = &traverseForSeedRegion(\%filter);
-    $step++;
+    die "No appropriate window.\n" unless ($bestWin);
     $time = localtime();
     print " --Finish ($time) detecting best seed window: $bestWin.\n";
     print LOG " --Finish ($time) detecting best seed window: $bestWin.\n";
@@ -152,8 +152,8 @@ sub sub_run {
     my ($s1s, $s1e) = &subBlock(\%seed1Snp, "phase.1", 1, $bestWin);
     my $subBS = $s0s>$s1s?$s0s:$s1s;# largest start
     my $subBE = $s0e<$s1e?$s0e:$s1e;# smallest end
-    my $subBS = $s0s<$s1s?$s0s:$s1s;# smallest start
-    my $subBE = $s0e>$s1e?$s0e:$s1e;# largest end
+    #my $subBS = $s0s<$s1s?$s0s:$s1s;# smallest start
+    #my $subBE = $s0e>$s1e?$s0e:$s1e;# largest end
     
     return $subBS, $subBE;#sub-block start and end position coordinate
 }
@@ -729,32 +729,34 @@ sub traverseForSeedRegion{#traverse all reads to figure out high heter and higt 
     my %filter = %$X; 
     my %seqDepth;#sequencing depth of each window
     my %heterNum;#heter-snp-marker num of each window
-    for my $i (0 .. $#{$read->{QNAME}}){
-        my $start = $read->{START}[$i];
-        my $end = $read->{END}[$i];
-        next if (&ifAlreadyDetect((($start + $end)/2)));# skip already detected sub-block read window
-        my $s = int($start/$opts{w})+1;
-        my $sr = ($start % $opts{w})/$opts{w};
-        my $e = int($end/$opts{w});
-        my $er = ($end % $opts{w})/$opts{w};
-        for my $w ($s .. $e){
-            $seqDepth{$w}++;
+        #for my $i (0 .. $#{$read->{QNAME}}){
+        #    my $start = $read->{START}[$i];
+        #    my $end = $read->{END}[$i];
+        #    my $s = int($start/$opts{w})+1;
+        #    my $sr = ($start % $opts{w})/$opts{w};
+        #    my $e = int($end/$opts{w});
+        #    my $er = ($end % $opts{w})/$opts{w};
+        #    my $value = &ifAlreadyDetect((($start + $end)/2))){# skip already detected sub-block read window
+        #        for my $w ($s .. $e){
+        #            $seqDepth{$w} += $value;
+        #        }
+        #        my $w = $s - 1;
+        #        $seqDepth{$w} += $sr;
+        #        $w = $e + 1;
+        #        $seqDepth{$w} += $er;
+        #    }
+        #}
+        for my $kpos (keys %filter){
+            my $w = int($kpos/$opts{w})+1;
+            next if (&ifAlreadyDetect($w));# skip already detected sub-block read window
+            $heterNum{$w}++;
         }
-        my $w = $s - 1;
-        $seqDepth{$w} += $sr;
-        $w = $e + 1;
-        $seqDepth{$w} += $er;
-    }
-    for my $kpos (keys %filter){
-        my $w = int($kpos/$opts{w})+1;
-        $heterNum{$w}++;
-    }
-    #judice
-    #high seq depth and high heterozygosity region selection
-    my $maxSeqDepth = 0;
-    for my $k (keys %seqDepth){
-        $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
-    }
+        ##judice
+        ##high seq depth and high heterozygosity region selection
+        #my $maxSeqDepth = 0;
+        #for my $k (keys %seqDepth){
+        #    $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
+        #}
     my $maxHeterNum = 0;
     my $maxHNWin;
     for my $kwin (keys %heterNum){
@@ -863,6 +865,7 @@ sub seedSelect{
         #print PT "$kpattern : $fre_hash{$kpattern}\n";
         print LOG "$kpattern : $fre_hash{$kpattern}\n";
     }
+    print  "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
     print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
     print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
     delete $fre_hash{$maxPatten};
