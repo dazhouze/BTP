@@ -88,7 +88,7 @@ def openFile (path, start, end):
     else:
         xamfile = pysam.AlignmentFile(path, 'r')
         iterCon = xamfile.fetch("chr6", start, end)
-    n = 0
+
     for read in iterCon:
         cigar = read.cigartuples #list of cigar field
         ref = read.get_reference_sequence() #str of ref sequence
@@ -101,22 +101,19 @@ def openFile (path, start, end):
         snp = Calling(ref, seq, start, cigar)
 
         readArray.append(Read(qname, start, end, snp)) #put SNPs of all read in an array
-        n =  n+1
-        if n > 10:
-            print (readArray[1].getQname(), readArray[1].getStart(), readArray[1].getSnp())
-            break
 
     xamfile.close()
     return readArray
 
 def main():
-    openFile ('../../6_filtered_result/output/BAM/A.sort.bam', 29910247, 29913661)
+    openFile ('/home/zhouze/6_filtered_result/output/BAM/A.sort.bam', 29910247, 29913661)
 
 if __name__ == '__main__':
     main()
 
 
-''' cigar
+''' 
+cigar:
     +-----+--------------+-----+
     |M    |BAM_CMATCH    |0    |
     +-----+--------------+-----+
@@ -130,6 +127,9 @@ if __name__ == '__main__':
     +-----+--------------+-----+
     note: The output is a list of (operation, length) tuples, such as [(0, 30)].
 
+block:
     read.get_block() only get the ref-coorinate of Match/Mismatch blocks
-    md field  read.get_tag('MD')
+
+md field:
+    read.get_tag('MD')
 '''
