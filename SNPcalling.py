@@ -13,7 +13,7 @@ class Read (object):
     '''
     Retrun a read infomation array including: qname, start, end, length, snp[]
     '''
-        def __init__ (self, qname, start, end, snp):
+    def __init__ (self, qname, start, end, snp = None):
         self.__qname = qname
         self.__start = start
         self.__end = end
