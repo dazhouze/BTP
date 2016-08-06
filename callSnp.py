@@ -106,7 +106,7 @@ def openFile (path, start, end):
     return readArray
 
 def main():
-    openFile ('/home/zhouze/6_filtered_result/output/BAM/A.sort.bam', 29910247, 29913661)
+    openFile ('/home/zhouze/team/YH05_PacBio/YH06_YH07/6_filtered_result/output/BAM/A.sort.bam', 29910247, 29913661)
 
 if __name__ == '__main__':
     main()
@@ -114,17 +114,16 @@ if __name__ == '__main__':
 
 ''' 
 cigar:
-    +-----+--------------+-----+
-    |M    |BAM_CMATCH    |0    |
-    +-----+--------------+-----+
-    |I    |BAM_CINS      |1    |
-    +-----+--------------+-----+
-    |D    |BAM_CDEL      |2    |
-    +-----+--------------+-----+
-    |S    |BAM_CSOFT_CLIP|4    |
-    +-----+--------------+-----+
-    |H    |BAM_CHARD_CLIP|5    |
-    +-----+--------------+-----+
+   *M   -   BAM_CMATCH      -   0
+   *I   -   BAM_CINS        -   1
+   *D   -   BAM_CDEL        -   2
+    N   -   BAM_CREF_SKIP   -   3
+   *S   -   BAM_CSOFT_CLIP  -   4
+   *H   -   BAM_CHARD_CLIP  -   5
+    P   -   BAM_CPAD        -   6
+    =   -   BAM_CEQUAL      -   7
+    X   -   BAM_CDIFF       -   8
+    NM  -   NM tag          -   9
     note: The output is a list of (operation, length) tuples, such as [(0, 30)].
 
 block:

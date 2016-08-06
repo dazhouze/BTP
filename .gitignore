@@ -1,4 +1,12 @@
+#text file and dirctory
 *.txt
 */
+
+#SAM/BAM file
+*.sam
+*.bam
+*.bai
+
+#shell bash scipt
 shell.sh
 temp.sh
