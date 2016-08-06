@@ -32,78 +32,78 @@ print OUT "Phase\tReadNO\tLen\tMarkerNum\tMarkerYes\tMarkerNo\tSeqError\tHomoSnp
 print HIT "Phase\tReadNO\tLen\tMarkerNum\tMarkerYes\tMarkerNo\tSeqError\tHomoSnp\n";
 my $time;# = localtime()
 
-    ########## ########## Data structure ########## ##########
-    my $read= {#data format likly to language C struct format
-        QNAME => [],
-        START => [],
-        END => [],
-        LEN => [],
-        SNPPOS => [],
-        SNPALT => [],
-        SNPQUAL => [],
-    };
+########## ########## Data structure ########## ##########
+my $read= {#data format likly to language C struct format
+    QNAME => [],
+    START => [],
+    END => [],
+    LEN => [],
+    SNPPOS => [],
+    SNPALT => [],
+    SNPQUAL => [],
+};
 
-    my $step = 0;
-    ########## ########## Detect all SNP in all read ########## ##########
-    my @bam = @ARGV;
-    &detectSnp("mismatch");
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) BAM file SNP detection.\n";
-    print LOG " - Finish ( $time $step/16) BAM file SNP detection.\n";
+my $step = 0;
+########## ########## Detect all SNP in all read ########## ##########
+my @bam = @ARGV;
+&detectSnp("mismatch");
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) BAM file SNP detection.\n";
+print LOG " - Finish ( $time $step/16) BAM file SNP detection.\n";
 
-    ########## ########## Identify heterozygous SNP marker, seq error and homo SNP ########## ##########
-    my %filter;#filtered marker hash
-    my %seqError;#read snp that seem to be sequencing error
-    my %homoSnp;#read snp that seem to be homozygous snp
+########## ########## Identify heterozygous SNP marker, seq error and homo SNP ########## ##########
+my %filter;#filtered marker hash
+my %seqError;#read snp that seem to be sequencing error
+my %homoSnp;#read snp that seem to be homozygous snp
 
-    my $heterSnpNum = &traverseSnp(\%filter, \%seqError, \%homoSnp);
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
-    print LOG " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+my $heterSnpNum = &traverseSnp(\%filter, \%seqError, \%homoSnp);
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+print LOG " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
 
-    ########## ########## Detect ref-allel SNP in all read ########## ##########
-    my %refSnp;#ref-allel snp {qname}{pos}
-    &detectSnp("match");
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) ref-allel SNP detection.\n";
-    print LOG " - Finish ( $time $step/16) ref-allel SNP detection.\n";
+########## ########## Detect ref-allel SNP in all read ########## ##########
+my %refSnp;#ref-allel snp {qname}{pos}
+&detectSnp("match");
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) ref-allel SNP detection.\n";
+print LOG " - Finish ( $time $step/16) ref-allel SNP detection.\n";
 
-    ########## ########## Set seed ########## ##########
-    my $bestWin = &traverseForSeedRegion(\%filter);
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
-    print LOG " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
+########## ########## Set seed ########## ##########
+my $bestWin = &traverseForSeedRegion(\%filter);
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
+print LOG " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
 
-    #seed arrays setting
-    my @seed0;
-    my @seed1;
-    &seedSelect($bestWin, \%filter, \%seqError, \%homoSnp, \@seed0, \@seed1);#return 2 seed array in diff hap as seed.
-    print "-- Phase 0 seeds array (NO): @seed0.\n";
-    print "-- Phase 1 seeds array (NO): @seed1.\n";
-    print LOG "-- Phase 0 seeds array (NO): @seed0.\n";
-    print LOG "-- Phase 1 seeds array (NO): @seed1.\n";
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) candidate seeds array selection.\n";
-    print LOG " - Finish ( $time $step/16) candidate seeds array selection.\n";
+#seed arrays setting
+my @seed0;
+my @seed1;
+&seedSelect($bestWin, \%filter, \%seqError, \%homoSnp, \@seed0, \@seed1);#return 2 seed array in diff hap as seed.
+print "-- Phase 0 seeds array (NO): @seed0.\n";
+print "-- Phase 1 seeds array (NO): @seed1.\n";
+print LOG "-- Phase 0 seeds array (NO): @seed0.\n";
+print LOG "-- Phase 1 seeds array (NO): @seed1.\n";
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) candidate seeds array selection.\n";
+print LOG " - Finish ( $time $step/16) candidate seeds array selection.\n";
 
-    #artificial seed or say region seed setting
-    my %seed0Snp;
-    my %seed1Snp;
-    my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
-    &artSeed(\@seed1, \%seed1Snp, \%filter);
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
-    print LOG " - Finish ( $time $step/16) two artificial region seeds setting.\n";
+#artificial seed or say region seed setting
+my %seed0Snp;
+my %seed1Snp;
+my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
+&artSeed(\@seed1, \%seed1Snp, \%filter);
+$step++;
+$time = localtime();
+print " - Finish ( $time $step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
+print LOG " - Finish ( $time $step/16) two artificial region seeds setting.\n";
 
-    #phasing
-    &Phase(\%seed0Snp, "phase.0", 0, $bestWin);
-    &Phase(\%seed1Snp, "phase.1", 1, $bestWin);
+#phasing
+&Phase(\%seed0Snp, "phase.0", 0, $bestWin);
+&Phase(\%seed1Snp, "phase.1", 1, $bestWin);
 
 
 close OUT;

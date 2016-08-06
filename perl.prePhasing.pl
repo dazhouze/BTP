@@ -189,7 +189,8 @@ sub detectSnp {
     for my $f (sort @bam){
         #best hit read only
         my %bestHit;#to keep line number
-        open IN , "samtools view $f |" ;
+        #open IN , "samtools view $f |" ;
+        open IN , "$f " or die "Cannot open file $?\n";
         while (<IN>){
             next if (/^@/);
             $l++;
