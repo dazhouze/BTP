@@ -38,7 +38,7 @@ class Read (object):
     def getSnp (self):
         return self.__snp
 
-def Calling (ref, seq, start, cigar):
+def calling (ref, seq, start, cigar):
     '''Though strings compare to call SNP'''
     pos = start #initialize the pos of seq
     snp = []
@@ -98,7 +98,7 @@ def openFile (path, start, end):
         start = read.reference_start #left most coordinate (except left Soft-clipping)
         end = read.reference_end #end position of read
         qname = read.query_name #QNAME of read
-        snp = Calling(ref, seq, start, cigar)
+        snp = calling(ref, seq, start, cigar)
 
         readArray.append(Read(qname, start, end, snp)) #put SNPs of all read in an array
 

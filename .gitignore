@@ -10,3 +10,12 @@
 #shell bash scipt
 shell.sh
 temp.sh
+
+# Python:
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+dist
+build
+__*
