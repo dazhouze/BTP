@@ -38,6 +38,9 @@ class Read (object):
     def getSnp (self):
         return self.__snp
 
+    def getSnpNum (self):
+        return len(self.__snp)
+
 def calling (ref, seq, start, cigar):
     '''Though strings compare to call SNP'''
     pos = start #initialize the pos of seq
@@ -74,7 +77,7 @@ def calling (ref, seq, start, cigar):
             pass
 
         else:
-            pass # 3 6 7 8  and 9
+            pass # 3 6 7 and 8. More detail in the end of module
 
     return snp
 
