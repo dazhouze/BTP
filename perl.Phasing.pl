@@ -5,8 +5,8 @@ use Getopt::Std;
 ########## ########## Get paramter ########## ##########
 my %opts;
 getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
-$opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{u} = 0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
+$opts{c}=0.95 unless ($opts{c});#coincide SNP proportion when extending.
+$opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
 $opts{w} = 500 unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
@@ -30,7 +30,6 @@ print PH "Phase\tPos\tMaxAlt\n";
 print PT "Pattern:Fre\n";
 print OUT "Phase\tReadNO\tLen\tMarkerNum\tMarkerYes\tMarkerNo\tSeqError\tHomoSnp\n";
 print HIT "Phase\tReadNO\tLen\tMarkerNum\tMarkerYes\tMarkerNo\tSeqError\tHomoSnp\n";
-my $time;# = localtime()
 
 ########## ########## Data structure ########## ##########
 my $read= {#data format likly to language C struct format
@@ -42,15 +41,14 @@ my $read= {#data format likly to language C struct format
     SNPALT => [],
     SNPQUAL => [],
 };
-
 my $step = 0;
+
 ########## ########## Detect all SNP in all read ########## ##########
 my @bam = @ARGV;
 &detectSnp("mismatch");
 $step++;
-$time = localtime();
-print " - Finish ( $time $step/16) BAM file SNP detection.\n";
-print LOG " - Finish ( $time $step/16) BAM file SNP detection.\n";
+print " - Finish ($step/16) BAM file SNP detection.\n";
+print LOG " - Finish ($step/16) BAM file SNP detection.\n";
 
 ########## ########## Identify heterozygous SNP marker, seq error and homo SNP ########## ##########
 my %filter;#filtered marker hash
@@ -59,24 +57,21 @@ my %homoSnp;#read snp that seem to be homozygous snp
 
 my $heterSnpNum = &traverseSnp(\%filter, \%seqError, \%homoSnp);
 $step++;
-$time = localtime();
-print " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
-print LOG " - Finish ( $time $step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+print " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
+print LOG " - Finish ($step/16) heterozygous SNP markers: $heterSnpNum determination.\n";
 
 ########## ########## Detect ref-allel SNP in all read ########## ##########
 my %refSnp;#ref-allel snp {qname}{pos}
 &detectSnp("match");
 $step++;
-$time = localtime();
-print " - Finish ( $time $step/16) ref-allel SNP detection.\n";
-print LOG " - Finish ( $time $step/16) ref-allel SNP detection.\n";
+print " - Finish ($step/16) ref-allel SNP detection.\n";
+print LOG " - Finish ($step/16) ref-allel SNP detection.\n";
 
 ########## ########## Set seed ########## ##########
 my $bestWin = &traverseForSeedRegion(\%filter);
 $step++;
-$time = localtime();
-print " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
-print LOG " - Finish ( $time $step/16) seed windows region setting. Window: $bestWin.\n";
+print " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
+print LOG " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
 
 #seed arrays setting
 my @seed0;
@@ -87,24 +82,66 @@ print "-- Phase 1 seeds array (NO): @seed1.\n";
 print LOG "-- Phase 0 seeds array (NO): @seed0.\n";
 print LOG "-- Phase 1 seeds array (NO): @seed1.\n";
 $step++;
-$time = localtime();
-print " - Finish ( $time $step/16) candidate seeds array selection.\n";
-print LOG " - Finish ( $time $step/16) candidate seeds array selection.\n";
+print " - Finish ($step/16) candidate seeds array selection.\n";
+print LOG " - Finish ($step/16) candidate seeds array selection.\n";
 
 #artificial seed or say region seed setting
 my %seed0Snp;
 my %seed1Snp;
 my $artMark = &artSeed(\@seed0, \%seed0Snp, \%filter);
 &artSeed(\@seed1, \%seed1Snp, \%filter);
-$step++;
-$time = localtime();
-print " - Finish ( $time $step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
-print LOG " - Finish ( $time $step/16) two artificial region seeds setting.\n";
+print " - Finish ($step/16) two artificial region seeds setting; each seed contain heter-SNP marker: $artMark.\n";
+print LOG " - Finish ($step/16) two artificial region seeds setting.\n";
 
 #phasing
-&Phase(\%seed0Snp, "phase.0", 0, $bestWin);
-&Phase(\%seed1Snp, "phase.1", 1, $bestWin);
+&Phase(\%seed0Snp, "phase.0", 0);
+&Phase(\%seed1Snp, "phase.1", 1);
 
+sub Phase{
+    my ($X, $fileName, $pha) = @_;
+    my %seedSnp = %$X;
+    my $allRead = $#{$read->{LEN}} + 1;
+    ########## ########## Initialize phase_0 SNP ########## ##########
+    my %phaseSnp;
+
+    &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
+    &seedInitial(\%phaseSnp, \%filter, \%refSnp, $X);#initial seed to phase 0
+    $step++;
+    print " - Finish ($step/16) phase $pha SNPs initialization.\n";
+    print LOG " - Finish ($step/16) phase $pha SNPs initialization.\n";
+
+    ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
+    my @range;#detect range of genome [0]:start pos, [1]:end pos
+    $range[0] = ($bestWin-1)*$opts{w};
+    $range[1] = ($bestWin+1)*$opts{w};
+    my ($extendTime, $extendLen) = &readExtend(\@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
+    $step++;
+    print "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print LOG "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print PT "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
+    print " - Finish ($step/16) phase $pha heter-SNP-marker tree growth.\n";
+
+    ########## ########## Filter phase_0 heter SNP markers ########## ##########
+    my %phaseSnpFilter;
+    &markerFilter(\%phaseSnp, \%phaseSnpFilter, $pha);
+    $step++;
+    print " - Finish ($step/16) phase $pha heter SNP markers filtering.\n";
+    print LOG " - Finish ($step/16) phase $pha heter SNP markers filtering.\n";
+
+    ########## ########## Scoring all reads ########## ##########
+    my %qnameMark;#hash of qname and markYes(hit marker) value
+    my @markerVal;#arrary of marker Yes(hit) value for midium caculation
+    &scoring(\%phaseSnpFilter, \@markerVal, \%qnameMark, \%filter, \%seqError, \%homoSnp, \%refSnp, $pha);
+    $step++;
+    print " - Finish ($step/16) all reads scoring.\n";
+    print LOG " - Finish ($step/16) all reads scoring.\n";
+
+    ########## ########## Determine 2 haplotype ########## ##########
+    &printResult(\@markerVal, \%qnameMark, "$fileName.qname");
+    $step++;
+    print " - Finish ($step/16) phase $pha result printing.\n";
+    print LOG " - Finish ($step/16) phase $pha result printing.\n";
+}
 
 close OUT;
 close PH;
@@ -117,59 +154,6 @@ system"rm -r $opts{o}/TEMP/" if ($opts{t});
 
 
 ########## ########## Functions ########## ##########
-
-sub Phase{
-    my ($X, $fileName, $pha, $bestWin) = @_;
-    my %seedSnp = %$X;
-    my $allRead = $#{$read->{LEN}} + 1;
-    ########## ########## Initialize phase_0 SNP ########## ##########
-    my %phaseSnp;
-
-    &phaseInitial(\%phaseSnp, \%filter, \%refSnp);#initial heter snp marker pos to phase0
-    &seedInitial(\%phaseSnp, \%filter, \%refSnp, $X);#initial seed to phase 0
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) phase $pha SNPs initialization.\n";
-    print LOG " - Finish ( $time $step/16) phase $pha SNPs initialization.\n";
-
-    ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
-    my @range;#detect range of genome [0]:start pos, [1]:end pos
-    $range[0] = ($bestWin-2)*$opts{w};
-    $range[1] = ($bestWin+1)*$opts{w};
-    my ($extendTime, $extendStart, $extendEnd) = &readExtend(\@range, \%phaseSnp, \%filter, \%refSnp, \%seqError, \%homoSnp, $pha, $opts{c});
-    $step++;
-    $time = localtime();
-    my $extendLen = $extendEnd - $extendStart;
-    print "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
-    print LOG "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
-    print PT "-- Phase $pha seed extend length (bp): $extendLen extend times: $extendTime (all read: $allRead)\n";
-    print " - Finish ( $time $step/16) phase $pha heter-SNP-marker tree growth.\n";
-
-    ########## ########## Filter phase_0 heter SNP markers ########## ##########
-    my %phaseSnpFilter;
-    &markerFilter(\%phaseSnp, \%phaseSnpFilter, $pha);
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) phase $pha heter SNP markers filtering.\n";
-    print LOG " - Finish ( $time $step/16) phase $pha heter SNP markers filtering.\n";
-
-    ########## ########## Scoring all reads ########## ##########
-    my %qnameMark;#hash of qname and markYes(hit marker) value
-    my @markerVal;#arrary of marker Yes(hit) value for midium caculation
-    &scoring(\%phaseSnpFilter, \@markerVal, \%qnameMark, \%filter, \%seqError, \%homoSnp, \%refSnp, $pha);
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) all reads scoring.\n";
-    print LOG " - Finish ( $time $step/16) all reads scoring.\n";
-
-    ########## ########## Determine 2 haplotype ########## ##########
-    &printResult(\@markerVal, \%qnameMark, "$fileName.qname");
-    $step++;
-    $time = localtime();
-    print " - Finish ( $time $step/16) phase $pha result printing.\n";
-    print LOG " - Finish ( $time $step/16) phase $pha result printing.\n";
-}
-
 sub detectSnp {
     my $l=0;#line number or say read number
     for my $f (sort @bam){
@@ -469,14 +453,14 @@ sub readExtend{
         last if ($ovl < 0.1);#the overlap is too low
         $rC = keys %readConsider;
         last if ($rC == (1+$#{$read->{LEN}}));
-        print "range(bp)",$range[1]-$range[0],"\tread consider:$rC\tread extend:$p0r","\toverlap",$ovl,"\n";
+        print "range(bp): ",$range[1]-$range[0],"\tread consider: $rC\tread extend: $p0r","\toverlap: ",$ovl,"\n";
         for my $i (0 .. $#{$read->{QNAME}}){
             if (exists $readConsider{$i}) { # skip phased read
                 next;
             }
             else{
                 next if (&range_overlap($range[0],$range[1],$read->{START}[$i],$read->{END}[$i])<=($ovl*$read->{LEN}[$i]));
-                $readConsider{$i}++;#
+                    $readConsider{$i}++;#
                 my %conReadSnp0;
                 for my $j (0 ..$#{$read->{SNPPOS}[$i]}){
                     my $pos = $read->{SNPPOS}[$i][$j];
@@ -505,7 +489,7 @@ sub readExtend{
         }
         $pre_p0r = $p0r;
     }
-    return $p0r, $range[1], $range[0];
+    return $p0r, ($range[1]-$range[0]);
 }
 
 sub markValue{#belong to readExtend part
@@ -983,7 +967,7 @@ print "
 *** Describe: This script is designed for 100% covered (well seqenced) region PacBio CCS reads two haplotypes (diploid) phasing. For example, applying HLA/MHC region capture sequencing and then using this script for HLA-A gene region CCS reads phasing. This script performs better than SAMtools phase espcially when 2 haplotypes are in unbalanced sequencing coverage fold.And print out QNAME of each read.Some abnormity long read with little overlap with this region will be discarded.
 *** Sugestion(1): Candidate reads pattern:R is ref allel. If the length of pattern is not long enough. You need to set -w larger. If there is no 2 siginificent high value in all value of pattern.
 ***Sugestion(2): If the \"extend times\" is too less than half of all read number. You need to set seed read NO. by -f -s.
-*** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, from April 2016 to July 2016, I am trying to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
+*** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, I try to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
 *** Email: zhouze\@genomics.cn
   _________  _________ 
   | __|__ |  |___|___| 
