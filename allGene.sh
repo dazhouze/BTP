@@ -92,7 +92,6 @@ samtools view -Sb DRB1/DRB1.0.fastq.sam | samtools sort > DRB1/DRB1.0.fastq.bam
 samtools index DRB1/DRB1.0.fastq.bam
 samtools index DRB1/DRB1.1.fastq.bam
 
-
 #Two phase Canu assembly
 ##Gene A
 canu  useGrid=false -p A -d A/A_0 genomesize=6000 -pacbio-raw  A/phase.0.qname.fastq
