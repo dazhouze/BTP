@@ -752,14 +752,15 @@ sub seedSelect{
     my @seedRegion;#candidate seed whose middle coordinate is in the "region"
     for my $i (0 .. $#{$read->{QNAME}}){
         my $mid = ($read->{START}[$i]+$read->{END}[$i])/2;#middle coordinate
-        if ($mid >= ($bestWin-1)*$opts{w} && $mid <= ($bestWin+1)*$opts{w}){
+        if ($read->{START}[$i] < ($bestWin-2)*$opts{w} && $read->{END}[$i] > ($bestWin+1)*$opts{w}){
             push @seedRegion , $i;
+            print PT "$read->{QNAME}[$i]\t$read->{START}[$i]\t$read->{END}[$i]\n";
         }
     }
     #set region marker
     my %markRegion;#filtered heter-snp-marker in the "region"(sub set of %filter)
     for my $kpos ( keys %filter){
-        if ($kpos >= ($bestWin-1)*$opts{w} && $kpos <= ($bestWin+1)*$opts{w}){
+        if ($kpos >= ($bestWin-2)*$opts{w} && $kpos <= ($bestWin+1)*$opts{w}){
             $markRegion{$kpos}++;
         }
     }
@@ -783,6 +784,7 @@ sub seedSelect{
                 $iArray{$i}{$pos} = $alt;
             }
         }
+        
         for my $kpos (keys %markRegion){
             unless(exists $snpArray{$kpos}{$i}){
                 $snpArray{$kpos}{$i} = "R";#ref allel but ignore indels
