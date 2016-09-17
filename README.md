@@ -12,3 +12,5 @@
 
 ### My phasing result of gene HLA-A reads(IGV view).
 ![my phase](workFlow/HLA-A_my.png)
+
+If read extention time is too low (<10) try to lower -c (0.95 default) to 0.8+.
