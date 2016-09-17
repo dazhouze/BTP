@@ -12,7 +12,7 @@ rm -rf DRB1
 
 #Gene region bam 2 fastq
 ##Gene A
-perl perl.Phasing.pl  -o A ../../6_filtered_result/output/BAM/A.sort.bam
+perl perl.Phasing.pl  -o A -c 0.92 ../../6_filtered_result/output/BAM/A.sort.bam
 perl perl.qname2fastq.pl A/phase.0.qname
 perl perl.qname2fastq.pl A/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa A/phase.0.qname.fastq > A/A.0.fastq.sam
@@ -62,7 +62,7 @@ samtools view -Sb DQB1/DQB1.0.fastq.sam | samtools sort > DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.1.fastq.bam
 ##Gene DPA1
-perl perl.Phasing.pl  -o DPA1 ../../6_filtered_result/output/BAM/DPA1.sort.bam
+perl perl.Phasing.pl  -o DPA1 -c 0.86 ../../6_filtered_result/output/BAM/DPA1.sort.bam
 perl perl.qname2fastq.pl DPA1/phase.0.qname
 perl perl.qname2fastq.pl DPA1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DPA1/phase.0.qname.fastq > DPA1/DPA1.0.fastq.sam

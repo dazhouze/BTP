@@ -72,6 +72,7 @@ my $bestWin = &traverseForSeedRegion(\%filter);
 $step++;
 print " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
 print LOG " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
+print PT " - Finish ($step/16) seed windows region setting. Window: $bestWin.\n";
 
 #seed arrays setting
 my @seed0;
@@ -719,21 +720,24 @@ sub traverseForSeedRegion{#traverse all reads to figure out high heter and higt 
         $heterNum{$w}++;
     }
     #judice
-    #high seq depth and high heterozygosity region selection
+    #high seq depth(> 0.45 max depth or > 100X) and high heterozygosity region (by sort) selection
     my $maxSeqDepth = 0;
     for my $k (keys %seqDepth){
         $maxSeqDepth = $seqDepth{$k} if ($seqDepth{$k} > $maxSeqDepth);
     }
     my $maxHeterNum = 0;
     my $maxHNWin;
-    for my $kwin (keys %heterNum){
-        next if ($seqDepth{$kwin} < 0.4*$maxSeqDepth);
-        next if (!exists $heterNum{($kwin+1)} || !exists $heterNum{($kwin-1)});
-        my $tri = $heterNum{$kwin}+$heterNum{($kwin+1)}+$heterNum{($kwin-1)};#three neighbor windows heter SNP num
-        if ($tri > $maxHeterNum){
-            $maxHeterNum = $tri;
-            $maxHNWin = $kwin;
-            #print "heterNum\t$kwin\t$tri\n";
+    my $depCutoff = (100>(0.4*$maxSeqDepth)?(0.4*$maxSeqDepth):100);
+    print PT " - Max sequencing depth:$maxSeqDepth\n - Depth cutoff = $depCutoff\n";
+    for my $kwin (sort {$a<=>$b} keys %heterNum){
+        if ($seqDepth{$kwin} > $depCutoff){
+            next if (!exists $heterNum{($kwin+1)} || !exists $heterNum{($kwin-1)});#skip start and end window
+            my $tri = $heterNum{$kwin}+$heterNum{($kwin+1)}+$heterNum{($kwin-1)};#three neighbor windows heter SNP num
+            print PT " - window: $kwin\theterNum: $tri\tdepth: $seqDepth{$kwin}\n";
+            if ($tri > $maxHeterNum){
+                $maxHeterNum = $tri;
+                $maxHNWin = $kwin;
+            }
         }
     }
     return $maxHNWin;
