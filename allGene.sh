@@ -18,10 +18,9 @@ perl perl.Phasing.pl  -o C ../../6_filtered_result/output/BAM/C.sort.bam
 perl perl.Phasing.pl  -o DQA1 -w 300 ../../6_filtered_result/output/BAM/DQA1.sort.bam
 perl perl.Phasing.pl  -o DQB1 -w 300 ../../6_filtered_result/output/BAM/DQB1.sort.bam
 perl perl.Phasing.pl  -o DPA1 -c 0.86 -w 300 ../../6_filtered_result/output/BAM/DPA1.sort.bam
-perl perl.Phasing.pl  -o DPB1 -w 300 ../../6_filtered_result/output/BAM/DPB1.sort.bam
+perl perl.Phasing.pl  -o DPB1 -c 0.9  -w 300 ../../6_filtered_result/output/BAM/DPB1.sort.bam
 perl perl.Phasing.pl  -o DRB1 ../../6_filtered_result/output/BAM/DRB1.sort.bam
 
-exit 0
 
 #Gene region qname to fastq and alignment
 ##Gene A
