@@ -841,33 +841,35 @@ sub seedSelect{
         if($ifAllN){
             delete $fre_hash{$kpattern};
             delete $fre_hash_i{$kpattern};
+        }else{
+            print PT "$kpattern : $fre_hash{$kpattern}\n";
+            print LOG "$kpattern : $fre_hash{$kpattern}\n";
         }
     }
 
-    my $maxPatten;
+    my $maxPattern;
     my $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
         my $fre = $fre_hash{$kpattern};
         if ($fre > $maxFre){
-            $maxPatten = $kpattern;
+            $maxPattern = $kpattern;
             $maxFre = $fre;
             my @temp = split /,/,$fre_hash_i{$kpattern};
             for (my $si=0; $si<= $#temp; $si++){
                 $$s0[$si] = $temp[$si];
             }
         }
-        #print "-- $kpattern : $fre_hash{$kpattern}\n";
-        print PT "$kpattern : $fre_hash{$kpattern}\n";
-        print LOG "$kpattern : $fre_hash{$kpattern}\n";
     }
-    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
-    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
-    delete $fre_hash{$maxPatten};
+    print PT  " - phase_0 seed: $maxPattern : $fre_hash{$maxPattern}\n";
+    print LOG " - phase_0 seed: $maxPattern : $fre_hash{$maxPattern}\n";
+    print LOG "Error! Plase set -w smaller (now=$opts{w}) or -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
+    print LOG "Error! Plase set -w smaller (now=$opts{w}) or -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
+    delete $fre_hash{$maxPattern};
     $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
         my $fre = $fre_hash{$kpattern};
         if ($fre > $maxFre){
-            $maxPatten = $kpattern;
+            $maxPattern = $kpattern;
             $maxFre = $fre;
             my @temp = split /,/,$fre_hash_i{$kpattern};
             for (my $si=0; $si<= $#temp; $si++){
@@ -875,6 +877,8 @@ sub seedSelect{
             }
         }
     }
+    print PT  " - phase_1 seed: $maxPattern : $fre_hash{$maxPattern}\n";
+    print LOG " - phase_1 seed: $maxPattern : $fre_hash{$maxPattern}\n";
     print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
 }
 
