@@ -10,9 +10,21 @@ rm -rf DPA1
 rm -rf DPB1
 rm -rf DRB1
 
-#Gene region bam 2 fastq
-##Gene A
+
+#Gene region phase
 perl perl.Phasing.pl  -o A -c 0.92 ../../6_filtered_result/output/BAM/A.sort.bam
+perl perl.Phasing.pl  -o B ../../6_filtered_result/output/BAM/B.sort.bam
+perl perl.Phasing.pl  -o C ../../6_filtered_result/output/BAM/C.sort.bam
+perl perl.Phasing.pl  -o DQA1 -w 300 ../../6_filtered_result/output/BAM/DQA1.sort.bam
+perl perl.Phasing.pl  -o DQB1 -w 300 ../../6_filtered_result/output/BAM/DQB1.sort.bam
+perl perl.Phasing.pl  -o DPA1 -c 0.86 -w 300 ../../6_filtered_result/output/BAM/DPA1.sort.bam
+perl perl.Phasing.pl  -o DPB1 -w 300 ../../6_filtered_result/output/BAM/DPB1.sort.bam
+perl perl.Phasing.pl  -o DRB1 ../../6_filtered_result/output/BAM/DRB1.sort.bam
+
+exit 0
+
+#Gene region qname to fastq and alignment
+##Gene A
 perl perl.qname2fastq.pl A/phase.0.qname
 perl perl.qname2fastq.pl A/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa A/phase.0.qname.fastq > A/A.0.fastq.sam
@@ -22,7 +34,6 @@ samtools view -Sb A/A.0.fastq.sam | samtools sort > A/A.0.fastq.bam
 samtools index A/A.0.fastq.bam
 samtools index A/A.1.fastq.bam
 ##Gene B
-perl perl.Phasing.pl  -o B ../../6_filtered_result/output/BAM/B.sort.bam
 perl perl.qname2fastq.pl B/phase.0.qname
 perl perl.qname2fastq.pl B/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa B/phase.0.qname.fastq > B/B.0.fastq.sam
@@ -32,7 +43,6 @@ samtools view -Sb B/B.0.fastq.sam | samtools sort > B/B.0.fastq.bam
 samtools index B/B.0.fastq.bam
 samtools index B/B.1.fastq.bam
 ##Gene C
-perl perl.Phasing.pl  -o C ../../6_filtered_result/output/BAM/C.sort.bam
 perl perl.qname2fastq.pl C/phase.0.qname
 perl perl.qname2fastq.pl C/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa C/phase.0.qname.fastq > C/C.0.fastq.sam
@@ -42,7 +52,6 @@ samtools view -Sb C/C.0.fastq.sam | samtools sort > C/C.0.fastq.bam
 samtools index C/C.0.fastq.bam
 samtools index C/C.1.fastq.bam
 ##Gene DQA1
-perl perl.Phasing.pl  -o DQA1 -w 300 ../../6_filtered_result/output/BAM/DQA1.sort.bam
 perl perl.qname2fastq.pl DQA1/phase.0.qname
 perl perl.qname2fastq.pl DQA1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DQA1/phase.0.qname.fastq > DQA1/DQA1.0.fastq.sam
@@ -52,7 +61,6 @@ samtools view -Sb DQA1/DQA1.0.fastq.sam | samtools sort > DQA1/DQA1.0.fastq.bam
 samtools index DQA1/DQA1.0.fastq.bam
 samtools index DQA1/DQA1.1.fastq.bam
 ##Gene DQB1
-perl perl.Phasing.pl  -o DQB1 -w 300 ../../6_filtered_result/output/BAM/DQB1.sort.bam
 perl perl.qname2fastq.pl DQB1/phase.0.qname
 perl perl.qname2fastq.pl DQB1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DQB1/phase.0.qname.fastq > DQB1/DQB1.0.fastq.sam
@@ -62,7 +70,6 @@ samtools view -Sb DQB1/DQB1.0.fastq.sam | samtools sort > DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.1.fastq.bam
 ##Gene DPA1
-perl perl.Phasing.pl  -o DPA1 -c 0.86 -w 300 ../../6_filtered_result/output/BAM/DPA1.sort.bam
 perl perl.qname2fastq.pl DPA1/phase.0.qname
 perl perl.qname2fastq.pl DPA1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DPA1/phase.0.qname.fastq > DPA1/DPA1.0.fastq.sam
@@ -72,7 +79,6 @@ samtools view -Sb DPA1/DPA1.0.fastq.sam | samtools sort > DPA1/DPA1.0.fastq.bam
 samtools index DPA1/DPA1.0.fastq.bam
 samtools index DPA1/DPA1.1.fastq.bam
 ##Gene DPB1
-perl perl.Phasing.pl  -o DPB1 -w 300 ../../6_filtered_result/output/BAM/DPB1.sort.bam
 perl perl.qname2fastq.pl DPB1/phase.0.qname
 perl perl.qname2fastq.pl DPB1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DPB1/phase.0.qname.fastq > DPB1/DPB1.0.fastq.sam
@@ -82,7 +88,6 @@ samtools view -Sb DPB1/DPB1.0.fastq.sam | samtools sort > DPB1/DPB1.0.fastq.bam
 samtools index DPB1/DPB1.0.fastq.bam
 samtools index DPB1/DPB1.1.fastq.bam
 ##Gene DRB1
-perl perl.Phasing.pl  -o DRB1 ../../6_filtered_result/output/BAM/DRB1.sort.bam
 perl perl.qname2fastq.pl DRB1/phase.0.qname
 perl perl.qname2fastq.pl DRB1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DRB1/phase.0.qname.fastq > DRB1/DRB1.0.fastq.sam
