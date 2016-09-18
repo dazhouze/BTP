@@ -754,7 +754,7 @@ sub seedSelect{
         my $mid = ($read->{START}[$i]+$read->{END}[$i])/2;#middle coordinate
         if ($read->{START}[$i] < ($bestWin-2)*$opts{w} && $read->{END}[$i] > ($bestWin+1)*$opts{w}){
             push @seedRegion , $i;
-            print PT "$read->{QNAME}[$i]\t$read->{START}[$i]\t$read->{END}[$i]\n";
+            #print PT "$read->{QNAME}[$i]\t$read->{START}[$i]\t$read->{END}[$i]\n";
         }
     }
     #set region marker
@@ -787,9 +787,16 @@ sub seedSelect{
         
         for my $kpos (keys %markRegion){
             unless(exists $snpArray{$kpos}{$i}){
-                $snpArray{$kpos}{$i} = "R";#ref allel but ignore indels
-                $snpFre{$kpos}{"R"}++;#ref allel but ignore indels. It is not exactly
-                $iArray{$i}{$kpos} = "R";
+                if (exists $refSnp{$read->{QNAME}[$i]}{$kpos}){
+                    $snpArray{$kpos}{$i} = "R";#ref allel but ignore indels
+                    $snpFre{$kpos}{"R"}++;#ref allel but ignore indels. It is not exactly
+                    $iArray{$i}{$kpos} = "R";
+                }
+                else{
+                    $snpArray{$kpos}{$i} = "N";#ref allel but ignore indels
+                    $snpFre{$kpos}{"N"}++;#ref allel but ignore indels. It is not exactly
+                    $iArray{$i}{$kpos} = "N";
+                }
             }
         }
     }
@@ -820,6 +827,21 @@ sub seedSelect{
         }
         $fre_hash{$snpPatten}++;
         $fre_hash_i{$snpPatten} .= "$ki,";
+    }
+    #All "N" base deletion
+    for my $kpattern (sort keys %fre_hash){
+        my @pattern = split /,/, $kpattern;
+        my $ifAllN = 1;
+        for my $base (@pattern){
+            if ($base ne "N"){
+                $ifAllN = 0;
+                last;
+            }
+        }
+        if($ifAllN){
+            delete $fre_hash{$kpattern};
+            delete $fre_hash_i{$kpattern};
+        }
     }
 
     my $maxPatten;
