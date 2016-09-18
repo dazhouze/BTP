@@ -42,7 +42,7 @@ samtools view -Sb C/C.0.fastq.sam | samtools sort > C/C.0.fastq.bam
 samtools index C/C.0.fastq.bam
 samtools index C/C.1.fastq.bam
 ##Gene DQA1
-perl perl.Phasing.pl  -o DQA1 ../../6_filtered_result/output/BAM/DQA1.sort.bam
+perl perl.Phasing.pl  -o DQA1 -w 300 ../../6_filtered_result/output/BAM/DQA1.sort.bam
 perl perl.qname2fastq.pl DQA1/phase.0.qname
 perl perl.qname2fastq.pl DQA1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DQA1/phase.0.qname.fastq > DQA1/DQA1.0.fastq.sam
@@ -52,7 +52,7 @@ samtools view -Sb DQA1/DQA1.0.fastq.sam | samtools sort > DQA1/DQA1.0.fastq.bam
 samtools index DQA1/DQA1.0.fastq.bam
 samtools index DQA1/DQA1.1.fastq.bam
 ##Gene DQB1
-perl perl.Phasing.pl  -o DQB1 ../../6_filtered_result/output/BAM/DQB1.sort.bam
+perl perl.Phasing.pl  -o DQB1 -w 300 ../../6_filtered_result/output/BAM/DQB1.sort.bam
 perl perl.qname2fastq.pl DQB1/phase.0.qname
 perl perl.qname2fastq.pl DQB1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DQB1/phase.0.qname.fastq > DQB1/DQB1.0.fastq.sam
@@ -62,7 +62,7 @@ samtools view -Sb DQB1/DQB1.0.fastq.sam | samtools sort > DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.0.fastq.bam
 samtools index DQB1/DQB1.1.fastq.bam
 ##Gene DPA1
-perl perl.Phasing.pl  -o DPA1 -c 0.86 ../../6_filtered_result/output/BAM/DPA1.sort.bam
+perl perl.Phasing.pl  -o DPA1 -c 0.86 -w 300 ../../6_filtered_result/output/BAM/DPA1.sort.bam
 perl perl.qname2fastq.pl DPA1/phase.0.qname
 perl perl.qname2fastq.pl DPA1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DPA1/phase.0.qname.fastq > DPA1/DPA1.0.fastq.sam
@@ -72,7 +72,7 @@ samtools view -Sb DPA1/DPA1.0.fastq.sam | samtools sort > DPA1/DPA1.0.fastq.bam
 samtools index DPA1/DPA1.0.fastq.bam
 samtools index DPA1/DPA1.1.fastq.bam
 ##Gene DPB1
-perl perl.Phasing.pl  -o DPB1 ../../6_filtered_result/output/BAM/DPB1.sort.bam
+perl perl.Phasing.pl  -o DPB1 -w 300 ../../6_filtered_result/output/BAM/DPB1.sort.bam
 perl perl.qname2fastq.pl DPB1/phase.0.qname
 perl perl.qname2fastq.pl DPB1/phase.1.qname
 bwa mem -x pacbio ~/team/dataBase/hg19_chr6/chr6.fa DPB1/phase.0.qname.fastq > DPB1/DPB1.0.fastq.sam
