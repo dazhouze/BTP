@@ -51,28 +51,40 @@ close IN ;
 print " - Finish read through SAM/BAM file.\n";
 
 #hard gap detect
-my $hardGap = 0;
-for my $kw (sort {$a<=>$b} keys %depthWin){
-    print OUT "$kw\t$depthWin{$kw}\n";
-    if ($depthWin{$kw} < $depCut && $hardGap == 0){
-        $hardGap = $kw*$winSize;
-        #print OUT "$hardGap\thard_start\n";    
+my $gap_s = 0;
+my @hardGap;#2D array for gap region
+my $index = 0;
+for my $kw (int($mhc_s/$winSize) .. int($mhc_e/$winSize+1)){
+    my $value = 0;
+    $value = $depthWin{$kw} if (exists $depthWin{$kw});
+    if ($value < $depCut && $gap_s == 0){
+        $gap_s = $kw*$winSize;
+        print OUT "hardS:$gap_s\t"; 
+        $hardGap[$index][0] = $gap_s;
     }
-    if ($depthWin{$kw} > $depCut && $hardGap != 0){
-        $hardGap = $kw*$winSize;
-        #print OUT "$hardGap\thard_end\n";    
-        $hardGap = 0;
+    if ($value > $depCut && $gap_s != 0){
+        my $dis = $kw*$winSize - $gap_s;
+        $gap_s = $kw*$winSize;
+        print OUT "hardE:$gap_s\tlen:$dis\n"; 
+        $hardGap[$index][1]=$gap_s;
+        $gap_s = 0;
+        $index++;
     }
 }
 close OUT;
 print " - Finish hard gaps detection.\n";
 
-die;
+$index = 0;
 for my $kp (($mhc_s+10) .. ($mhc_e-20)){
+    next if ($kp > $hardGap[$index][0] && $kp > $hardGap[$index][1]);
+    if ($kp>=$hardGap[$index][1]){
+        $index++;
+        print "go though No.$index hard gap\n";
+    }
     #soft gap detect
-    #my $si = &siginificant(\%depth, $kp);#si == 1: sinificant; else si == 0: not siginificant
+    #&siginificant == 1: sinificant; else si == 0: not siginificant
     if( &siginificant(\%depth, $kp) ){
-        print OUT "$kp\tsoft\n";
+        print OUT "soft:$kp\n";
     }
 }
 print " - Finish soft gaps detection.\n";
