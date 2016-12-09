@@ -83,16 +83,15 @@ for my $kp (($mhc_s+10) .. ($mhc_e-20)){
     }
     #soft gap detect
     #&siginificant == 1: sinificant; else si == 0: not siginificant
-    if( &siginificant(\%depth, $kp) ){
+    if( &siginificant($kp) ){
         print OUT "soft:$kp\n";
+        print "soft:$kp\n";
     }
 }
 print " - Finish soft gaps detection.\n";
 
 sub siginificant {
-    my ($X, $Y) = @_;
-    my %hash = %$X;#depth hash
-    my $pos = $Y;
+    my $pos = $_[0];
     my $n = 10; #sample size
     my @diff;
     for my $kp (($pos-$n+1) .. $pos){
