@@ -5,19 +5,20 @@ my $mhc_s = 28477797;#start of mhc region of hg19
 my $mhc_e = 33448354;#start of mhc region of hg19
 $mhc_s -= 1000;#flanking 1k
 $mhc_e += 1000;#flanking 1k
+my $winSize = 100;#window size (depth)
+my $depCut = 10;#depth cutoff value: 2x Canu cutoff value
 
 #BAM file 
 my $f ="/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/5YH.best.sorted.bam";
 open IN , "samtools view $f | " and print "$f\n";
 
 #resutl file 
-my $o = "mhc_flank.depth.txt";
+my $o = "hardSoftGap.txt";
 open OUT , ">$o" and print "Output file: $o\n";
-print OUT "Coordinate\tDepth\n";
 
 my %depth;#alignment depth
+my %depthWin;#hash for depth (win size = 100bp)
 
-=begin
 while (<IN>){
     next if (/^@/);
     my ($chr,$read_s,$cigar)=(split /\t/)[2,3,5];
@@ -39,35 +40,42 @@ while (<IN>){
     for my $p ($read_s .. $read_e){
         $depth{$p}++;
     }
+    #hard gap calculation
+    for my $w ( (int($read_s/$winSize)+1) .. int($read_e/$winSize)){
+        $depthWin{$w}++;
+    }
+    $depthWin{(int($read_s/$winSize))}+= 1 - ($read_s % $winSize)/$winSize;
+    $depthWin{(int($read_e/$winSize)+1)}+= ($read_e % $winSize)/$winSize;
 }
 close IN ;
-=cut
+print " - Finish read through SAM/BAM file.\n";
 
-for my $kp (1..50){
-    #$depth{$kp} = int(17+rand(3));
-    my $p = int 17+rand(3);
-    $depth{$kp} = 10*$p;
-}
-for my $kp (51..200){
-    #$depth{$kp} = int(36 + rand(4));
-    $depth{$kp} = 10*int(10*int(36 + rand(4))/10);
-}
-
-for my $kp ((10) .. (100-10)){
-    #print "test: $depth{$kp}\n";
-    my $si = &siginificant(\%depth, $kp);
-}
-
-=begin
-for my $kp (($mhc_s+10) .. ($mhc_e-10)){
-    my $value = 0;
-    if (exists $depth{$kp}){
-        #print OUT "$kp\t$depth{$kp}\n";
-        $value = $depth{$kp};
-    }   
+#hard gap detect
+my $hardGap = 0;
+for my $kw (sort {$a<=>$b} keys %depthWin){
+    print OUT "$kw\t$depthWin{$kw}\n";
+    if ($depthWin{$kw} < $depCut && $hardGap == 0){
+        $hardGap = $kw*$winSize;
+        #print OUT "$hardGap\thard_start\n";    
+    }
+    if ($depthWin{$kw} > $depCut && $hardGap != 0){
+        $hardGap = $kw*$winSize;
+        #print OUT "$hardGap\thard_end\n";    
+        $hardGap = 0;
+    }
 }
 close OUT;
-=cut
+print " - Finish hard gaps detection.\n";
+
+die;
+for my $kp (($mhc_s+10) .. ($mhc_e-20)){
+    #soft gap detect
+    #my $si = &siginificant(\%depth, $kp);#si == 1: sinificant; else si == 0: not siginificant
+    if( &siginificant(\%depth, $kp) ){
+        print OUT "$kp\tsoft\n";
+    }
+}
+print " - Finish soft gaps detection.\n";
 
 sub siginificant {
     my ($X, $Y) = @_;
@@ -76,23 +84,29 @@ sub siginificant {
     my $n = 10; #sample size
     my @diff;
     for my $kp (($pos-$n+1) .. $pos){
-        push @diff,($hash{$kp}-$hash{($kp+$n)});
+        my $before = 0;
+        my $after = 0;
+        $before = $depth{$kp} if (exists $depth{$kp});
+        $after = $depth{($kp+$n)} if (exists $depth{($kp+$n)});
+        push @diff,($before - $after);
     }
-    my  $mean_diff = 0;
+    my  $mean_diff = 0;#mean of the diff number list
     for my $val (@diff){
         $mean_diff += $val;
     }
     $mean_diff /= $n;
-    my $var_diff = 0;
+    my $var_diff = 0;#The variance is a numerical measure of how the data values is dispersed around the mean.
     for my $val (@diff){
         $var_diff +=  ($val-$mean_diff)*($val-$mean_diff);
     }
     $var_diff /= $n;
-    my $t_stat_diff=abs($mean_diff)/sqrt($var_diff/$n);
+    my $t_stat_diff = 0;#t score
+    if($var_diff){#avoid /0
+        $t_stat_diff=abs($mean_diff)/sqrt($var_diff/$n);
+    }
     #print "$pos\t$depth{$pos}\t$var_diff\t$t_stat_diff\n";
-    if($t_stat_diff > 30){
+    if($t_stat_diff > 30){#arbitory cutoff value of t-score
         return 1;
     }
     return 0;
 }
-
