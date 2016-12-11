@@ -71,16 +71,16 @@ for my $kw (int($mhc_s/$winSize) .. int($mhc_e/$winSize+1)){
         $index++;
     }
 }
-close OUT;
 print " - Finish hard gaps detection.\n";
 
 $index = 0;
 for my $kp (($mhc_s+10) .. ($mhc_e-20)){
-    next if ($kp > $hardGap[$index][0] && $kp > $hardGap[$index][1]);
-    if ($kp>=$hardGap[$index][1]){
-        $index++;
-        print "go though No.$index hard gap\n";
-    }
+    #next if ($kp > $hardGap[$index][0] && $kp > $hardGap[$index][1]);
+    #if ($kp>=$hardGap[$index][1]){
+    #    $index++;
+    #    if($index>=$#hardGap)
+    #    print "go though No.$index hard gap\n";
+    #}
     #soft gap detect
     #&siginificant == 1: sinificant; else si == 0: not siginificant
     if( &siginificant($kp) ){
@@ -89,6 +89,7 @@ for my $kp (($mhc_s+10) .. ($mhc_e-20)){
     }
 }
 print " - Finish soft gaps detection.\n";
+close OUT;
 
 sub siginificant {
     my $pos = $_[0];
@@ -116,6 +117,7 @@ sub siginificant {
         $t_stat_diff=abs($mean_diff)/sqrt($var_diff/$n);
     }
     #print "$pos\t$depth{$pos}\t$var_diff\t$t_stat_diff\n";
+    print "$pos\t$t_stat_diff\n";
     if($t_stat_diff > 30){#arbitory cutoff value of t-score
         return 1;
     }
