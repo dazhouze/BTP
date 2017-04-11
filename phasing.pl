@@ -5,15 +5,18 @@ use Getopt::Std;
 ########## ########## Get paramter ########## ##########
 my %opts;
 getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
-$opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
+$opts{c} = 0.90 unless ($opts{c});#coincide SNP proportion when extending.
 $opts{u} = 0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
-$opts{w} = 500  unless ($opts{w});#window size of seed region selection
+$opts{w} = 300  unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
-$opts{e} = 0.30 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{v} = 0.30 unless ($opts{v});#cutoff value of seed (SNP) pattern selection
+$opts{s} = 28477797 unless ($opts{s}); # region start coordinate (GRCh37.p13 MHC) 
+$opts{e} = 33448354 unless ($opts{e}); # region end coordinate (GRCh37.p13 MHC) 
 
 &help and &info and die "Please retry with new paramters.\n" if ($opts{h}); 
 &help and die "Please retry with new paramters.\n" unless ($opts{o} && @ARGV);
+die "Please ues correct coordinate" if $opts{s}>$opts{e};
 
 system "mkdir -p $opts{o}/";
 system "mkdir -p $opts{o}/TEMP";
@@ -44,7 +47,7 @@ my $read= {#data format likly to language C struct format
 my $step = 0;
 
 ########## ########## Detect all SNP in all read ########## ##########
-my @bam = @ARGV;
+my $bam = $ARGV[-1];
 &detectSnp("mismatch");
 $step++;
 print " - Finish ($step/16) BAM file SNP detection.\n";
@@ -157,169 +160,169 @@ system"rm -r $opts{o}/TEMP/" if ($opts{t});
 ########## ########## Functions ########## ##########
 sub detectSnp {
     my $l=0;#line number or say read number
-    for my $f (sort @bam){
-        #best hit read only
-        my %bestHit;#to keep line number
-        open IN , "samtools view $f |" ;
-        while (<IN>){
-            next if (/^@/);
-            $l++;
-            my ($qname)=(split /\t/)[0];
-            $_=~/AS:i:(.*?)\s/;
-            my $as=$1;#AS field
-            $bestHit{$qname}{$as}="$_";
-        }
-        close IN;
-        
-        for my $kq (sort keys %bestHit){#kq qname key
-            my @AS=reverse sort {$a<=>$b} keys %{$bestHit{$kq}};
-        
-            my %seq_hash;#sequence based (start from 1) hash {ref_pos}{base N.O}{ref}{alt}
-            my @line_snp_pos;
-            my @line_snp_alt;
-            my @line_snp_qual;#qualty of each snp
-        
-            my ($qname,$chr,$pos,$cigar,$seq,$qual)=(split /\t/,$bestHit{$kq}{$AS[0]})[0,2,3,5,9,10];
-            $bestHit{$kq}{$AS[0]}=~/MD:Z:(.*?)\t/;
-            my $md="$1";
-            print LOG "No MD field was found in SAM/BAM file." and die unless($md);
-            my $now_ci=$cigar;
-            my $now_md=$md;
-            my $now_pos=$pos;#position in reference genome
-            my $now_seq=$seq;
-            my $now_base=0;#N.O. of base in sequence
-            my $start = $pos;
-            my $len = length($seq);#lenthgh of read
-            my $end = $pos+length($seq);#hard clip base is not avalible
-        
-            #use cigar field to figure out base N.O, base, type.
-            $now_pos=$pos-1;
-            while($now_ci=~ /^([0-9]+)([A-Z])(.*)/){
-                my $num=$1;
-                my $type=$2;
-                $now_ci=$3;
-                if ($type eq "M"){
-                    for my $i (1 .. $num){
-                        $now_base++;
-                        $now_pos++;
-                        my $base=substr($now_seq,0,1,"");#base of sequenced seq
-                        my $bQua=substr($qual,0,1,"");#base quality
-                        $seq_hash{$now_pos}{$now_base}{$base}{$bQua}{"M"}="mis/match";
-                    }
-                }elsif ($type eq "I"){
-                    for my $i (1 .. $num){
-                        $now_base++;
-                        $now_pos+=0;
-                        my $base=substr($now_seq,0,1,"");
-                        my $bQua=substr($qual,0,1,"");#base quality
-                        $seq_hash{$now_pos}{$now_base}{$base}{$bQua}{"I"}="insert";
-                    }
-                }elsif ($type eq "D"){
-                    for my $i (1 .. $num){
-                        $now_base+=0;
-                        $now_pos++;
-                        my $bQua = "NA";
-                        $seq_hash{$now_pos}{$now_base}{"NA"}{$bQua}{"D"}="delet";
-                    }
-                }elsif ($type eq "S"){
-                    for my $i (1 .. $num){
-                        $now_base++;
-                        $now_pos+=0;
-                        my $base=substr($now_seq,0,1,"");#base of sequenced seq
-                        my $bQua=substr($qual,0,1,"");#base quality
-                        $seq_hash{$now_pos}{$now_base}{"NA"}{$bQua}{"S"}="soft";
-                    }
-                }elsif ($type eq "H"){
-                }else{
-                    print LOG "Unknow Cigar character.\n";
-                    die;
+    #best hit read only
+    my %bestHit;#to keep line number
+    my $region = "chr6:"."$opts{s}"."-"."$opts{e}";
+    open IN , "samtools view $bam  $region | " or die "Can not open file $bam.";
+    while (<IN>){
+        print LOG "$_";
+        next if (/^@/);
+        $l++;
+        my ($qname)=(split /\t/)[0];
+        $_=~/AS:i:(.*?)\s/;
+        my $as=$1;#AS field
+        $bestHit{$qname}{$as}="$_";
+    }
+    close IN;
+    
+    for my $kq (sort keys %bestHit){#kq qname key
+        my @AS=reverse sort {$a<=>$b} keys %{$bestHit{$kq}};
+    
+        my %seq_hash;#sequence based (start from 1) hash {ref_pos}{base N.O}{ref}{alt}
+        my @line_snp_pos;
+        my @line_snp_alt;
+        my @line_snp_qual;#qualty of each snp
+    
+        my ($qname,$chr,$pos,$cigar,$seq,$qual)=(split /\t/,$bestHit{$kq}{$AS[0]})[0,2,3,5,9,10];
+        $bestHit{$kq}{$AS[0]}=~/MD:Z:(.*?)\t/;
+        my $md="$1";
+        print LOG "No MD field was found in SAM/BAM file." and die unless($md);
+        my $now_ci=$cigar;
+        my $now_md=$md;
+        my $now_pos=$pos;#position in reference genome
+        my $now_seq=$seq;
+        my $now_base=0;#N.O. of base in sequence
+        my $start = $pos;
+        my $len = length($seq);#lenthgh of read
+        my $end = $pos+length($seq);#hard clip base is not avalible
+    
+        #use cigar field to figure out base N.O, base, type.
+        $now_pos=$pos-1;
+        while($now_ci=~ /^([0-9]+)([A-Z])(.*)/){
+            my $num=$1;
+            my $type=$2;
+            $now_ci=$3;
+            if ($type eq "M"){
+                for my $i (1 .. $num){
+                    $now_base++;
+                    $now_pos++;
+                    my $base=substr($now_seq,0,1,"");#base of sequenced seq
+                    my $bQua=substr($qual,0,1,"");#base quality
+                    $seq_hash{$now_pos}{$now_base}{$base}{$bQua}{"M"}="mis/match";
                 }
+            }elsif ($type eq "I"){
+                for my $i (1 .. $num){
+                    $now_base++;
+                    $now_pos+=0;
+                    my $base=substr($now_seq,0,1,"");
+                    my $bQua=substr($qual,0,1,"");#base quality
+                    $seq_hash{$now_pos}{$now_base}{$base}{$bQua}{"I"}="insert";
+                }
+            }elsif ($type eq "D"){
+                for my $i (1 .. $num){
+                    $now_base+=0;
+                    $now_pos++;
+                    my $bQua = "NA";
+                    $seq_hash{$now_pos}{$now_base}{"NA"}{$bQua}{"D"}="delet";
+                }
+            }elsif ($type eq "S"){
+                for my $i (1 .. $num){
+                    $now_base++;
+                    $now_pos+=0;
+                    my $base=substr($now_seq,0,1,"");#base of sequenced seq
+                    my $bQua=substr($qual,0,1,"");#base quality
+                    $seq_hash{$now_pos}{$now_base}{"NA"}{$bQua}{"S"}="soft";
+                }
+            }elsif ($type eq "H"){
+            }else{
+                print LOG "Unknow Cigar character.\n";
+                die;
             }
-            #use MD field to figure out reference sequence
-            my $krp=$pos-1;
-            while( $now_md ){
-                if ($now_md =~ /^([0-9]+)(.*)/){
-                    my $cat=$1;
-                    $now_md=$2;
-                    if ($cat == 0){
-                        next;
-                    }else{
-                        for my $i (1 .. $cat){
-                            $krp++;
-                            for my $ksp (keys %{$seq_hash{$krp}}){
-                                for my $kb (keys %{$seq_hash{$krp}{$ksp}}){
-                                    for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
-                                        for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
-                                            $seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt}="$kb" if ($kt eq "M");
-                                            $seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt}="NA" if ($kt eq "I");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if ($now_md =~ /^([A-Z]+)(.*)/){
-                    #insertion or mis-match
-                    my $cat=$1;
-                    $now_md=$2;
-                    for my $i ( 1 .. length($cat) ){
-                        my $ref=substr($cat,0,1,"");
+        }
+        #use MD field to figure out reference sequence
+        my $krp=$pos-1;
+        while( $now_md ){
+            if ($now_md =~ /^([0-9]+)(.*)/){
+                my $cat=$1;
+                $now_md=$2;
+                if ($cat == 0){
+                    next;
+                }else{
+                    for my $i (1 .. $cat){
                         $krp++;
                         for my $ksp (keys %{$seq_hash{$krp}}){
                             for my $kb (keys %{$seq_hash{$krp}{$ksp}}){
                                 for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
                                     for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
-                                        if ($kt eq "M"){
-                                            delete $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"M"};
-                                            $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"Mis"}="$ref"; 
-                                        }
-                                        print LOG "Script error:$ksp $krp $kt == M\n" and die if($kt eq "I");
+                                        $seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt}="$kb" if ($kt eq "M");
+                                        $seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt}="NA" if ($kt eq "I");
                                     }
                                 }
                             }
                         }
                     }
                 }
-                if ($now_md =~ /^\^([A-Z]+)(.*)/){
-                    my $cat=$1;
-                    $now_md=$2;
-                    for my $i ( 1 .. length($cat) ){
-                        $krp++;
-                    }
-                }
             }
-            #check result
-            for my $krp (sort {$a<=>$b} keys %seq_hash){
-                for my $ksp (keys %{$seq_hash{$krp}}){
-                    for my $kb (keys %{$seq_hash{$krp}{$ksp}}){
-                        for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
-                            for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
-                                my $kr=$seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt};
-                                print LOG "Script error:$krp\t$ksp\t$kb\t$kt\t$kr\n" and die if ($kt eq "Mis" && $kb eq $kr);
-                                ########## important ########## 
-                                if ($kt eq "Mis" && $_[0] eq "mismatch"){
-                                    push @line_snp_pos , $krp; 
-                                    push @line_snp_alt , $kb; 
-                                    push @line_snp_qual , (ord($kqu)-33); 
-                                }
-                                elsif ($kt eq "M"  && $_[0] eq "match"){
-                                    $refSnp{$qname}{$krp}=(ord($kqu)-33) if (exists $filter{$krp});
+            if ($now_md =~ /^([A-Z]+)(.*)/){
+                #insertion or mis-match
+                my $cat=$1;
+                $now_md=$2;
+                for my $i ( 1 .. length($cat) ){
+                    my $ref=substr($cat,0,1,"");
+                    $krp++;
+                    for my $ksp (keys %{$seq_hash{$krp}}){
+                        for my $kb (keys %{$seq_hash{$krp}{$ksp}}){
+                            for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
+                                for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
+                                    if ($kt eq "M"){
+                                        delete $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"M"};
+                                        $seq_hash{$krp}{$ksp}{$kb}{$kqu}{"Mis"}="$ref"; 
+                                    }
+                                    print LOG "Script error:$ksp $krp $kt == M\n" and die if($kt eq "I");
                                 }
                             }
                         }
                     }
                 }
             }
-            if ($_[0] eq "mismatch"){
-                push @{ $read->{QNAME} } , $qname;
-                push @{ $read->{START} } , $start;
-                push @{ $read->{END} } , $end;
-                push @{ $read->{LEN} } , $len;
-                push @{ $read->{SNPPOS} } , [ @line_snp_pos ];
-                push @{ $read->{SNPALT} } , [ @line_snp_alt ];
-                push @{ $read->{SNPQUAL} } , [ @line_snp_qual ];
+            if ($now_md =~ /^\^([A-Z]+)(.*)/){
+                my $cat=$1;
+                $now_md=$2;
+                for my $i ( 1 .. length($cat) ){
+                    $krp++;
+                }
             }
+        }
+        #check result
+        for my $krp (sort {$a<=>$b} keys %seq_hash){
+            for my $ksp (keys %{$seq_hash{$krp}}){
+                for my $kb (keys %{$seq_hash{$krp}{$ksp}}){
+                    for my $kqu (keys %{$seq_hash{$krp}{$ksp}{$kb}}){
+                        for my $kt (keys %{$seq_hash{$krp}{$ksp}{$kb}{$kqu}}){
+                            my $kr=$seq_hash{$krp}{$ksp}{$kb}{$kqu}{$kt};
+                            print LOG "Script error:$krp\t$ksp\t$kb\t$kt\t$kr\n" and die if ($kt eq "Mis" && $kb eq $kr);
+                            ########## important ########## 
+                            if ($kt eq "Mis" && $_[0] eq "mismatch"){
+                                push @line_snp_pos , $krp; 
+                                push @line_snp_alt , $kb; 
+                                push @line_snp_qual , (ord($kqu)-33); 
+                            }
+                            elsif ($kt eq "M"  && $_[0] eq "match"){
+                                $refSnp{$qname}{$krp}=(ord($kqu)-33) if (exists $filter{$krp});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if ($_[0] eq "mismatch"){
+            push @{ $read->{QNAME} } , $qname;
+            push @{ $read->{START} } , $start;
+            push @{ $read->{END} } , $end;
+            push @{ $read->{LEN} } , $len;
+            push @{ $read->{SNPPOS} } , [ @line_snp_pos ];
+            push @{ $read->{SNPALT} } , [ @line_snp_alt ];
+            push @{ $read->{SNPQUAL} } , [ @line_snp_qual ];
         }
     }
 }
@@ -812,7 +815,7 @@ sub seedSelect{
                 $otherFre += $snpFre{$kpos}{$kalt};
             }
         }
-        if (($refFre/($refFre+$otherFre)) >= $opts{e} && ($refFre/($refFre+$otherFre)) < (1-$opts{e})){
+        if (($refFre/($refFre+$otherFre)) >= $opts{v} && ($refFre/($refFre+$otherFre)) < (1-$opts{v})){
             $selectPos{$kpos}++;
         }
     }
@@ -862,8 +865,8 @@ sub seedSelect{
     }
     print PT  " - phase_0 seed: $maxPattern : $fre_hash{$maxPattern}\n";
     print LOG " - phase_0 seed: $maxPattern : $fre_hash{$maxPattern}\n";
-    print LOG "Error! Plase set -w smaller (now=$opts{w}) or -e more close to 0 (now=$opts{e})" and die if ($maxFre == 0);
-    print LOG "Error! Plase set -w smaller (now=$opts{w}) or -e more close to 0 (now=$opts{e})" and die if ($maxFre == 1);
+    print LOG "Error! Plase set -w smaller (now=$opts{w}) or -e more close to 0 (now=$opts{v})" and die if ($maxFre == 0);
+    print LOG "Error! Plase set -w smaller (now=$opts{w}) or -e more close to 0 (now=$opts{v})" and die if ($maxFre == 1);
     delete $fre_hash{$maxPattern};
     $maxFre = 0;
     for my $kpattern (sort keys %fre_hash){
@@ -879,7 +882,7 @@ sub seedSelect{
     }
     print PT  " - phase_1 seed: $maxPattern : $fre_hash{$maxPattern}\n";
     print LOG " - phase_1 seed: $maxPattern : $fre_hash{$maxPattern}\n";
-    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{e})" and die if ($maxFre == 1);
+    print LOG "Error! Plase set -w larger (now=$opts{w}) and -e more close to 0.5 (now=$opts{v})" and die if ($maxFre == 1);
 }
 
 sub errorNum{
@@ -981,13 +984,15 @@ sub help{
 print "*** Phase reads into 2 haplotype, using BAM format files. ***
 Usage:perl thisScript.pl -o /output/path/ -c $opts{c} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
 \t-h For more information.
+\t-o Output directory.(default is unsetted)
 \t-t Delete the TEMP file directory.
 \t-c Coincident SNP proportion. 0.0-1.0(default=$opts{c})
-\t-w Window size of seed selection.(default=$opts{w}bp)
-\t-o Output directory.(default is unsetted)
 \t-u Phase 0 and 1 > score cutoff. 0.0--1.0(default=$opts{u})
+\t-w Window size of seed selection.(default=$opts{w}bp)
 \t-p Upper heter-SNP proportion cutoff, alt fre/seq depth.(default=$opts{p})
 \t-d Lowwer heter-SNP proportion cutoff, alt fre/seq depth.(default=$opts{d})
+\t-s Start coordinate of region(default=$opts{s}) 
+\t-e End coordinate of region.(default=$opts{e}) 
 \t*.bamFiles: BAM files for small region
 ";
 }
