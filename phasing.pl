@@ -5,15 +5,15 @@ use Getopt::Std;
 ########## ########## Get paramter ########## ##########
 my %opts;
 getopts('hto:w:p:d:s:f:c:e:u:', \%opts);
-$opts{c}=0.95 unless ($opts{c});#coincide SNP proportion when extending.
-$opts{u}=0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
-$opts{w} = 500 unless ($opts{w});#window size of seed region selection
+$opts{c} = 0.95 unless ($opts{c});#coincide SNP proportion when extending.
+$opts{u} = 0.55 unless ($opts{u});#phase 0 and 1 cutoff value of scoring
+$opts{w} = 500  unless ($opts{w});#window size of seed region selection
 $opts{p} = 0.25 unless ($opts{p});#upper heter snp cutoff, alt fre/seq depth
 $opts{d} = 0.75 unless ($opts{d});#lowwer heter snp cutoff, alt fre/seq depth
-$opts{e} = 0.3 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
+$opts{e} = 0.30 unless ($opts{e});#cutoff value of seed (SNP) pattern selection
 
-&help and &info and die if ($opts{h}); 
-&help and die unless ($opts{o} && @ARGV);
+&help and &info and die "Please retry with new paramters.\n" if ($opts{h}); 
+&help and die "Please retry with new paramters.\n" unless ($opts{o} && @ARGV);
 
 system "mkdir -p $opts{o}/";
 system "mkdir -p $opts{o}/TEMP";
@@ -978,18 +978,16 @@ sub artSeed {
 
 ########## ########## Help and Information ########## ##########
 sub help{
-print "*** Phase reads into 2 haplotype, using BAM format files.
-Usage:perl thisScript.pl -o $opts{o} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
+print "*** Phase reads into 2 haplotype, using BAM format files. ***
+Usage:perl thisScript.pl -o /output/path/ -c $opts{c} -w $opts{w} -u $opts{u} -p $opts{p} -d $opts{d} *.bam
 \t-h For more information.
-\t-t Delet the TEMP file directory.
-\t-c Coincide SNP proportion.(default=$opts{c})
+\t-t Delete the TEMP file directory.
+\t-c Coincident SNP proportion. 0.0-1.0(default=$opts{c})
 \t-w Window size of seed selection.(default=$opts{w}bp)
-\t-o Output directory.(default=$opts{o})
+\t-o Output directory.(default is unsetted)
 \t-u Phase 0 and 1 > score cutoff. 0.0--1.0(default=$opts{u})
-\t-f First seed read NO. 
-\t-s Second seed read NO. 
-\t-p Upper heter snp cutoff, alt fre/seq depth.(default=$opts{p})
-\t-d Lowwer heter snp cutoff, alt fre/seq depth.(default=$opts{d})
+\t-p Upper heter-SNP proportion cutoff, alt fre/seq depth.(default=$opts{p})
+\t-d Lowwer heter-SNP proportion cutoff, alt fre/seq depth.(default=$opts{d})
 \t*.bamFiles: BAM files for small region
 ";
 }
@@ -998,14 +996,8 @@ sub info{
 print "
 *** Describe: This script is designed for 100% covered (well seqenced) region PacBio CCS reads two haplotypes (diploid) phasing. For example, applying HLA/MHC region capture sequencing and then using this script for HLA-A gene region CCS reads phasing. This script performs better than SAMtools phase espcially when 2 haplotypes are in unbalanced sequencing coverage fold.And print out QNAME of each read.Some abnormity long read with little overlap with this region will be discarded.
 *** Sugestion(1): Candidate reads pattern:R is ref allel. If the length of pattern is not long enough. You need to set -w larger. If there is no 2 siginificent high value in all value of pattern.
-***Sugestion(2): If the \"extend times\" is too less than half of all read number. You need to set seed read NO. by -f -s.
+*** Sugestion(2): If the \"extend times\" is too less than half of all read number. You need to set seed read NO. by -f -s.
 *** Proformance: This script is written in Perl, with lots of C style pointers in functions. With dozen of times optimizing of algorithm, I try to make the phasing result more accurate. One more thing, unfortunately, I used planty of hash data structure to simplify programming, so that the script will not run very fast.
 *** Email: zhouze\@genomics.cn
-  _________  _________ 
-  | __|__ |  |___|___| 
-  |___|___|  |___|___| 
-  |  ___  |      |     
-  | |___| |      |     
-  /      \\|      |    
-\n";
+  _________  _________ \n  | __|__ |  |___|___| \n  |___|___|  |___|___| \n  |  ___  |      |     \n  | |___| |      |     \n  /      \\|      |    \n";
 }

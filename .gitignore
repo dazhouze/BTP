@@ -1,21 +1,24 @@
-#text file and dirctory
-*.txt
-*/
-
-#SAM/BAM file
-*.sam
+# Data File
 *.bam
 *.bai
+*.sam
 
-#shell bash scipt
-shell.sh
-temp.sh
+# Database
+*.db
 
-# Python:
+# Text File
+*.txt
+!requirements.txt
+!LICENSES.txt
+
+# Directory
+__*/
+*__/
+
+# Python
 *.py[cod]
 *.so
 *.egg
 *.egg-info
 dist
 build
-__*
