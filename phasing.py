@@ -5,34 +5,77 @@ __author__ = 'Zhou Ze'
 __version__ = '0.0.1'
 
 '''
+Python version phasing program.
+More rebost.
 '''
 
-from PB_Phasing import *
 
-########## ########## Data structure ########## ##########
-########## ########## Detect all SNP in all read ########## ##########
-########## ########## Identify heterozygous SNP marker, seq error and homo SNP ########## ##########
-########## ########## Detect ref-allel SNP in all read ########## ##########
-########## ########## Set seed ########## ##########
-    ########## ########## Initialize phase_0 SNP ########## ##########
-    ########## ########## Grow SNP tree (phase 0 SNP markers) ########## ##########
-    ########## ########## Filter phase_0 heter SNP markers ########## ##########
-    ########## ########## Scoring all reads ########## ##########
-    ########## ########## Determine 2 haplotype ########## ##########
-########## ########## Veen check ########## ##########
+# Data structure 
+'''
+    PL = PositionalList()
+    for x in ' WORLD':
+        p = PL.add_after(p, x)
+    print(PL.first().getNode().getElement())
+    for x in PL:
+        print(x, end = ' ')
+    pode def init(self, qname, start, end, snp_pos=None, snp_alt=None, snp_qual=None, nextN):
+'''
+# Detect all SNP in all read 
+# Identify heterozygous SNP marker, seq error and homo SNP 
+# Detect ref-allel SNP in all read 
+# Set seed 
+# Initialize phase_0 SNP 
+# Grow SNP tree (phase 0 SNP markers) 
+# Filter phase_0 heter SNP markers 
+# Scoring all reads 
+# Determine 2 haplotype 
+# Veen check 
+
+class Read(object):
+    #__slots__ = '__qname', '__start', '__end', '__snp_pos', '__snp_alt', '__snp_qual' #streamline memeory usage
+    def __init__(self, qname, start, end, snp_pos=[None], snp_alt=[None], snp_qual=[None]):
+        self.__qname = qname
+        self.__start = start
+        self.__end   = end
+        self.__snp_pos  = snp_pos
+        self.__snp_alt  = snp_alt
+        self.__snp_qual = snp_qual
+
+    def getQname(self):
+        return self.__qname
+    def getStart(self):
+        return self.__start
+    def getEnd(self):
+        return self.__end
+    def getSnpPos(self):
+        return self.__snp_pos
+    def getSnpAlt(self):
+        return self.__snp_alt
+    def getSnpQual(self):
+        return self.__snp_qual
+
 def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut):
-    import os, pysam
     '''
-    bam_p bam file path
+    input bam file path
     reg_s region start coordinate
     reg_e region end coordinate
     '''
+    import os, pysam
+    from PB_Phasing import posList
+    PL = posList.PositionalList() # initialize a positional list
+    p = PL.add_first(Read('Begin', 0, 0)) # initialize the first item in PL list and store the position in varible p
+    for x in PL:
+        print(x.getQname())
 
+    #Node def init(self, qname, start, end, snp_pos=None, snp_alt=None, snp_qual=None, nextN):
+
+    # Data structure 
+    # Detect all SNP in all read 
     ##### Identify SAM/BAM file to open different pysam IO handle. #####
-    if os.path.splitext(bam_p)[1] == '.sam': # SAM file
-        bamfile = pysam.AlignmentFile(bam_p, "r")
-    elif os.path.splitext(bam_p)[1] == '.bam': # BAM file
-        bamfile = pysam.AlignmentFile(bam_p, "rb") # file handle of BAM file
+    if os.path.splitext(input)[1] == '.sam': # SAM file
+        bamfile = pysam.AlignmentFile(input, "r")
+    elif os.path.splitext(input)[1] == '.bam': # BAM file
+        bamfile = pysam.AlignmentFile(input, "rb") # file handle of BAM file
     else:
         raise IOError('Please choose a SAM/BAM file!')
     target = bamfile.fetch('chr6', reg_s, reg_e) # iterable method of target region read
@@ -77,7 +120,7 @@ if __name__ == '__main__':
         sys.exit(2)
 
     output = None # output dirctory
-    input = None # input BAM/SAM file
+    input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     temp_delete = False # if delete the temp direcory
     chrom = 'chr6' # chromesome name
     reg_s = 0 # start coordinate of the region
