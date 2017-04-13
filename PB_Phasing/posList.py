@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-__author__ = 'Zhou Ze'
-__version__ = '0.1'
-
 '''
 Position class: 
     __init__(): 
@@ -87,32 +83,6 @@ class PositionalList(object):
             return None
         return self.Position(self, node)
 
-    ##### __Read class #####
-    class __Read(object):
-        '''Lightweigth, nonpublic class for read informations'''
-        __slots__ = '__qname', '__start', '__end', '__snp_pos', '__snp_alt', '__snp_qual' #streamline memeory usage
-        def init(self, nextN, qname, start, end, snp_pos=None, snp_alt=None, snp_qual=None):
-            self.__qname = qname
-            self.__start = start
-            self.__end   = end
-            self.__snp_pos  = snp_pos
-            self.__snp_alt  = snp_alt
-            self.__snp_qual = snp_qual
-
-        def getQname(self):
-            return self.__qname
-        def getStart(self):
-            return self.__start
-        def getEnd(self):
-            return self.__end
-
-        def getSnpPos(self):
-            return self.__snp_pos
-        def getSnpAlt(self):
-            return self.__snp_alt
-        def getSnpQual(self):
-            return self.__snp_qual
-     
     ##### __Node class #####
     class __Node(object):
         '''Lightweigth, nonpublic class for storing a double linked node.'''
@@ -125,15 +95,21 @@ class PositionalList(object):
 
         def getPrev(self):
             return self.__prev
+
         def getNext(self):
             return self.__next
-        def setNext(self, n):
-            self.__next = n
-        def setPrev(self, p):
-            self.__prev = p
 
         def getElement(self):
             return self.__element
+
+        def setPrev(self, p):
+            self.__prev = p
+
+        def setNext(self, n):
+            self.__next = n
+
+        def setElement(self, e):
+            self.__element = e
 
     ##### Positional list class #####
     def __init__(self):
@@ -151,6 +127,7 @@ class PositionalList(object):
     def is_empty(self):
         '''Return True if the list is empty.'''
         return self.__size == 0
+
 
     ##### accessors #####
     def first(self):
@@ -235,14 +212,12 @@ class PositionalList(object):
 
 if __name__ == '__main__':
     PL = PositionalList()
-    p = PL.first()
-    print(p)
     p1 = PL.add_first('H')
     p2 = PL.add_after(p1, 'E')
     p5 = PL.add_last('O')
     p4 = PL.add_before(p5, 'L')
     p3 = PL.add_before(p4, 'L')
-    p = PL.first()
+    p = PL.last()
     for x in ' WORLD':
         p = PL.add_after(p, x)
     print('length of PositionalList:%d'%len(PL))
