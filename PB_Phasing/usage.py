@@ -3,7 +3,7 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.0.1'
 
-def usage():
+def Usage():
     info = '''
 Program: phasing.py 
 Version: 0.2.0
@@ -27,4 +27,4 @@ Usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s st
     print(info)
 
 if __name__ == '__main__':
-    usage()
+    Usage()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 __author__ = 'Zhou Ze'
 __version__ = '0.0.1'
 
@@ -31,14 +32,7 @@ class Base(object):
     def getT(self):
         return self.__t
     def count(self):
-        return self.__a + self.__c + self.__g + self.__t
-
-    def max2(self):
-        '''Return the maxium 2 Base in A C G T and Ref-allel.'''
-        first = second = 1
-        bases = [self.__a, self.__c, self.__g, self.__t, self.__r]
-        first = bases.index(max(bases))
-        raise ValueError('must impliment by writer.')
+        return (self.__a + self.__c + self.__g + self.__t)
 
 def HeterSNP(PL, heter_snp, max_heter, min_heter):
     '''Retrun a dict of heter SNP marker positions.
@@ -79,43 +73,23 @@ def HeterSNP(PL, heter_snp, max_heter, min_heter):
     for x,v in heter_snp.items(): # candidate heter snp positions
         #print(x,v)
         #print(snp_sum[x].a,snp_sum[x].c,snp_sum[x].g,snp_sum[x].t,'=' ,seq_dep[x])
-
         ref_ap = 1 - snp_sum[x].count()/seq_dep[x] # ref allel proporty
-        if seq_dep[x] == 1:
+        a_ap = snp_sum[x].getA()/seq_dep[x] # Base A allel proporty
+        c_ap = snp_sum[x].getC()/seq_dep[x] # Base C allel proporty
+        g_ap = snp_sum[x].getG()/seq_dep[x] # Base G allel proporty
+        t_ap = snp_sum[x].getT()/seq_dep[x] # Base T allel proporty
+        if seq_dep[x] <= 8:
             heter_snp[x] = 0 # discard
-        else:
-            if max_heter < ref_ap: # seq error
-                heter_snp[x] = 1
-            else:
-                # homo snp
-                if snp_sum[x].getA()/seq_dep[x] > max_heter:  # A allel proporty
-                    heter_snp[x] = 3
-                    next
-                elif snp_sum[x].getC()/seq_dep[x] > max_heter: # C allel proporty
-                    heter_snp[x] = 3
-                    next
-                elif snp_sum[x].getG()/seq_dep[x] > max_heter: # G allel proporty
-                    heter_snp[x] = 3
-                    next
-                elif snp_sum[x].getT()/seq_dep[x] > max_heter: # T allel proporty
-                    heter_snp[x] = 3
-                    next
-                # heter snp
-                elif min_heter <= snp_sum[x].getA()/seq_dep[x]: # A allel proporty
-                    heter_snp[x] = 2
-                    next
-                elif min_heter <= snp_sum[x].getC()/seq_dep[x]: # C allel proporty
-                    heter_snp[x] = 2
-                    next
-                elif min_heter <= snp_sum[x].getG()/seq_dep[x]: # G allel proporty
-                    heter_snp[x] = 2
-                    next
-                elif min_heter <= snp_sum[x].getT()/seq_dep[x]: # T allel proporty
-                    heter_snp[x] = 2
-                    next
-    result = {} # the result dict
-    for k, v in heter_snp.items():
-        if v == 2: # only return the heter snp
-            result.setdefault(k, v)
-    return result # only return the heter snp
+            next
+        elif ref_ap > max_heter: # seq error
+            heter_snp[x] = 1
+            next
+        elif max([a_ap, c_ap, g_ap, t_ap]) > max_heter: # homo snp
+            heter_snp[x] = 3
+            next
+        elif min_heter < max([a_ap, c_ap, g_ap, t_ap]) < max_heter: # heter snp
+            heter_snp[x] = 2
+            next
+
+    return heter_snp # only return the heter snp
 

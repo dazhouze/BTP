@@ -45,13 +45,13 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     reg_e: region end coordinate
     '''
     import os, pysam
-    from PB_Phasing import posList, usage, heterSnp, seed
+    from PB_Phasing import posList, heterSnp, seed
 
     # init varibls for Phasing #
     heter_snp = {} 
     ''' All possible position of SNPs.
     key is pos, vuale is one of types: 1=seq error(<min_heter), 2=heter snp, 3=homo snp(>min_heter). 
-    Init when traverse reads in BAM file and determine when traverse SNPs in posList 
+    Init when traverse reads in BAM file and determine when traverse SNPs in positional list 
     '''
 
     # init a list for SNPs #
@@ -90,6 +90,11 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     assert PL.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
     ##### Identify heterozygous SNP marker; seq error and homo SNP #####
     heter_snp = heterSnp.HeterSNP(PL, heter_snp, max_heter, min_heter)
+    for x in range(reg_s, reg_e+1):
+        if x in heter_snp:
+            if heter_snp[x] >1:
+                print (x, heter_snp[x])
+    return 0
     #print(heter_snp)
 # 3.Detect ref-allel SNP in all read 
     ##### Set seed #####
@@ -98,10 +103,11 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
 
 if __name__ == '__main__':
     import getopt, sys
+    from PB_Phasing import usage
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hb:o:c:u:w:p:d:v:s:e:m:")
+        opts, args = getopt.getopt(sys.argv[1:], "htb:o:c:u:w:p:d:v:s:e:m:")
     except getopt.GetoptError as err:
-        usage.usage()
+        usage.Usage()
         print(err)  # will print something like "option -a not recognized"
         sys.exit(2)
     # default value
@@ -112,14 +118,14 @@ if __name__ == '__main__':
     reg_s = 0 # start coordinate of the region
     reg_e = 0 # end coordinate of the region
     max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
-    min_heter = 0.24 # #lower heter snp cutoff, alt fre/seq depth
+    min_heter = 0.25 # #lower heter snp cutoff, alt fre/seq depth
     seed_win = 300 # window size of seed region selection
     seed_cut = 0.30 # cutoff value of seed (SNP) pattern selection
     snp_coin = 0.90  # SNP coincide proportion when extending
     score_cut = 0.55 # phase 0 and 1 cutoff value of scoring
     for o, a in opts:
         if o == '-h':
-            usage.usage()
+            usage.Usage()
             sys.exit()
         elif o == '-b':
             input = a
@@ -134,18 +140,18 @@ if __name__ == '__main__':
             reg_e = int(a) # end coordinate of the region
 
         elif o == '-p':
-            max_heter = a # upper heter snp cutoff, alt fre/seq depth
+            max_heter = float(a) # upper heter snp cutoff, alt fre/seq depth
         elif o == '-d':
-            min_heter = a # #lower heter snp cutoff, alt fre/seq depth
+            min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
 
         elif o == '-w':
-            seed_win = a # window size of seed region selection
+            seed_win = int(a) # window size of seed region selection
         elif o == '-v':
-            seed_cut = a # cutoff value of seed (SNP) pattern selection
+            seed_cut = int(a) # cutoff value of seed (SNP) pattern selection
 
         elif o == '-c':
-            snp_coin = a # SNP coincide proportion when extending
+            snp_coin = float(a)  # SNP coincide proportion when extending
         elif o == '-u':
-            score_cut = a # phase 0 and 1 cutoff value of scoring
+            score_cut = float(a) # phase 0 and 1 cutoff value of scoring
     # Run the program
     main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)
