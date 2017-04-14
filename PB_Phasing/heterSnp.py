@@ -34,7 +34,16 @@ class Base(object):
     def count(self):
         return (self.__a + self.__c + self.__g + self.__t)
 
-def HeterSNP(PL, heter_snp, max_heter, min_heter):
+    def max2(self, dep):
+        '''Return a tuple of the 2 maxium base(A C G T Ref) of position.'''
+        ref = dep -(self.__a + self.__c + self.__g + self.__t) # reference allel frequence
+        bases = [self.__a, self.__c, self.__g, self.__t, ref] # base list
+        first = bases.index(max(bases)) # largest item index
+        bases[first] = -1 # "remove" the largest item
+        second = bases.index(max(bases)) # get the second largest item
+        return first, second
+
+def HeterSNP(PL, heter_snp, max_heter, min_heter, reg_s, reg_e):
     '''Retrun a dict of heter SNP marker positions.
     PL is the SNP positional list
     heter_snp is the candidate heter SNP position.
@@ -91,5 +100,9 @@ def HeterSNP(PL, heter_snp, max_heter, min_heter):
             heter_snp[x] = 2
             next
 
-    return heter_snp # only return the heter snp
+    result = {} # result dict
+    for k,v in heter_snp.items(): # k is position and v is type 1:seq error 2:heter 3:homo
+        if v == 2 and reg_s<= k <= reg_e: # only within region heter snp
+            result.setdefault(k, snp_sum[k].max2(seq_dep[k])) # return the tuple of 2 maxium base 0:A 1:C 2:G 3:T 4:Ref
+    return result # only return the heter snp
 

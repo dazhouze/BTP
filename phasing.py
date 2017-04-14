@@ -88,17 +88,13 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     bamfile.close() # file handle closed
     PL.delete(PL.first()) # move first "begin" item, by test: 
     assert PL.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
-    ##### Identify heterozygous SNP marker; seq error and homo SNP #####
-    heter_snp = heterSnp.HeterSNP(PL, heter_snp, max_heter, min_heter)
-    for x in range(reg_s, reg_e+1):
-        if x in heter_snp:
-            if heter_snp[x] >1:
-                print (x, heter_snp[x])
+    ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
+    heter_snp = heterSnp.HeterSNP(PL, heter_snp, max_heter, min_heter, reg_s, reg_e) 
+    # k is pos, v is the tuple of 2 maxium base 0:A 1:C 2:G 3:T 4:Ref
+    print(heter_snp)
     return 0
-    #print(heter_snp)
-# 3.Detect ref-allel SNP in all read 
     ##### Set seed #####
-    ai_seed = seed.Seed(PL, heter_snp, Read()) # artifical seed read
+    ai_seed_0, ai_seed_1 = seed.Seed(PL, heter_snp, Read()) # artifical seed read for 2 haplotigs
     return 0
 
 if __name__ == '__main__':
