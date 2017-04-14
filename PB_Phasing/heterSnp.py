@@ -6,24 +6,39 @@ __version__ = '0.0.1'
 
 class Base(object):
     ''' A, T, G, C 4 base'''
-    __slots__ = 'a', 'c', 'g', 't', 'r' #streamline memeory usage
+    __slots__ = '__a', '__c', '__g', '__t' #streamline memeory usage
     def __init__(self):
-        self.a = 0
-        self.c = 0
-        self.g = 0
-        self.t = 0
-        self.r = 0 # reference allel
+        self.__a = 0
+        self.__c = 0
+        self.__g = 0
+        self.__t = 0
 
     def addA(self):
-        self.a += 1
+        self.__a += 1
     def addC(self):
-        self.c += 1
+        self.__c += 1
     def addG(self):
-        self.g += 1
+        self.__g += 1
     def addT(self):
-        self.t += 1
-    def addR(self):
-        self.r += 1
+        self.__t += 1
+
+    def getA(self):
+        return self.__a
+    def getC(self):
+        return self.__c
+    def getG(self):
+        return self.__g
+    def getT(self):
+        return self.__t
+    def count(self):
+        return self.__a + self.__c + self.__g + self.__t
+
+    def max2(self):
+        '''Return the maxium 2 Base in A C G T and Ref-allel.'''
+        first = second = 1
+        bases = [self.__a, self.__c, self.__g, self.__t, self.__r]
+        first = bases.index(max(bases))
+        raise ValueError('must impliment by writer.')
 
 def HeterSNP(PL, heter_snp, max_heter, min_heter):
     '''Retrun a dict of heter SNP marker positions.
@@ -31,8 +46,8 @@ def HeterSNP(PL, heter_snp, max_heter, min_heter):
     heter_snp is the candidate heter SNP position.
     '''
     seq_dep = {} # Depth of  covered region. Set when traverse reads in BAM file
-    snp_sum = {} # SNP summary by position
-    for x in PL:
+    snp_sum = {} # SNP info(kind and frequence) summary by position
+    for x in PL: # x is Read object
         start = x.getStart()
         end = x.getEnd()
         for i in range(start, end+1): # log the sequencing depth
@@ -42,49 +57,65 @@ def HeterSNP(PL, heter_snp, max_heter, min_heter):
             snp_pos = k
             snp_alt = v[0]
             snp_qual = v[1]
-            snp_sum.setdefault(snp_pos, Base()) # A C G T base
+            #snp_sum.setdefault(snp_pos, Base())# A C G T base
+            if snp_pos not in snp_sum:
+                snp_sum[snp_pos]=Base() # A C G T base
+            #print(snp_alt,snp_sum[snp_pos] )
             if snp_alt == 'A':
                 snp_sum[snp_pos].addA()
-            elif snp_alt = 'C':
+            elif snp_alt == 'C':
                 snp_sum[snp_pos].addC()
-            elif snp_alt = 'G':
+            elif snp_alt == 'G':
                 snp_sum[snp_pos].addG()
-            elif snp_alt = 'T':
+            elif snp_alt == 'T':
                 snp_sum[snp_pos].addT()
             else:
                 raise ValueError('Base %s is not in ACGT.' % snp_alt)
+
     # determine the SNP types: 1=seq error, 2=heter SNP, 3=homo SNP, 0=unknown
-    for x,v in heter_snp: # candidate heter snp positions
-        rf = 1 - (snp_sum[x].a+snp_sum[x].c+snp_sum[x].g+snp_sum[x].t)/seq_dep[x] # ref allel proporty
+    for x,v in snp_sum.items(): # candidate heter snp positions
+        #print(x, v.con())
+        pass
+    for x,v in heter_snp.items(): # candidate heter snp positions
+        #print(x,v)
+        #print(snp_sum[x].a,snp_sum[x].c,snp_sum[x].g,snp_sum[x].t,'=' ,seq_dep[x])
+
+        ref_ap = 1 - snp_sum[x].count()/seq_dep[x] # ref allel proporty
         if seq_dep[x] == 1:
-            v = 0 # discard
+            heter_snp[x] = 0 # discard
         else:
-            if max_heter < rf: # seq error
-                v = 1
+            if max_heter < ref_ap: # seq error
+                heter_snp[x] = 1
             else:
-                if snp_sum[x].a/seq_dep[x] > max_heter:
-                    v = 3
+                # homo snp
+                if snp_sum[x].getA()/seq_dep[x] > max_heter:  # A allel proporty
+                    heter_snp[x] = 3
                     next
-                elif snp_sum[x].c/seq_dep[x] > max_heter:
-                    v = 3
+                elif snp_sum[x].getC()/seq_dep[x] > max_heter: # C allel proporty
+                    heter_snp[x] = 3
                     next
-                elif snp_sum[x].g/seq_dep[x] > max_heter:
-                    v = 3
+                elif snp_sum[x].getG()/seq_dep[x] > max_heter: # G allel proporty
+                    heter_snp[x] = 3
                     next
-                elif snp_sum[x].t/seq_dep[x] > max_heter:
-                    v = 3
+                elif snp_sum[x].getT()/seq_dep[x] > max_heter: # T allel proporty
+                    heter_snp[x] = 3
                     next
-                elif min_heter <= snp_sum[x].a/seq_dep[x]: # A allel proporty
-                    v = 2
+                # heter snp
+                elif min_heter <= snp_sum[x].getA()/seq_dep[x]: # A allel proporty
+                    heter_snp[x] = 2
                     next
-                elif min_heter <= snp_sum[x].c/seq_dep[x]: # C allel proporty
-                    v = 2
+                elif min_heter <= snp_sum[x].getC()/seq_dep[x]: # C allel proporty
+                    heter_snp[x] = 2
                     next
-                elif min_heter <= snp_sum[x].g/seq_dep[x]: # G allel proporty
-                    v = 2
+                elif min_heter <= snp_sum[x].getG()/seq_dep[x]: # G allel proporty
+                    heter_snp[x] = 2
                     next
-                elif min_heter <= snp_sum[x].t/seq_dep[x]: # T allel proporty
-                    v = 2
+                elif min_heter <= snp_sum[x].getT()/seq_dep[x]: # T allel proporty
+                    heter_snp[x] = 2
                     next
-    return heter_snp
+    result = {} # the result dict
+    for k, v in heter_snp.items():
+        if v == 2: # only return the heter snp
+            result.setdefault(k, v)
+    return result # only return the heter snp
 

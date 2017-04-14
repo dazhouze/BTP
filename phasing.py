@@ -20,7 +20,7 @@ More rebost.
 ##### Data structure #####
 class Read(object):
     __slots__ = '__qname', '__start', '__end', '__ave_sq', '__snp' #streamline memeory usage
-    def __init__(self, qname, start, end, ave_sq, snp):
+    def __init__(self, qname=None, start=0, end=0, ave_sq=0, snp=None):
         self.__qname = qname # QNAME of read
         self.__start = start # start coordinate in reference genome
         self.__end   = end # end coordinate in reference genome
@@ -45,7 +45,7 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     reg_e: region end coordinate
     '''
     import os, pysam
-    from PB_Phasing import posList, usasge, heterSnp
+    from PB_Phasing import posList, usage, heterSnp, seed
 
     # init varibls for Phasing #
     heter_snp = {} 
@@ -70,24 +70,30 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     ##### Detect all SNP in all read #####
     for read in target:
         qname = read.query_name
-        start = read.query_alignment_start 
-        end = read.query_alignment_end 
+        start = read.reference_start
+        end   = read.reference_end
         ave_sq = sum(read.query_qualities) / float(len(read.query_qualities)) #average sequencing quality
         snp = {} # dict
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True): # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]
-            if ref_seq is not None and ref_seq.islower(): # lower case means subsititution
+            if ref_seq is not None and ref_seq.islower(): # indels' ref_seq is None. lower case means subsititution
                 snp_pos = ref_pos
                 snp_alt = read.query_sequence[read_pos]
+                if snp_alt is  None:
+                    raise ValueError(' alt is None') 
                 snp_qual = read.query_qualities[read_pos]
                 snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add value to key
                 heter_snp.setdefault(snp_pos, 0) # add None type to heter_snp dict
         p = PL.add_after(p, Read(qname, start, end, ave_sq, snp)) # add SNPs of read to positional list
     bamfile.close() # file handle closed
-    PL.delete(PL.first()) # move first "begin" item
-    #print(PL.first().getNode().getElement().getQname())
+    PL.delete(PL.first()) # move first "begin" item, by test: 
+    assert PL.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
     ##### Identify heterozygous SNP marker; seq error and homo SNP #####
     heter_snp = heterSnp.HeterSNP(PL, heter_snp, max_heter, min_heter)
+    #print(heter_snp)
+# 3.Detect ref-allel SNP in all read 
+    ##### Set seed #####
+    ai_seed = seed.Seed(PL, heter_snp, Read()) # artifical seed read
     return 0
 
 if __name__ == '__main__':
