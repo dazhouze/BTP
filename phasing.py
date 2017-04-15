@@ -53,6 +53,7 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     key is pos, vuale is one of types: 1=seq error(<min_heter), 2=heter snp, 3=homo snp(>min_heter). 
     Init when traverse reads in BAM file and determine when traverse SNPs in positional list 
     '''
+    seq_depth = [0]*(reg_e-reg_s+1) # region sequencing depth
 
     # init a list for SNPs #
     PL = posList.PositionalList() # initialize a positional list
@@ -74,9 +75,13 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
         end   = read.reference_end
         ave_sq = sum(read.query_qualities) / float(len(read.query_qualities)) #average sequencing quality
         snp = {} # dict
+        
+        for x in read.get_reference_positions(): # add 1 to seq_depth array
+            if reg_s <= x <= reg_e: # only consider pos within target region
+                seq_depth[x-reg_s] += 1
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True): # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]
-            if ref_seq is not None and ref_seq.islower(): # indels' ref_seq is None. lower case means subsititution
+            if ref_seq is not None and reg_s<=ref_pos<=reg_e and ref_seq.islower(): # indels' ref_seq is None. lower case means subsititution
                 snp_pos = ref_pos
                 snp_alt = read.query_sequence[read_pos]
                 if snp_alt is  None:
@@ -89,9 +94,13 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     PL.delete(PL.first()) # move first "begin" item, by test: 
     assert PL.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp = heterSnp.HeterSNP(PL, heter_snp, max_heter, min_heter, reg_s, reg_e) 
+    heter_snp = heterSnp.HeterSNP(PL, heter_snp, seq_depth, max_heter, min_heter, reg_s, reg_e) 
+    # seq_depth mem realse
     # k is pos, v is the tuple of 2 maxium base 0:A 1:C 2:G 3:T 4:Ref
-    print(heter_snp)
+    for k in sorted(heter_snp):
+        v = heter_snp[k]
+        print('%d\t%s\t%s' % (k, v[0], v[1]))
+    #print(heter_snp)
     return 0
     ##### Set seed #####
     ai_seed_0, ai_seed_1 = seed.Seed(PL, heter_snp, Read()) # artifical seed read for 2 haplotigs
@@ -111,8 +120,8 @@ if __name__ == '__main__':
     input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     temp_delete = False # if delete the temp direcory
     chrom = 'chr6' # chromesome name
-    reg_s = 0 # start coordinate of the region
-    reg_e = 0 # end coordinate of the region
+    reg_s = 28476797 # start coordinate of the region
+    reg_e = 33449354 # end coordinate of the region
     max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
     min_heter = 0.25 # #lower heter snp cutoff, alt fre/seq depth
     seed_win = 300 # window size of seed region selection
