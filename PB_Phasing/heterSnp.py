@@ -108,5 +108,5 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
                 elif v == 3: # homo snp
                     ho += 1
                     log_f.write('homo\t%d\n' % k)
-        log_f.write('***\nhomo SNP: %d\nheter SNP: %d\nseq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n' % (ho,he,se,dis))
+        log_f.write('***\nHomo SNP: %d\nHeter SNP: %d\nSeq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n' % (ho,he,se,dis))
     return result # only return the heter snp

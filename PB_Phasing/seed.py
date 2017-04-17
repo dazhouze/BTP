@@ -8,7 +8,7 @@ __version__ = '0.0.1'
 I have to use seed and extension strategy to illustrate the heter-information.
 '''
 
-def Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, result_0, result_1):
+def Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, result_0, result_1, log):
     '''Set seed and return 2 aritifical Read object with heter-heter-snp-marker.
     The heter-snp-marker distance: 200bp possibly cover 2 heter-heter-snp-marker
     Min.    1st Qu.    Median    Mean    3rd Qu.    Max.   
@@ -68,6 +68,8 @@ def Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, result_0, result_1):
         #result_0.setInfo("seed_0", seed_s, seed_e, , seed_snp_0)
         #result_1.setInfo("seed_1", seed_s, seed_e, , seed_snp_1)
 
+    with open(log, 'a') as log_f:
+        log_f.write('\n***\nSeed i\Information:\n')
     return result_0, result_1
 
 def MaxDictValue(dt):

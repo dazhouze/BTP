@@ -60,7 +60,8 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
         os.makedirs(output_dir)
     log = os.path.join(output, 'log.txt') # path of log.txt
     with open(log, 'w') as log_f:
-        log_f.write('Target:\n%s:%d-%d\n' % (chrom, reg_s, reg_e))
+        log_f.write('***\nTarget:\n%s:%d-%d\n' % (chrom, reg_s, reg_e))
+        log_f.write('input:%s\noutput:%s\nchr:%s, start:%d, end:%d\nseed_win:%d, seed_cut:%.2f\nmax_heter:%.2f, min_heter:%.2f\nsnp_coin:%.2f, score_cut:%.2f\n' % (input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut))
 
     # init varibls for Phasing #
     heter_snp = {} 
@@ -113,7 +114,7 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     # seq_depth mem realse
 
     ##### Set seed #####
-    seed_0, seed_1 = seed.Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, Read(), Read()) # artifical seed read for 2 haplotigs
+    seed_0, seed_1 = seed.Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, Read(), Read(), log) # artifical seed read for 2 haplotigs
     return 0
     return 0
 
@@ -127,7 +128,7 @@ if __name__ == '__main__':
         print(err)  # will print something like "option -a not recognized"
         sys.exit(2)
     # default value
-    output = 'MHC' # output dirctory
+    output = 'test' # output dirctory
     input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     temp_delete = False # if delete the temp direcory
     chrom = 'chr6' # chromosome name
