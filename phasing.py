@@ -8,7 +8,7 @@ More rebost.
 '''
 # 1.Detect all SNP in all read 
 # 2.Identify heterozygous SNP marker, seq error and homo SNP 
-# 3.Detect ref-allel SNP in all read 
+# 3.Detect ref-allele SNP in all read 
 # 4.Set seed 
 # 5.Initialize phase_0 SNP 
 # 6.Grow SNP tree (phase 0 SNP markers) 
@@ -37,6 +37,13 @@ class Read(object):
     def getSnp(self):
         return self.__snp
 
+    def setInfo(self, qname, start, end, ave_sq, snp):
+        self.__qname =  qname
+        self.__start = start
+        self.__end = end
+        self.__ave_sq = ave_sq
+        self.__snp = snp
+
 def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut):
     '''
     input: SAM/BAM file path
@@ -47,17 +54,25 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     import os, pysam
     from PB_Phasing import posList, heterSnp, seed
 
+    # init output directory #
+    output_dir = os.path.abspath(output)
+    if not os.path.exists(output):
+        os.makedirs(output_dir)
+    log = os.path.join(output, 'log.txt') # path of log.txt
+    with open(log, 'w') as log_f:
+        log_f.write('Target:\n%s:%d-%d\n' % (chrom, reg_s, reg_e))
+
     # init varibls for Phasing #
     heter_snp = {} 
     ''' All possible position of SNPs.
     key is pos, vuale is one of types: 1=seq error(<min_heter), 2=heter snp, 3=homo snp(>min_heter). 
     Init when traverse reads in BAM file and determine when traverse SNPs in positional list 
     '''
-    seq_depth = [0]*(reg_e-reg_s+1) # region sequencing depth
+    seq_depth = [0]*(reg_e-reg_s+1) # region sequencing depth accurate to base
 
     # init a list for SNPs #
-    PL = posList.PositionalList() # initialize a positional list
-    p = PL.add_first(Read('Begin', 0, 0, 0, None)) # initialize the first item in PL list and store the position in varible p
+    read_queue = posList.PositionalList() # initialize a positional list
+    p = read_queue.add_first(Read('Begin', 0, 0, 0, None)) # initialize the first item in read_queue list and store the position in varible p
 
     # Identify SAM/BAM file to open different pysam IO handle. #
     if os.path.splitext(input)[1] == '.sam': # SAM file
@@ -75,7 +90,6 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
         end   = read.reference_end
         ave_sq = sum(read.query_qualities) / float(len(read.query_qualities)) #average sequencing quality
         snp = {} # dict
-        
         for x in read.get_reference_positions(): # add 1 to seq_depth array
             if reg_s <= x <= reg_e: # only consider pos within target region
                 seq_depth[x-reg_s] += 1
@@ -89,21 +103,18 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
                 snp_qual = read.query_qualities[read_pos]
                 snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add value to key
                 heter_snp.setdefault(snp_pos, 0) # add None type to heter_snp dict
-        p = PL.add_after(p, Read(qname, start, end, ave_sq, snp)) # add SNPs of read to positional list
+        p = read_queue.add_after(p, Read(qname, start, end, ave_sq, snp)) # add SNPs of read to positional list
     bamfile.close() # file handle closed
-    PL.delete(PL.first()) # move first "begin" item, by test: 
-    assert PL.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
+    read_queue.delete(read_queue.first()) # move first "begin" item, by test: 
+    assert read_queue.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
+
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp = heterSnp.HeterSNP(PL, heter_snp, seq_depth, max_heter, min_heter, reg_s, reg_e) 
+    heter_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) 
     # seq_depth mem realse
-    # k is pos, v is the tuple of 2 maxium base 0:A 1:C 2:G 3:T 4:Ref
-    for k in sorted(heter_snp):
-        v = heter_snp[k]
-        print('%d\t%s\t%s' % (k, v[0], v[1]))
-    #print(heter_snp)
-    return 0
+
     ##### Set seed #####
-    ai_seed_0, ai_seed_1 = seed.Seed(PL, heter_snp, Read()) # artifical seed read for 2 haplotigs
+    seed_0, seed_1 = seed.Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, Read(), Read()) # artifical seed read for 2 haplotigs
+    return 0
     return 0
 
 if __name__ == '__main__':
@@ -116,10 +127,10 @@ if __name__ == '__main__':
         print(err)  # will print something like "option -a not recognized"
         sys.exit(2)
     # default value
-    output = None # output dirctory
+    output = 'MHC' # output dirctory
     input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     temp_delete = False # if delete the temp direcory
-    chrom = 'chr6' # chromesome name
+    chrom = 'chr6' # chromosome name
     reg_s = 28476797 # start coordinate of the region
     reg_e = 33449354 # end coordinate of the region
     max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
@@ -138,7 +149,7 @@ if __name__ == '__main__':
             output = a
 
         elif o == '-m':
-            chrom = a # chromesome
+            chrom = a # chromosome
         elif o == '-s':
             reg_s = int(a) # start coordinate of the region
         elif o == '-e':
@@ -152,11 +163,12 @@ if __name__ == '__main__':
         elif o == '-w':
             seed_win = int(a) # window size of seed region selection
         elif o == '-v':
-            seed_cut = int(a) # cutoff value of seed (SNP) pattern selection
+            seed_cut = float(a) # cutoff value of seed (SNP) pattern selection
 
         elif o == '-c':
             snp_coin = float(a)  # SNP coincide proportion when extending
         elif o == '-u':
             score_cut = float(a) # phase 0 and 1 cutoff value of scoring
     # Run the program
+    usage.check(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)
     main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)

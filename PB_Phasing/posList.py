@@ -3,9 +3,8 @@
 '''
 Position class: 
     __init__(): 
-        __container: a ref to a instance of the Positional list   _      _      _      _ 
-                                                               <-|_|-><-|_|-><-|_|-><-|_|->   
-        __node: a ref to a intance of __Node class    _    
+        __container: a ref to a instance of the Positional list 
+        __node: a ref to a intance of __Node class    p    
                                                    <-|_|->  
     __eq__() __ne__()                      
     element()

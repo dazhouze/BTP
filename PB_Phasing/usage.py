@@ -25,6 +25,15 @@ Usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s st
 \t-u Phase 0 and 1 > score cutoff. 0.0--1.0(score_cut = 0.55)
     '''
     print(info)
+def check(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut):
+    import sys
+    if reg_e - reg_s <= 2000:
+        Usage()
+        sys.exit()
+    elif min_heter > max_heter > 1:
+        Usage()
+        sys.exit()
+    return 0
 
 if __name__ == '__main__':
     Usage()
