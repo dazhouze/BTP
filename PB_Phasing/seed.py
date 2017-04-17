@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Zhou Ze'
-__version__ = '0.0.1'
+__version__ = '0.2.0'
 
 ''' Consider that the heter snp may can not be link together.
 I have to use seed and extension strategy to illustrate the heter-information.
@@ -49,21 +49,45 @@ def Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, result_0, result_1, log)
     tr_s = template_read.getStart() # template_read start
     tr_e = template_read.getEnd() # template_read end
     tr_snp = template_read.getSnp() # template_read heter-snp-marker dict
-    seed_s = tr_s
-    seed_e = tr_e
-    for c in range(50,105,5):
-        c = float(c)/100
-        for x in range(tr_s, tr_e+1):
-            if x in heter_snp and snp_cover[x] < c*max_v: # snp_cover: heter-snp-marker coverage max_v: max-coverage heter-snp-marker covreage(dep)
-                '''heter-snp-marker coverage less than 60% max-coverage heter-snp-marker.'''
-                if x < max_k: # max_k: position of max-coverage heter-snp-marker
-                    '''shrink left side of max-coverage heter-snp-marker.'''
-                    seed_s = x+1
-                else:
-                    '''shrink right side of max-coverage heter-snp-marker.'''
-                    seed_e = x-1
-        #print('%d\t%d\t%.2f\t%d\t%d' % (reg_s, reg_e, c, seed_e-seed_s, tr_e-tr_s))
+    seed_s = tr_s # seed start position
+    seed_e = tr_e # seed end position
+    for x in range(tr_s, tr_e+1):
+        if x in heter_snp and snp_cover[x] < 0.55*max_v: # snp_cover: heter-snp-marker coverage max_v: max-coverage heter-snp-marker covreage(dep)
+            '''heter-snp-marker coverage less than 60% max-coverage heter-snp-marker.'''
+            if x < max_k: # max_k: position of max-coverage heter-snp-marker
+                '''shrink left side of max-coverage heter-snp-marker.'''
+                seed_s = x+1
+            else:
+                '''shrink right side of max-coverage heter-snp-marker.'''
+                seed_e = x-1
+    # set seed region heter-snp-marker
+    seed_snp = {} # seed region heter_snp
+    for x in range(seed_s, seed_e+1):
+        if x in heter_snp:
+            seed_snp.setdefault(x, heter_snp[x])
+    print(tr_s, seed_s,seed_e, tr_e)
 
+    # determine the heter-snp-marker of seed
+    seed_pat = [] # seed pattern
+    for x in read_queue: # x is Read object
+        start = x.getStart()
+        end = x.getEnd()
+        read_snp = x.getSnp() # read heter-snp-marker dict
+        if start<=(seed_s+seed_e)/2<=end or seed_s <=(start+end)/2<=seed_e : # read overlap with seed
+            test = read_snp
+            pat = []
+            for k in sorted(seed_snp): #
+                if start <= k <= end: # in read region
+                    alt = read_snp.get(k, 'R') # set snp is ref-allele first
+                    if alt == seed_snp[k][0]: # snp allele is the maximum allele property base
+                        pat.append(0)
+                    elif alt == seed_snp[k][1]: # snp allele is the sec-max allele property base
+                        pat.append(1)
+                    else: # other allele or deletion variants
+                        pat.append(2)
+                else: # out of read region
+                    pat.append(3)
+            print(pat, test==read_snp)
     return result_0, result_1
         #result_0.setInfo("seed_0", seed_s, seed_e, , seed_snp_0)
         #result_1.setInfo("seed_1", seed_s, seed_e, , seed_snp_1)

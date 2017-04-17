@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 __author__ = 'Zhou Ze'
-__version__ = '0.0.1'
+__version__ = '0.2.0'
+
 '''
 Python version phasing program.
 More rebost.
 '''
+
 # 1.Detect all SNP in all read 
 # 2.Identify heterozygous SNP marker, seq error and homo SNP 
 # 3.Detect ref-allele SNP in all read 
@@ -111,6 +114,7 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
     heter_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) 
+    print(heter_snp)
     # seq_depth mem realse
 
     ##### Set seed #####

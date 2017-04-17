@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Zhou Ze'
-__version__ = '0.0.1'
+__version__ = '0.2.0'
 
 
 class Base(object):
@@ -35,13 +35,14 @@ class Base(object):
         return (self.__a + self.__c + self.__g + self.__t)
 
     def max2(self, dep):
-        '''Return a tuple of the 2 maxium base(A C G T Ref) of position.'''
+        '''Return a tuple of the 2 maximum base(A C G T Ref) of position.'''
         ref = dep -(self.__a + self.__c + self.__g + self.__t) # reference allele frequence
         bases = [self.__a, self.__c, self.__g, self.__t, ref] # base list
         first = bases.index(max(bases)) # largest item index
         bases[first] = -1 # "remove" the largest item
         second = bases.index(max(bases)) # get the second largest item
-        return (first, second)
+        base_c = ['A','C','G','T','R'] # base code
+        return (base_c[first], base_c[second])
 
 def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log):
     '''Retrun a dict of heter SNP marker positions.
@@ -103,7 +104,7 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
                 elif v == 2: # only within region heter snp
                     he += 1
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
-                    result.setdefault(k, max2_bases) # return the tuple of 2 maxium base 0:A 1:C 2:G 3:T 4:Ref
+                    result.setdefault(k, max2_bases) # return the tuple of 2 maximum base 0:A 1:C 2:G 3:T 4:Ref
                     log_f.write('heter\t%d\t%s\t%s\n' % (k, max2_bases[0], max2_bases[1]))
                 elif v == 3: # homo snp
                     ho += 1
