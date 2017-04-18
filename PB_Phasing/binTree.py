@@ -120,8 +120,7 @@ class LinkedBinaryTree(object):
         return count
 
     def add_root(self, e):
-        '''
-        Place element e at the root of an empty tree and return noe Position.
+        '''Place element e at the root of an empty tree and return noe Position.
         Raise ValueError if tree nonempty
         '''
         if self.__root is not None:
@@ -131,8 +130,7 @@ class LinkedBinaryTree(object):
         return self.__make_position(self.__root)
 
     def add_left(self, p, e):
-        '''
-        Creat a new left child for Position p, storing element e.
+        '''Creat a new left child for Position p, storing element e.
         Return the Position of new node.
         Raise ValueError if Position p is invalid or p already has a left child.
         '''
@@ -144,8 +142,7 @@ class LinkedBinaryTree(object):
         return self.__make_position(node.getLeft())
 
     def add_right(self, p, e):
-        '''
-        Creat a new right child for Position p, storing element e.
+        '''Creat a new right child for Position p, storing element e.
         Return the Position of new node.
         Raise ValueError if Position p is invalid or p already has a right child.
         '''
@@ -163,9 +160,8 @@ class LinkedBinaryTree(object):
         node.setElement(e)
         return old
 
-    def delet(self, p):
-        '''
-        Delete the node at Position p, and replace it with its child, if any.
+    def delete(self, p):
+        '''Delete the node at Position p, and replace it with its child, if any.
         Return the element that had been storedat Postion p.
         Raise ValueError if Position p is invalid or p has two children.
         '''
@@ -186,6 +182,60 @@ class LinkedBinaryTree(object):
         self.__size -= 1
         node.setParent(node)
         return node.getElement()
+
+    def __iter__(self):
+        '''Generate an iteration of tree's elements.'''
+        for p in self.inorder():
+            yield p.getElement()
+
+    def inorder(self):
+        '''Generate a preorder iteration of positions in the tree.'''
+        if not self.is_empty():
+            for p in self.__subtree_inorder(self.root()):
+                yield p
+
+    def __subtree_preorder(self,p):
+        '''Generate a preorder iteration of positions in subtree rooted at p.'''
+        yield p
+        for c in self.children(p):
+            for other in self.__sutree_preorder(c):
+                yield other
+
+    def __subtree_postorder(self, p):
+        '''Generate a postorder iteration of positions in subtree rooted at P.'''
+        for c in self.children(p):
+            for other in self.__subtree_postorder(c):
+                yield other
+        yield p
+
+    def __subtree_inorder(self, p):
+        '''Generate a preorder iteration of positions in subtree rooted at p.(only for binary tree.'''
+        if self.left(p) is not None:
+            for other in self.__subtree_inorder(self.left(p)):
+                yield other
+        yield p
+        if self.right(p) is not None:
+            for other in self.__subtree_inorder(self.right(p)):
+                yield other
+
+    def inorder_indent(self, p, d):
+        '''Print inorder representation of subtree of T rooted at p at depth d.'''
+        if not self.is_empty():
+            for other in self.__subtree_inorder(p):
+                dep = self.depth(other) + d
+                print(2*dep*' ', '--', other.getElement())
+
+    def delete_subtree(self, p):
+        '''Delete the node at Position p, and its child, if any.
+        Only work in post order.
+        '''
+        if not self.is_empty():
+            for other in self.__subtree_postorder(p):
+                node = other.getNode()
+                node.setElement(None)
+                node.setLeft(None)
+                node.setRight(None)
+                node.setParent(None)
 
     def attach(self, p, t1, t2):
         '''Attach tree t1 an t2 as left and right subtrees of external p.'''
@@ -220,12 +270,10 @@ class LinkedBinaryTree(object):
 
     def depth(self, p):
         '''Return the number of levels separation Position p from the root.'''
-        if p is None:
-            p = self.root()
-        if self.is_leaf(p):
+        if self.is_root(p):
             return 0
-        return 1 + max(self.heigt(c) for c in self.children(p))
-
+        else:
+            return 1 + self.depth(self.parent(p))
 
     def sibling(self, p):
         '''Retrun a Position representing p's sibling (or None if no sibling).'''
@@ -245,21 +293,44 @@ class LinkedBinaryTree(object):
         if self.right(p) is not None:
             yield self.right(p)
 
-    def height(self, p=None):
-        '''
-        Return the height of the subtree rooted at Position p.
+    def __height(self, p=None):
+        '''Return the height of the subtree rooted at Position p.
         If p is None return the height of entire tree.
         '''
         if p is None:
             p = self.root()
         if self.is_leaf(p):
             return 0
-        return 1 + max(self. height2(c) for c in self.children(p))
+        return 1 + max(self. height(c) for c in self.children(p))
 
 if __name__ == '__main__':
+    import cpuCheck, os
+    pid = os.getpid()
+    print('origin:', cpuCheck.mem(pid))
+    '''
+    Test for binary tree init and print out
+    '''
     lbt = LinkedBinaryTree()
-    pr = lbt.add_root('/')
-    lbt.add_left(pr,'Document')
-    lbt.add_right(pr,'Desktop')
-    for x in lbt.children(pr):
-        print(x.getElement())
+    p0 = lbt.add_root('/')
+    p00 = lbt.add_left(p0,'Document')
+    p000 = lbt.add_left(p00,'PDFs')
+    p001 = lbt.add_right(p00,'PNGs')
+    p01 = lbt.add_right(p0,'Desktop')
+    p010 = lbt.add_left(p01,'Wallpapers')
+    p011 = lbt.add_right(p01,'Folds')
+    for x in lbt:
+        print(x)
+    lbt.inorder_indent(lbt.root(), 0)
+    '''
+    Test for memory realse
+    '''
+    lbt = LinkedBinaryTree()
+    p = lbt.add_root('/')
+    for x in range(0,100):
+        p = lbt.add_left(p, [0]*1000)
+    p = lbt.root()
+    for x in range(0,100):
+        p = lbt.add_right(p, [1]*1000)
+    print('init tree:', cpuCheck.mem(pid))
+    lbt.delete_subtree(lbt.root())
+    print('delete tree:', cpuCheck.mem(pid))

@@ -22,7 +22,8 @@ def info(pid):
 
 def mem(pid):
     ''' Return memory in kb. '''
-    return 'PID:%s\tMemory:%d kb' %(pid, int(info(pid)['rss'])/1000)
+    m = int(info(pid)['rss'])
+    return 'PID:%s\tMemory:%d(%d kb)' % (pid, m, m/1000)
 
 '''
 (0, 'USER')
@@ -41,4 +42,13 @@ def mem(pid):
 if __name__ == '__main__':
     import os
     pid = os.getpid()
-    print(mem(pid))
+    print('Initial:',mem(pid))
+    a = [0]*100000
+    print('100k item list:',mem(pid))
+    a = None
+    print('a=None',mem(pid))
+    a = [0]*100000
+    print('100k item list:',mem(pid))
+    del a
+    print('del a',mem(pid))
+

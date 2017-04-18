@@ -113,13 +113,14 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     assert read_queue.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) 
+    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) 
     print(heter_snp)
+    print(homo_snp)
     # seq_depth mem realse
 
+    return 0
     ##### Set seed #####
     seed_0, seed_1 = seed.Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, Read(), Read(), log) # artifical seed read for 2 haplotigs
-    return 0
     return 0
 
 if __name__ == '__main__':
