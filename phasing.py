@@ -7,18 +7,8 @@ __version__ = '0.2.0'
 '''
 Python version phasing program.
 More rebost.
+Binary tree.
 '''
-
-# 1.Detect all SNP in all read 
-# 2.Identify heterozygous SNP marker, seq error and homo SNP 
-# 3.Detect ref-allele SNP in all read 
-# 4.Set seed 
-# 5.Initialize phase_0 SNP 
-# 6.Grow SNP tree (phase 0 SNP markers) 
-# 7.Filter phase_0 heter SNP markers 
-# 8.Scoring all reads 
-# 9.Determine 2 haplotype 
-# 10.Veen check 
 
 ##### Data structure #####
 class Read(object):
@@ -55,9 +45,9 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     reg_e: region end coordinate
     '''
     import os, pysam
-    from PB_Phasing import posList, heterSnp, seed
+    from PB_Phasing import posList, binTree, heterSnp, seed
 
-    # init output directory #
+    ##### init output directory #####
     output_dir = os.path.abspath(output)
     if not os.path.exists(output):
         os.makedirs(output_dir)
@@ -79,12 +69,10 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     p = read_queue.add_first(Read('Begin', 0, 0, 0, None)) # initialize the first item in read_queue list and store the position in varible p
 
     # Identify SAM/BAM file to open different pysam IO handle. #
-    if os.path.splitext(input)[1] == '.sam': # SAM file
-        bamfile = pysam.AlignmentFile(input, "r")
-    elif os.path.splitext(input)[1] == '.bam': # BAM file
+    if os.path.splitext(input)[1] == '.bam': # BAM file
         bamfile = pysam.AlignmentFile(input, "rb") # file handle of BAM file
     else:
-        raise IOError('Please choose a SAM/BAM file!')
+        raise IOError('Please choose a BAM file.(sorted by position)')
     target = bamfile.fetch(chrom, reg_s, reg_e) # iterable method of target region read
 
     ##### Detect all SNP in all read #####
@@ -113,17 +101,78 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     assert read_queue.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) 
+    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
+    seq_depth = None # seq_depth mem release
+    del seq_depth
     print(heter_snp)
-    print(homo_snp)
-    # seq_depth mem realse
+    #print(homo_snp)
+    print(len(read_queue))
+
+    ##### Build binary tree. #####
+    tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
+    p0 = tree.add_root('root')
+    tree.setdefault(1,1)
+    pos_level = {} # tree level dict: k is sorted heter_snp position, v is level in tree
+    level_pos = {} # k, v reverse of pos level
+    i = 0 # index of tree level
+    for k in sorted(heter_snp):
+        i += 1
+        pos_level.setdefault(k, i)
+        level_pos.setdefault(i, k)
+    i = None # mem release
+    del i # mem release
+    #print(pos_level)
+    #print(level_pos)
+
+    # determine heter-snp-marker pattern of each read
+    for x in read_queue: # x is Read object
+        start = x.getStart()
+        end = x.getEnd()
+        read_snp = x.getSnp() # read heter-snp-marker dict
+        ave_sq = x.getAveSq()
+        #prun_d = binTree.second_large(pos_level, start) # pruning level
+        #tree.pruning(tree.root(), prun_d)
+        #print(prun_d,len(tree))
+        pat = [3] # heter snp pattern
+        for k in sorted(heter_snp): #
+            alt = read_snp.get(k, 'R') # set snp is ref-allele first
+            if start<= k <= end:
+                if alt == heter_snp[k][0]: # snp allele is the maximum allele property base
+                    pat.append(0)
+                elif alt == heter_snp[k][1]: # snp allele is the sec-max allele property base
+                    pat.append(1)
+                else: # other allele or deletion variants
+                    pat.append(2)
+            else: # out of read region
+                pat.append(3)
+        print(pat)
+        # determine the Position of each heter-snp-marker
+        p0 = tree.root() # level 0
+        # first heter-snp-marker # level 1
+        for x in range(1, len(pat)): # exculde the first heter-snp level (index 1) and root level (index 0)
+            tree.setdefault(x, 0)
+            if pat[x-1]==0 or pat[x-1]==1: # parent's left  node add one
+                if pat[x]==0:
+                    tree.add_value_left(x-1, ave_sq, pat[x-1]) # find depth-1 level 0 = height 1
+                    tree.add_value_right(x-1, ave_sq, 1) # cross over
+                elif pat[x]==1:
+                    tree.add_value_right(x-1, ave_sq, pat[x-1])
+                    tree.add_value_left(x-1, ave_sq, 0) # cross over
+
+    tree.pruning(tree.root(), len(heter_snp)+2)
+    tree.preorder_indent(tree.root())
+    phase_0, phase_1 = tree.linkage_result()
+    print('phase 0 snp:', phase_0)
+    print('phase 1 snp:', phase_1)
 
     return 0
+    ##### Reads clustering. #####
     ##### Set seed #####
     seed_0, seed_1 = seed.Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, Read(), Read(), log) # artifical seed read for 2 haplotigs
     return 0
 
 if __name__ == '__main__':
+    ''' Run the program. '''
     import getopt, sys
     from PB_Phasing import usage
     try:
@@ -132,7 +181,8 @@ if __name__ == '__main__':
         usage.Usage()
         print(err)  # will print something like "option -a not recognized"
         sys.exit(2)
-    # default value
+
+    # set default value
     output = 'test' # output dirctory
     input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     temp_delete = False # if delete the temp direcory
@@ -145,36 +195,46 @@ if __name__ == '__main__':
     seed_cut = 0.30 # cutoff value of seed (SNP) pattern selection
     snp_coin = 0.90  # SNP coincide proportion when extending
     score_cut = 0.55 # phase 0 and 1 cutoff value of scoring
+
+    # set command line opts value, if any
     for o, a in opts:
         if o == '-h':
             usage.Usage()
             sys.exit()
+
         elif o == '-b':
             input = a
+
         elif o == '-o':
             output = a
 
         elif o == '-m':
             chrom = a # chromosome
+
         elif o == '-s':
             reg_s = int(a) # start coordinate of the region
+
         elif o == '-e':
             reg_e = int(a) # end coordinate of the region
 
         elif o == '-p':
             max_heter = float(a) # upper heter snp cutoff, alt fre/seq depth
+
         elif o == '-d':
             min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
 
         elif o == '-w':
             seed_win = int(a) # window size of seed region selection
+
         elif o == '-v':
             seed_cut = float(a) # cutoff value of seed (SNP) pattern selection
 
         elif o == '-c':
             snp_coin = float(a)  # SNP coincide proportion when extending
+
         elif o == '-u':
             score_cut = float(a) # phase 0 and 1 cutoff value of scoring
+
     # Run the program
     usage.check(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)
     main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)

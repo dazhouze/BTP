@@ -81,7 +81,7 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
         c_ap = snp_sum[x].getC()/seq_depth[x-reg_s] # Base C allele property
         g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property
         t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property
-        #print('%.2f' % max([a_ap, c_ap, g_ap, t_ap])) # for all SNPs' allele property
+        #print('%.2f' % max(a_ap, c_ap, g_ap, t_ap)) # for all SNPs' allele property
         if seq_depth[x-reg_s] <= 8:
             heter_snp[x] = 0 # discard
             next
@@ -109,7 +109,7 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
                     dis += 1
                 elif v == 1: # sequecing error snp
                     se += 1
-                elif v == 2: # only within region heter snp
+                elif v == 2: # heter snp
                     he += 1
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
                     result_heter.setdefault(k, max2_bases) # return the tuple of 2 maximum allele 0:A 1:C 2:G 3:T 4:Ref
