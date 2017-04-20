@@ -184,7 +184,7 @@ if __name__ == '__main__':
     import getopt, sys
     from PB_Phasing import usage
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "htb:o:c:u:w:p:d:v:s:e:m:")
+        opts, args = getopt.getopt(sys.argv[1:], "hb:o:u:p:d:s:e:m:")
     except getopt.GetoptError as err:
         usage.Usage()
         print(err)  # will print something like "option -a not recognized"
@@ -193,7 +193,6 @@ if __name__ == '__main__':
     # set default value
     output = 'test' # output dirctory
     input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
-    temp_delete = False # if delete the temp direcory
     chrom = 'chr6' # chromosome name
     reg_s = 28476797 # start coordinate of the region
     reg_e = 33449354 # end coordinate of the region
@@ -231,18 +230,9 @@ if __name__ == '__main__':
         elif o == '-d':
             min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
 
-        elif o == '-w':
-            seed_win = int(a) # window size of seed region selection
-
-        elif o == '-v':
-            seed_cut = float(a) # cutoff value of seed (SNP) pattern selection
-
-        elif o == '-c':
-            snp_coin = float(a)  # SNP coincide proportion when extending
-
         elif o == '-u':
             score_cut = float(a) # phase 0 and 1 cutoff value of scoring
 
     # Run the program
-    usage.check(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)
+    usage.check(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut)
     main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)
