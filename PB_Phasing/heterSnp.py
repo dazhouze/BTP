@@ -51,7 +51,7 @@ class Base(object):
         base_c = ['A','C','G','T','R'] # base code
         return (base_c[first], base_c[second])
 
-def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log):
+def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, log):
     '''Retrun a dict of heter SNP marker positions.
     read_queue is the SNP positional list
     heter_snp is the candidate heter SNP position.
@@ -71,6 +71,8 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
                 snp_sum[snp_pos].addG()
             elif snp_alt == 'T':
                 snp_sum[snp_pos].addT()
+            elif snp_alt is None:
+                pass # Deletion
             else:
                 raise ValueError('Base %s is not in ACGT.' % snp_alt)
 
@@ -100,8 +102,8 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
     ho, he, se, dis = 0, 0, 0, 0 # homo snp number, heter snp marker number, sequencing error snp number, discard snp number
     with open(log, 'a') as log_f:
         log_f.write('\n***\nHeterzygous SNP Markers and Homozygous SNPs :\n')
-        log_f.write('Chromosome is same as target chromosome.\nBase Code: 0=A 1=C 2=G 3=t 4=Ref.\n')
-        log_f.write('Tpye\tPosition\tSNP_1\tSNP_2\n')
+        log_f.write('Base Code: 0=A 1=C 2=G 3=t 4=Ref.\n')
+        log_f.write('Tpye\tChromosome\tPosition\tSNP_1\tSNP_2\n')
         for k in sorted(heter_snp): # k is position and v is type 1:seq error 2:heter 3:homo
             if reg_s<= k <= reg_e: # only within region
                 v = heter_snp[k]
@@ -113,10 +115,10 @@ def HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_hete
                     he += 1
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
                     result_heter.setdefault(k, max2_bases) # return the tuple of 2 maximum allele 0:A 1:C 2:G 3:T 4:Ref
-                    log_f.write('heter\t%d\t%s\t%s\n' % (k, max2_bases[0], max2_bases[1]))
+                    log_f.write('heter\t%s\t%d\t%s\t%s\n' % (chrom, k, max2_bases[0], max2_bases[1]))
                 elif v == 3: # homo snp
                     ho += 1
                     result_homo.setdefault(k, 1) # return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
-                    log_f.write('homo\t%d\n' % k)
+                    log_f.write('homo\t%s\t%d\n' % (chrom, k))
         log_f.write('***\nHomo SNP: %d\nHeter SNP: %d\nSeq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n' % (ho,he,se,dis))
     return result_heter, result_homo # only return the heter snp marker and homo snp pos, seq error cost too much memory

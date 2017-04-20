@@ -352,7 +352,7 @@ class LinkedBinaryTree(object):
         if not self.is_empty():
             for other in self.__subtree_preorder(p):
                 dep = self.depth(other)
-                if 1 <= dep <= d: # only consider node with depth less than d
+                if 1 <= dep < d: # only consider node with depth less than d
                     left_c  = self.left(other)  # left child position
                     right_c = self.right(other) # right child position
                     if left_c is not None and right_c is not None:
@@ -364,11 +364,9 @@ class LinkedBinaryTree(object):
                             elif left_v < right_v: # right child element value is larger, delete left child tree
                                   self.delete_subtree(left_c)
                             elif left_v==0 and right_v==0: 
-                                print('depth', dep)
-                                print('Should be break point.')
+                                print('depth', dep, 'Should be break point.')
                             else:
                                 print('Wrong')
-                    print('num child', self.num_children(other))
 
     def is_left(self, p):
         '''Return True if p is parent's left.'''
@@ -425,8 +423,6 @@ class LinkedBinaryTree(object):
             elif self.is_right(other):
                 v = 1
             sub_l.append(v)
-            #print(v,dep,end = ',')
-        #print('\n')
         for other in self.__subtree_preorder(self.right(self.root())):# sub right tree
             dep = self.depth(other)
             v = 3 # 0/1 value
@@ -435,7 +431,6 @@ class LinkedBinaryTree(object):
             elif self.is_right(other):
                 v = 1
             sub_r.append(v)
-            #print(v,dep,end = ',')
         return sub_l, sub_r
 
     def setdefault(self, d, v):
@@ -446,16 +441,6 @@ class LinkedBinaryTree(object):
             if self.depth(other) <= d-1 and self.num_children(other) == 0:
                 self.add_left(other, v)
                 self.add_right(other, v)
-
-def second_large(pos_level, read_s): # pruning level
-    '''Return the largest k's value of dict less than v:'''
-    prev_l = 1
-    for k in sorted(pos_level):
-        v = pos_level[k]
-        if k > read_s:
-            return prev_l
-        prev_l = v
-    return prev_l
 
 if __name__ == '__main__':
     import cpuCheck, os

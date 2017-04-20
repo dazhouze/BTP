@@ -37,7 +37,7 @@ class Read(object):
         self.__ave_sq = ave_sq
         self.__snp = snp
 
-def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut):
+def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
     '''
     input: SAM/BAM file path
     output: output directory path
@@ -45,7 +45,7 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
     reg_e: region end coordinate
     '''
     import os, pysam
-    from PB_Phasing import posList, binTree, heterSnp, seed
+    from PB_Phasing import posList, binTree, heterSnp, clusterSnp, evalRead
 
     ##### init output directory #####
     output_dir = os.path.abspath(output)
@@ -53,8 +53,7 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
         os.makedirs(output_dir)
     log = os.path.join(output, 'log.txt') # path of log.txt
     with open(log, 'w') as log_f:
-        log_f.write('***\nTarget:\n%s:%d-%d\n' % (chrom, reg_s, reg_e))
-        log_f.write('input:%s\noutput:%s\nchr:%s, start:%d, end:%d\nseed_win:%d, seed_cut:%.2f\nmax_heter:%.2f, min_heter:%.2f\nsnp_coin:%.2f, score_cut:%.2f\n' % (input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut))
+        log_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nmax_heter:%.2f, min_heter:%.2f\nscore_cut:%.2f\n' % (input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut))
 
     # init varibls for Phasing #
     heter_snp = {} 
@@ -82,101 +81,62 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
         end   = read.reference_end
         ave_sq = sum(read.query_qualities) / float(len(read.query_qualities)) #average sequencing quality
         snp = {} # dict
+        ''' 
+        read_pos, ref_pos, ref_seq = x[0:3]
+        Soft clipping: (0, None, None)
+        Deletion: (None, 29052325, 'A')
+        Insertion: (88, None, None)
+        Match(SNP): (116, 29052381, 'a') (117, 29052382, 'C')
+        '''
         for x in read.get_reference_positions(): # add 1 to seq_depth array
             if reg_s <= x <= reg_e: # only consider pos within target region
                 seq_depth[x-reg_s] += 1
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True): # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]
-            if ref_seq is not None and reg_s<=ref_pos<=reg_e and ref_seq.islower(): # indels' ref_seq is None. lower case means subsititution
-                snp_pos = ref_pos
-                snp_alt = read.query_sequence[read_pos]
-                if snp_alt is  None:
-                    raise ValueError(' alt is None') 
-                snp_qual = read.query_qualities[read_pos]
-                snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add value to key
-                heter_snp.setdefault(snp_pos, 0) # add None type to heter_snp dict
+            if ref_seq is not None and reg_s<=ref_pos<=reg_e: # Match(SNP and non SNP) and Deletions
+                if read_pos is None: # Deletion variant
+                    snp_pos = ref_pos
+                    snp_alt = None
+                    snp_qual = 0
+                    snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add deletion to read's snp dict
+                if ref_seq.islower(): # lower case means subsititution(SNP)
+                    snp_pos = ref_pos
+                    snp_alt = read.query_sequence[read_pos]
+                    if snp_alt is  None:
+                        raise ValueError(' alt is None') 
+                    snp_qual = read.query_qualities[read_pos]
+                    snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add value to key
+                    heter_snp.setdefault(snp_pos, 0) # add None type to heter_snp dict
         p = read_queue.add_after(p, Read(qname, start, end, ave_sq, snp)) # add SNPs of read to positional list
     bamfile.close() # file handle closed
     read_queue.delete(read_queue.first()) # move first "begin" item, by test: 
     assert read_queue.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
+    del target, read ,qname, start, end, snp, ave_sq, snp_pos, snp_alt, snp_qual
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
+    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
     seq_depth = None # seq_depth mem release
     del seq_depth
-    print(heter_snp)
-    #print(homo_snp)
-    print(len(read_queue))
 
-    ##### Build binary tree. #####
+    ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
     p0 = tree.add_root('root')
     tree.setdefault(1,1)
-    pos_level = {} # tree level dict: k is sorted heter_snp position, v is level in tree
-    level_pos = {} # k, v reverse of pos level
-    i = 0 # index of tree level
-    for k in sorted(heter_snp):
-        i += 1
-        pos_level.setdefault(k, i)
-        level_pos.setdefault(i, k)
-    i = None # mem release
-    del i # mem release
-    #print(pos_level)
-    #print(level_pos)
+    phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, heter_snp, chrom, log)
 
-    # determine heter-snp-marker pattern of each read
-    for x in read_queue: # x is Read object
-        start = x.getStart()
-        end = x.getEnd()
-        read_snp = x.getSnp() # read heter-snp-marker dict
-        ave_sq = x.getAveSq()
-        #prun_d = binTree.second_large(pos_level, start) # pruning level
-        #tree.pruning(tree.root(), prun_d)
-        #print(prun_d,len(tree))
-        pat = [3] # heter snp pattern
-        for k in sorted(heter_snp): #
-            alt = read_snp.get(k, 'R') # set snp is ref-allele first
-            if start<= k <= end:
-                if alt == heter_snp[k][0]: # snp allele is the maximum allele property base
-                    pat.append(0)
-                elif alt == heter_snp[k][1]: # snp allele is the sec-max allele property base
-                    pat.append(1)
-                else: # other allele or deletion variants
-                    pat.append(2)
-            else: # out of read region
-                pat.append(3)
-        print(pat)
-        # determine the Position of each heter-snp-marker
-        p0 = tree.root() # level 0
-        # first heter-snp-marker # level 1
-        for x in range(1, len(pat)): # exculde the first heter-snp level (index 1) and root level (index 0)
-            tree.setdefault(x, 0)
-            if pat[x-1]==0 or pat[x-1]==1: # parent's left  node add one
-                if pat[x]==0:
-                    tree.add_value_left(x-1, 1, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
-                    # cross over
-                    if pat[x-1] == 0:
-                        tree.add_value_right(x-1, 1, 1) # cross over
-                    else:
-                        tree.add_value_right(x-1, 1, 0) # cross over
-                elif pat[x]==1:
-                    tree.add_value_right(x-1, 1, pat[x-1])
-                    # cross over
-                    if pat[x-1] == 0:
-                        tree.add_value_left(x-1, 1, 1) # cross over
-                    else:
-                        tree.add_value_left(x-1, 1, 0) # cross over
+    ##### Reads phasing. #####
+    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, homo_snp, log)
 
-    tree.pruning(tree.root(), len(heter_snp)+2)
-    tree.preorder_indent(tree.root())
-    phase_0, phase_1 = tree.linkage_result()
-    print('phase 0 snp:', phase_0)
-    print('phase 1 snp:', phase_1)
+    ##### Reads' Qname print out. #####
+    out = os.path.join(output, 'phase_0.txt') # path of log.txt
+    with open(out, 'w') as out_f:
+        for x in phase_0_q:
+            out_f.write('%s\n' % x)
+    out = os.path.join(output, 'phase_1.txt') # path of log.txt
+    with open(out, 'w') as out_f:
+        for x in phase_1_q:
+            out_f.write('%s\n' % x)
 
-    return 0
-    ##### Reads clustering. #####
-    ##### Set seed #####
-    seed_0, seed_1 = seed.Seed(read_queue, heter_snp, reg_s, reg_e, seed_win, Read(), Read(), log) # artifical seed read for 2 haplotigs
     return 0
 
 if __name__ == '__main__':
@@ -198,9 +158,6 @@ if __name__ == '__main__':
     reg_e = 33449354 # end coordinate of the region
     max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
     min_heter = 0.25 # #lower heter snp cutoff, alt fre/seq depth
-    seed_win = 300 # window size of seed region selection
-    seed_cut = 0.30 # cutoff value of seed (SNP) pattern selection
-    snp_coin = 0.90  # SNP coincide proportion when extending
     score_cut = 0.55 # phase 0 and 1 cutoff value of scoring
 
     # set command line opts value, if any
@@ -235,4 +192,4 @@ if __name__ == '__main__':
 
     # Run the program
     usage.check(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut)
-    main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min_heter, snp_coin, score_cut)
+    main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut)
