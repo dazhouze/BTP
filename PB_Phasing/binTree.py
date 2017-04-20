@@ -424,9 +424,9 @@ class LinkedBinaryTree(object):
                 v = 0
             elif self.is_right(other):
                 v = 1
-            #sub_l.append(v)
-            print(v,dep,end = ',')
-        print('\n')
+            sub_l.append(v)
+            #print(v,dep,end = ',')
+        #print('\n')
         for other in self.__subtree_preorder(self.right(self.root())):# sub right tree
             dep = self.depth(other)
             v = 3 # 0/1 value
@@ -435,9 +435,8 @@ class LinkedBinaryTree(object):
             elif self.is_right(other):
                 v = 1
             sub_r.append(v)
-            print(v,dep,end = ',')
-        return 0,0
-        #return sub_l, sub_r
+            #print(v,dep,end = ',')
+        return sub_l, sub_r
 
     def setdefault(self, d, v):
         '''Init 2 child of depth d and set default v.

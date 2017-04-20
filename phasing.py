@@ -153,11 +153,19 @@ def main(input, output, chrom, reg_s, reg_e, seed_win, seed_cut,  max_heter, min
             tree.setdefault(x, 0)
             if pat[x-1]==0 or pat[x-1]==1: # parent's left  node add one
                 if pat[x]==0:
-                    tree.add_value_left(x-1, ave_sq, pat[x-1]) # find depth-1 level 0 = height 1
-                    tree.add_value_right(x-1, ave_sq, 1) # cross over
+                    tree.add_value_left(x-1, 1, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
+                    # cross over
+                    if pat[x-1] == 0:
+                        tree.add_value_right(x-1, 1, 1) # cross over
+                    else:
+                        tree.add_value_right(x-1, 1, 0) # cross over
                 elif pat[x]==1:
-                    tree.add_value_right(x-1, ave_sq, pat[x-1])
-                    tree.add_value_left(x-1, ave_sq, 0) # cross over
+                    tree.add_value_right(x-1, 1, pat[x-1])
+                    # cross over
+                    if pat[x-1] == 0:
+                        tree.add_value_left(x-1, 1, 1) # cross over
+                    else:
+                        tree.add_value_left(x-1, 1, 0) # cross over
 
     tree.pruning(tree.root(), len(heter_snp)+2)
     tree.preorder_indent(tree.root())
