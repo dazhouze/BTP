@@ -57,7 +57,7 @@ class PositionalList(object):
         def getNode(self):
             return self.__node
 
-        def element(self):
+        def getElement(self):
             '''Return the element stored at this Position.'''
             return self.getNode().getElement()
 
@@ -155,7 +155,7 @@ class PositionalList(object):
         '''Generatea forward iteration of the elements of the list.'''
         cursor = self.first()
         while cursor is not None:
-            yield cursor.element()
+            yield cursor.getElement()
             cursor = self.after(cursor)
 
     ##### mutators #####
@@ -228,3 +228,7 @@ if __name__ == '__main__':
     for x in PL:
         print(x, end = ' ')
     print('')
+    p =PL.first()
+    while p:
+        print(p.getElement())
+        p = PL.after(p)

@@ -121,8 +121,9 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
-    p0 = tree.add_root('root')
+    t0 = tree.add_root(binTree.Marker(0, 'root'))
     tree.setdefault(1,1)
+    tree.inorder_indent(t0)
     phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, heter_snp, chrom, log)
 
     ##### Reads phasing. #####

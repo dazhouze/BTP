@@ -27,7 +27,30 @@ LinkedBinaryTree():
     __make_position(node): __Node to Position
     left(p), right(p), parent(p): Position to Position
 '''
+class Marker(object):
+    '''To store in element of node. 
+    Reduce the compute complex
+    '''
+    __slots__ = '__depth', '__value', '__dir'
+    def __init__(self, depth=0, value=0, dir=0):
+        self.__depth = depth
+        self.__value = value
+        self.__dir = dir # 0 is left, 1 is right
 
+    def getDepth(self):
+        return self.__depth
+
+    def getValue(self):
+        return self.__value
+
+    def getDir(self):
+        return self.__dir
+
+    def setValue(self, v):
+        self.__value = v
+
+    def setDepth(self, d):
+        self.__depth = d
 class LinkedBinaryTree(object):
     '''Linked representeation of a binary tree structure.'''
     class __Node(object):
@@ -309,16 +332,25 @@ class LinkedBinaryTree(object):
                 yield other
 
     def inorder_indent(self, p, d=0):
-        '''Print inorder representation of subtree of T rooted at p at start with 2d*blank.'''
+        '''Print inorder representation of subtree of T rooted at p at start with 2d*blank.
+        Develper's tools
+        '''
         if not self.is_empty():
             for other in self.__subtree_inorder(p):
-                dep = self.depth(other) + d
-                print(2*dep*' ', '--', other.getElement())
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                val = node.getElement().getValue() # direction of node 
+                print(2*dep*' '+ str(dir) + ' ' + str(val) )
 
     def preorder_indent(self, p, d=0):
-        print(2*d*' ' + str(p.getElement()))
+        node = self.__validate(p)
+        dep = d + node.getElement().getDepth()  # depth of node
+        dir = node.getElement().getDir() # direction of node 
+        val = node.getElement().getValue() # direction of node 
+        print(2*dep*' '+ str(dir) + ' -> ' + str(val) )
         for c in self.children(p):
-            self.preorder_indent(c, d+1)
+            self.preorder_indent(c, d)
 
     def delete_subtree(self, p):
         '''Delete the node at Position p, and its child, if any.
@@ -351,13 +383,14 @@ class LinkedBinaryTree(object):
         '''
         if not self.is_empty():
             for other in self.__subtree_preorder(p):
-                dep = self.depth(other)
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # left child element value
                 if 1 <= dep < d: # only consider node with depth less than d
                     left_c  = self.left(other)  # left child position
                     right_c = self.right(other) # right child position
                     if left_c is not None and right_c is not None:
-                        left_v  = self.__validate(left_c).getElement()  # left child element value
-                        right_v  = self.__validate(right_c).getElement()  # right child element value
+                        left_v  = self.__validate(left_c).getElement().getValue()  # left child element value
+                        right_v  = self.__validate(right_c).getElement().getValue()  # right child element value
                         if left_v is not None and right_v is not None:
                             if left_v > right_v: # left child element value is larger, delete right child tree
                                   self.delete_subtree(right_c)
@@ -368,47 +401,45 @@ class LinkedBinaryTree(object):
                             else:
                                 print('Wrong')
 
-    def is_left(self, p):
-        '''Return True if p is parent's left.'''
-        node = self.__validate(p)
-        parent = self.__make_position(node.getParent()) # parent Position
-        return self.left(parent) == p
-
-    def is_right(self, p):
-        '''Return True if p is parent's right.'''
-        node = self.__validate(p)
-        parent = self.__make_position(node.getParent()) # parent Position
-        return self.right(parent) == p
-
-    def add_value_left(self, d, v, dir):
+    def add_value_left(self, d, v, direct):
         '''Add value=v to all node element in depth=d.
            dir == 1 is right
            dir = 0 is left 
         '''
         if not self.is_empty():
             for other in self.__subtree_preorder(self.root()):
-                if self.depth(other) == d: # find depth x-1 (parent)
-                    if (dir==0 and self.is_left(other)) or (dir==1 and self.is_right(other)): # make sure parent's  is same as dir
-                        left_c = self.left(other)
-                        if left_c is not None:
-                            node = self.__validate(left_c)
-                            node.setElement(node.getElement() + v)
-        return 0
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                if dep == d and dir == direct: # make sure parent's  is same as dir
+                    left_c = self.left(other)
+                    if left_c is not None:
+                        node = self.__validate(left_c)
+                        mar = node.getElement()
+                        prev_v = mar.getValue()
+                        mar.setValue(prev_v + v)
+                        node.setElement(mar)
+                        assert prev_v != node.getElement().getValue(), 'Value add error'
  
-    def add_value_right(self, d, v, dir):
+    def add_value_right(self, d, v, direct):
         '''Add value=v to all node element in depth=d.
            dir == 1 is right
            dir = 0 is left 
         '''
         if not self.is_empty():
             for other in self.__subtree_postorder(self.root()):
-                if self.depth(other) == d:
-                    if (dir==0 and self.is_left(other)) or (dir==1 and self.is_right(other)):
-                        right_c = self.right(other) # left child position
-                        if right_c is not None:
-                            node = self.__validate(right_c)
-                            node.setElement(node.getElement() + v)
-        return 0
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                if dep == d and dir == direct: # make sure parent's  is same as dir
+                    right_c = self.right(other) # left child position
+                    if right_c is not None:
+                        node = self.__validate(right_c)
+                        mar = node.getElement()
+                        prev_v = mar.getValue()
+                        mar.setValue(prev_v + v)
+                        node.setElement(mar)
+                        assert prev_v != node.getElement().getValue(), 'Value add error'
 
     def linkage_result(self):
         '''Get conclusion of heter-snp-marker linkage infomation.'''
@@ -416,21 +447,15 @@ class LinkedBinaryTree(object):
         sub_l = []*h #left
         sub_r = []*h #right
         for other in self.__subtree_preorder(self.left(self.root())):# sub left tree
-            dep = self.depth(other)
-            v = 3 # 0/1 value
-            if self.is_left(other):
-                v = 0
-            elif self.is_right(other):
-                v = 1
-            sub_l.append(v)
+            node = self.__validate(other)
+            dep = node.getElement().getDepth()  # depth of node
+            dir = node.getElement().getDir() # direction of node 
+            sub_l.append(dir)
         for other in self.__subtree_preorder(self.right(self.root())):# sub right tree
-            dep = self.depth(other)
-            v = 3 # 0/1 value
-            if self.is_left(other):
-                v = 0
-            elif self.is_right(other):
-                v = 1
-            sub_r.append(v)
+            node = self.__validate(other)
+            dep = node.getElement().getDepth()  # depth of node
+            dir = node.getElement().getDir() # direction of node 
+            sub_r.append(dir)
         return sub_l, sub_r
 
     def setdefault(self, d, v):
@@ -438,9 +463,14 @@ class LinkedBinaryTree(object):
         Traverse tree through postorder.
         '''
         for other in self.__subtree_preorder(self.root()):
-            if self.depth(other) <= d-1 and self.num_children(other) == 0:
-                self.add_left(other, v)
-                self.add_right(other, v)
+            #dep = self.__validate(other).getElement().getDepth()  # depth of node
+            dep = self.depth(other)
+            if dep < d-1 and self.num_children(other) == 0:
+                self.add_left(other,  Marker(dep+1, 0, 0))
+                self.add_right(other, Marker(dep+1, 0, 1))
+            elif dep == d-1 and self.num_children(other) == 0:
+                self.add_left(other,  Marker(dep+1, v, 0))
+                self.add_right(other, Marker(dep+1, v, 1))
 
 if __name__ == '__main__':
     import cpuCheck, os

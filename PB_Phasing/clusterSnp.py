@@ -5,6 +5,7 @@ __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
 def Clustering(tree, read_queue, heter_snp, chrom,log):
+    import time
     pos_level = {} # tree level dict: k is sorted heter_snp position, v is level in tree
     level_pos = {} # k, v reverse of pos level
     i = 0 # index of tree level
@@ -16,7 +17,9 @@ def Clustering(tree, read_queue, heter_snp, chrom,log):
     del i # mem release
 
     # determine heter-snp-marker pattern of each read
-    for x in read_queue: # x is Read object
+    cursor = read_queue.first() # read queue Position
+    while cursor != None:
+        x = cursor.getElement()
         start, end = x.getStart(), x.getEnd()
         read_snp = x.getSnp() # read heter-snp-marker dict
         ave_sq = x.getAveSq()
@@ -32,14 +35,16 @@ def Clustering(tree, read_queue, heter_snp, chrom,log):
                     pat.append(2)
             else: # out of read region
                 pat.append(3)
+
         prun_d = min(rightMost(pat, 3), second_large(pos_level, start))# pruning level (find right most index 3 in the left of list pat
         tree.pruning(tree.root(), prun_d) # every read try to pruing front never covered tree
-        print(pat, prun_d)
+        print(pat, prun_d, len(tree))
         # determine the Position of each heter-snp-marker
-        p0 = tree.root() # level 0
         # first heter-snp-marker # level 1
         for x in range(1, len(pat)): # exculde the first heter-snp level (index 1) and root level (index 0)
-            tree.setdefault(x, 0)
+            ######### local tree
+            tree.setdefault(x, 0) # value must be 0
+            #########
             if pat[x-1]==0 or pat[x-1]==1: # parent's left  node add one
                 if pat[x]==0:
                     tree.add_value_left(x-1, 1, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
@@ -55,6 +60,7 @@ def Clustering(tree, read_queue, heter_snp, chrom,log):
                         tree.add_value_left(x-1, 1, 1) # cross over
                     else:
                         tree.add_value_left(x-1, 1, 0) # cross over
+        cursor = read_queue.after(cursor) # read queue Position
 
     tree.pruning(tree.root(), len(heter_snp)+1) # final pruning
     tree.preorder_indent(tree.root())

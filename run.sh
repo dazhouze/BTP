@@ -8,6 +8,7 @@ rm -rf $dir
 # 7 k
 python phasing.py -s 29053005 -e 29060759 -o $dir
 
+cat $dir/log.txt
 exit 1
 python fetch.py $dir/phase_0.txt $dir/phase_1.txt
 # BWA Alignment Command
