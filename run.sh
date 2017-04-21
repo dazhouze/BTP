@@ -1,13 +1,15 @@
 #!/bin/bash
-# A gene
-#python phasing.py -s 29910247   -e 29913661
 # low long region 91k
 #python phasing.py -s 28497412   -e 28588898
-# 7 k
 dir=./test
-#python phasing.py -s 29053005 -e 29060759 -o $dir
-python fetch.py $dir/phase_0.txt $dir/phase_1.txt
+rm -rf $dir
+# A gene
+#python phasing.py -s 29910247   -e 29913661 -o $dir
+# 7 k
+python phasing.py -s 29053005 -e 29060759 -o $dir
 
+exit 1
+python fetch.py $dir/phase_0.txt $dir/phase_1.txt
 # BWA Alignment Command
 align="bwa mem -x pacbio"
 

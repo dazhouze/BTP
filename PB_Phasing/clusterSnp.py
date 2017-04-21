@@ -20,8 +20,6 @@ def Clustering(tree, read_queue, heter_snp, chrom,log):
         start, end = x.getStart(), x.getEnd()
         read_snp = x.getSnp() # read heter-snp-marker dict
         ave_sq = x.getAveSq()
-        prun_d = second_large(pos_level, start) # pruning level
-        tree.pruning(tree.root(), prun_d) # every read try to pruing front never covered tree
         pat = [3] # heter snp pattern
         for k in sorted(heter_snp): #
             snp_alt = read_snp.get(k, 'R') # set snp is ref-allele first
@@ -34,7 +32,9 @@ def Clustering(tree, read_queue, heter_snp, chrom,log):
                     pat.append(2)
             else: # out of read region
                 pat.append(3)
-        #print(pat)
+        prun_d = min(rightMost(pat, 3), second_large(pos_level, start))# pruning level (find right most index 3 in the left of list pat
+        tree.pruning(tree.root(), prun_d) # every read try to pruing front never covered tree
+        print(pat, prun_d)
         # determine the Position of each heter-snp-marker
         p0 = tree.root() # level 0
         # first heter-snp-marker # level 1
@@ -71,6 +71,16 @@ def Clustering(tree, read_queue, heter_snp, chrom,log):
             pos = level_pos[x+1]
             log_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
     return phase_0, phase_1, pos_level
+
+def rightMost(l, i): # pruning level
+    '''Return the index of last i in left of list l'''
+    prev_ind = 0
+    for k in range(0, len(l)):
+        v = l[k]
+        if v != i:
+            return prev_ind
+        prev_ind = k
+    return prev_ind
 
 def second_large(pos_level, read_s): # pruning level
     '''Return the largest k's value of dict less than v:'''

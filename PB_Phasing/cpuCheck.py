@@ -5,7 +5,7 @@ __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
 '''
-Check cpu and memory information.
+Check cpu and Memory information.
 '''
 
 def info(pid):
@@ -16,14 +16,21 @@ def info(pid):
     for line in lines:
         words = re.split('\s+', line)
         if words[1]==str(pid):
-            return {'user':words[0],'pid':words[1],'cpu':words[2],'mem':words[3],'vsa':words[4],'rss':words[5],'start_time':words[9]}
+            return {'user':words[0],'pid':words[1],'cpu':words[2],'Mem':words[3],'vsa':words[4],'rss':words[5],'start_time':words[9]}
 
     return -1
 
-def mem(pid):
-    ''' Return memory in kb. '''
-    m = int(info(pid)['rss'])
-    return 'PID:%s\tMemory:%d(%d kb)' % (pid, m, m/1000)
+def Mem(pid):
+    ''' Return Memory in kb. '''
+    m = float(info(pid)['rss'])
+    if m < 10*1000: # 0-10k
+        return 'PID:%s\tMemory:%.2f' % (pid, m)
+    elif m < 10*1000000: # 11k - 10Mb (kb)
+        return 'PID:%s\tMemory:%.2f kb' % (pid, m/1000)
+    elif m< 1*1000000000: # 10Mb - 10Gb(Mb)
+        return 'PID:%s\tMemory:%.2f Mb' % (pid, m/1000000)
+    else: # >1G
+        return 'PID:%s\tMemory:%.2f Gb' % (pid, m/1000000000)
 
 '''
 (0, 'USER')
@@ -42,13 +49,13 @@ def mem(pid):
 if __name__ == '__main__':
     import os
     pid = os.getpid()
-    print('Initial:',mem(pid))
+    print('Initial:',Mem(pid))
     a = [0]*100000
-    print('100k item list:',mem(pid))
+    print('100k item list:',Mem(pid))
     a = None
-    print('a=None',mem(pid))
+    print('a=None',Mem(pid))
     a = [0]*100000
-    print('100k item list:',mem(pid))
+    print('100k item list:',Mem(pid))
     del a
-    print('del a',mem(pid))
+    print('del a',Mem(pid))
 
