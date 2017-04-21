@@ -4,12 +4,13 @@
 dir=./test
 rm -rf $dir
 # A gene
-#python phasing.py -s 29910247   -e 29913661 -o $dir
+python phasing.py -s 29910247   -e 29913661 -o $dir
 # 7 k
-python phasing.py -s 29053005 -e 29060759 -o $dir
+#python phasing.py -s 29053005 -e 29060759 -o $dir
 
 cat $dir/log.txt
 exit 1
+
 python fetch.py $dir/phase_0.txt $dir/phase_1.txt
 # BWA Alignment Command
 align="bwa mem -x pacbio"

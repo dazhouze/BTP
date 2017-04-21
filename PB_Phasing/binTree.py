@@ -397,7 +397,8 @@ class LinkedBinaryTree(object):
                             elif left_v < right_v: # right child element value is larger, delete left child tree
                                   self.delete_subtree(left_c)
                             elif left_v==0 and right_v==0: 
-                                print('depth', dep, 'Should be break point.')
+                                self.preorder_indent(self.root())
+                                raise ValuError('depth', dep, 'Should be break point.')
                             else:
                                 print('Wrong')
 
