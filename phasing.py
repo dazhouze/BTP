@@ -19,6 +19,7 @@ class Read(object):
         self.__end   = end # end coordinate in reference genome
         self.__ave_sq  = ave_sq # average value of sequencing qulity
         self.__snp  = snp # dict of snp. key is position, vaule is [snp_alt, snp_qual]
+
     def getQname(self):
         return self.__qname
     def getStart(self):

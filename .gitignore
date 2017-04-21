@@ -5,6 +5,8 @@
 
 # Database
 *.db
+*.fq
+*.fa
 
 # Text File
 *.txt
