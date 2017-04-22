@@ -228,7 +228,21 @@ if __name__ == '__main__':
     for x in PL:
         print(x, end = ' ')
     print('')
-    p =PL.first()
+    p = PL.first()
     while p:
-        print(p.getElement())
+        print(p.getElement(), end = '')
         p = PL.after(p)
+    print('')
+    n = PL.delete(p1)
+    p = PL.first()
+    while p:
+        print(p.getElement(), end = '')
+        p = PL.after(p)
+
+    TA = PositionalList()
+    p = TA.add_first(' ')
+    for x in 'HEHE':
+        p = TA.add_after(p, x)
+    PL.link(PL.last(), TA.first())
+    for x in PL:
+        print(x)

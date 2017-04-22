@@ -38,14 +38,14 @@ class Read(object):
         self.__ave_sq = ave_sq
         self.__snp = snp
 
-def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
+def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     '''
     input: SAM/BAM file path
     output: output directory path
     reg_s: region start coordinate
     reg_e: region end coordinate
     '''
-    import os, pysam
+    import os, copy, pysam
     from PB_Phasing import posList, binTree, heterSnp, clusterSnp, evalRead
 
     ##### init output directory #####
@@ -54,7 +54,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
         os.makedirs(output_dir)
     log = os.path.join(output, 'log.txt') # path of log.txt
     with open(log, 'w') as log_f:
-        log_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nmax_heter:%.2f, min_heter:%.2f\nscore_cut:%.2f\n' % (input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut))
+        log_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nmax_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s, reg_e, max_heter, min_heter))
 
     # init varibls for Phasing #
     heter_snp = {} 
@@ -95,17 +95,16 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True): # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]
             if ref_seq is not None and reg_s<=ref_pos<=reg_e: # Match(SNP and non SNP) and Deletions
+                snp_pos = ref_pos
                 if read_pos is None: # Deletion variant
-                    snp_pos = ref_pos
                     snp_alt = None
-                    snp_qual = 0
+                    snp_qual = ave_sq # 
+                    assert snp_qual != 0, 'qual is 0' 
                     snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add deletion to read's snp dict
                 if ref_seq.islower(): # lower case means subsititution(SNP)
-                    snp_pos = ref_pos
                     snp_alt = read.query_sequence[read_pos]
-                    if snp_alt is  None:
-                        raise ValueError(' alt is None') 
                     snp_qual = read.query_qualities[read_pos]
+                    assert snp_alt != None, 'alt is None' 
                     snp.setdefault(snp_pos, [snp_alt, snp_qual]) # add value to key
                     heter_snp.setdefault(snp_pos, 0) # add None type to heter_snp dict
         p = read_queue.add_after(p, Read(qname, start, end, ave_sq, snp)) # add SNPs of read to positional list
@@ -121,10 +120,12 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
-    t0 = tree.add_root(binTree.Marker(0, 'root'))
+    tree.add_root(binTree.Marker(0, 'root'))
     tree.setdefault(1,1)
-    tree.inorder_indent(t0)
-    phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, heter_snp, chrom, log)
+    bak_queue = posList.PositionalList() # a back up positional list
+    phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, log)
+    bak_queue = None
+    del bak_queue
 
     ##### Reads phasing. #####
     phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, homo_snp, log)
@@ -146,7 +147,7 @@ if __name__ == '__main__':
     import getopt, sys
     from PB_Phasing import usage
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hb:o:u:p:d:s:e:m:")
+        opts, args = getopt.getopt(sys.argv[1:], "hb:o:p:d:s:e:m:")
     except getopt.GetoptError as err:
         usage.Usage()
         print(err)  # will print something like "option -a not recognized"
@@ -160,7 +161,6 @@ if __name__ == '__main__':
     reg_e = 33449354 # end coordinate of the region
     max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
     min_heter = 0.25 # #lower heter snp cutoff, alt fre/seq depth
-    score_cut = 0.55 # phase 0 and 1 cutoff value of scoring
 
     # set command line opts value, if any
     for o, a in opts:
@@ -189,9 +189,6 @@ if __name__ == '__main__':
         elif o == '-d':
             min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
 
-        elif o == '-u':
-            score_cut = float(a) # phase 0 and 1 cutoff value of scoring
-
     # Run the program
-    usage.check(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut)
-    main(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut)
+    usage.Check(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
+    main(input, output, chrom, reg_s, reg_e, max_heter, min_heter)

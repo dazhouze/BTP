@@ -19,18 +19,20 @@ Usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s st
 \t-e End coordinate of the region.
 \t-p Upper heter-SNP proportion cutoff, alt fre/seq depth.(default = 0.75)
 \t-d Lowwer heter-SNP proportion cutoff, alt fre/seq depth.(default = 0.25)
-\t-u Phase 0 and 1 > score cutoff. 0.0--1.0(score_cut = 0.55)
     '''
     print(info)
-def check(input, output, chrom, reg_s, reg_e, max_heter, min_heter, score_cut):
+
+def Check(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     import sys
-    if reg_e - reg_s <= 2000:
+    if reg_e <= reg_s:
+        print('\n*** Error -e value should > -s value')
         Usage()
         sys.exit()
-    elif min_heter > max_heter > 1:
+    elif min_heter > max_heter or max_heter > 1:
+        print('\n*** Error: -p value should > -d value')
         Usage()
         sys.exit()
     return 0
 
 if __name__ == '__main__':
-    Usage()
+    Check('in', 'out', 'chr6', 100, 1000, 0.5,  0.6)

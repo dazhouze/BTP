@@ -51,6 +51,7 @@ class Marker(object):
 
     def setDepth(self, d):
         self.__depth = d
+
 class LinkedBinaryTree(object):
     '''Linked representeation of a binary tree structure.'''
     class __Node(object):
@@ -389,8 +390,8 @@ class LinkedBinaryTree(object):
                     left_c  = self.left(other)  # left child position
                     right_c = self.right(other) # right child position
                     if left_c is not None and right_c is not None:
-                        left_v  = self.__validate(left_c).getElement().getValue()  # left child element value
-                        right_v  = self.__validate(right_c).getElement().getValue()  # right child element value
+                        left_v = self.__validate(left_c).getElement().getValue()  # left child element value
+                        right_v = self.__validate(right_c).getElement().getValue()  # right child element value
                         if left_v is not None and right_v is not None:
                             if left_v > right_v: # left child element value is larger, delete right child tree
                                   self.delete_subtree(right_c)
@@ -419,6 +420,7 @@ class LinkedBinaryTree(object):
                         mar = node.getElement()
                         prev_v = mar.getValue()
                         mar.setValue(prev_v + v)
+                        #mar.setNum(mar.getNum() + 1)
                         node.setElement(mar)
                         assert prev_v != node.getElement().getValue(), 'Value add error'
  
@@ -439,6 +441,7 @@ class LinkedBinaryTree(object):
                         mar = node.getElement()
                         prev_v = mar.getValue()
                         mar.setValue(prev_v + v)
+                        #mar.setNum(mar.getNum() + 1)
                         node.setElement(mar)
                         assert prev_v != node.getElement().getValue(), 'Value add error'
 
