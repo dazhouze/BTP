@@ -61,6 +61,6 @@ def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, homo_snp, log
                 phase_0_q.append(qname)
             if 1*cons_1_n > cons_0_n :
                 phase_1_q.append(qname)
-            #out.write('%d %d %d\n' % (cons_0_n, cons_1_n, conf_n))
-            out.write('%d %d\n' % (int(100*cons_0_v), int(cons_1_v)))
+            out.write('%d %d %d\n' % (cons_0_n, cons_1_n, conf_n))
+            #out.write('%d %d\n' % (int(100*cons_0_v), int(cons_1_v)))
     return phase_0_q, phase_1_q
