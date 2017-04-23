@@ -8,7 +8,7 @@ __version__ = '0.2.0'
 Clustering heterozygous SNP marker by optimised binary tree algorithm.
 '''
 
-def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, log):
+def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
     pos_level = {} # start from 1. tree level dict: k is sorted heter_snp position, v is level in tree
     level_pos = {} # start from 1. k, v reverse of pos_level
     i = 0 # index of tree level
@@ -48,25 +48,31 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, log):
             for x in range(level_s, level_e+1): # exculde root level (index 0)
                 if (pat[x-1]==0 or pat[x-1]==1) and (pat[x]==0 or pat[x]==1): # parent's left  node add one
                     '''
-                    pos =  level_pos[x] # heter-snp position
+                    pos1 =  level_pos[x] # heter-snp position
+                    pos0 =  level_pos[x-1] # heter-snp position
                     snp_alt, snp_qual = read_snp.get(k, ['R', ave_sq]) # 
                     v = snp_qual # 1/snp_qual : without/with weight
                     '''
+                    pos = level_pos[x] - reg_s
                     v = 1 # 1/snp_qual : without/with weight
                     if pat[x]==0:
                         tree.add_value_left(x-1, v, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
+                        '''
                         # cross over
                         if pat[x-1] == 0:
                             tree.add_value_right(x-1, v, 1) # cross over
                         else:
                             tree.add_value_right(x-1, v, 0) # cross over
+                        '''
                     elif pat[x]==1:
                         tree.add_value_right(x-1, v, pat[x-1])
+                        '''
                         # cross over
                         if pat[x-1] == 0:
                             tree.add_value_left(x-1, v, 1) # cross over
                         else:
                             tree.add_value_left(x-1, v, 0) # cross over
+                        '''
             cursor = read_queue.after(cursor) # cursor point to next node
 
         cursor = read_queue.first()
@@ -74,6 +80,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, log):
 
     #tree.preorder_indent(tree.root())
     phase_0, phase_1 = tree.linkage_result()
+    print(phase_0, phase_1)
 
     # move bak_queue to read_queue
     cursor = bak_queue.first()
@@ -94,6 +101,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, log):
         for x in range(0, len(phase_0)):
             pos = level_pos[x+1]
             log_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
+    print(phase_0, phase_1)
     return phase_0, phase_1, pos_level
 
 def rightMost(l, i): # pruning level

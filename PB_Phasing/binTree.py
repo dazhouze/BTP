@@ -31,10 +31,11 @@ class Marker(object):
     '''To store in element of node. 
     Reduce the compute complex
     '''
-    __slots__ = '__depth', '__value', '__dir'
-    def __init__(self, depth=0, value=0, dir=0):
+    __slots__ = '__depth', '__value', '__dir', '__cross'
+    def __init__(self, depth=0, value=0, dir=0, cross=0):
         self.__depth = depth
         self.__value = value
+        self.__cross = cross # cross over value
         self.__dir = dir # 0 is left, 1 is right
 
     def getDepth(self):
@@ -46,11 +47,17 @@ class Marker(object):
     def getDir(self):
         return self.__dir
 
+    def getCross(self):
+        return self.__cross
+
     def setValue(self, v):
         self.__value = v
 
     def setDepth(self, d):
         self.__depth = d
+
+    def setCross(self, c):
+        self.__cross = c
 
 class LinkedBinaryTree(object):
     '''Linked representeation of a binary tree structure.'''
@@ -392,6 +399,8 @@ class LinkedBinaryTree(object):
                     if left_c is not None and right_c is not None:
                         left_v = self.__validate(left_c).getElement().getValue()  # left child element value
                         right_v = self.__validate(right_c).getElement().getValue()  # right child element value
+                        left_v += self.__validate(left_c).getElement().getCross()
+                        right_v += self.__validate(right_c).getElement().getCross()
                         if left_v is not None and right_v is not None:
                             if left_v > right_v: # left child element value is larger, delete right child tree
                                   self.delete_subtree(right_c)
@@ -423,6 +432,24 @@ class LinkedBinaryTree(object):
                         #mar.setNum(mar.getNum() + 1)
                         node.setElement(mar)
                         assert prev_v != node.getElement().getValue(), 'Value add error'
+
+    def set_cross_left(self, d, c, direct):
+        '''set cross=c to all node element in depth=d.
+           dir == 1 is right
+           dir = 0 is left 
+        '''
+        if not self.is_empty():
+            for other in self.__subtree_preorder(self.root()):
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                if dep == d and dir == direct: # make sure parent's  is same as dir
+                    left_c = self.left(other)
+                    if left_c is not None:
+                        node = self.__validate(left_c)
+                        mar = node.getElement()
+                        mar.setCross(c)
+                        node.setElement(mar)
  
     def add_value_right(self, d, v, direct):
         '''Add value=v to all node element in depth=d.
@@ -444,6 +471,24 @@ class LinkedBinaryTree(object):
                         #mar.setNum(mar.getNum() + 1)
                         node.setElement(mar)
                         assert prev_v != node.getElement().getValue(), 'Value add error'
+
+    def set_cross_right(self, d, c, direct):
+        '''set cross=c to all node element in depth=d.
+           dir == 1 is right
+           dir = 0 is left 
+        '''
+        if not self.is_empty():
+            for other in self.__subtree_preorder(self.root()):
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                if dep == d and dir == direct: # make sure parent's  is same as dir
+                    right_c = self.right(other)
+                    if right_c is not None:
+                        node = self.__validate(right_c)
+                        mar = node.getElement()
+                        mar.setCross(c)
+                        node.setElement(mar)
 
     def linkage_result(self):
         '''Get conclusion of heter-snp-marker linkage infomation.'''

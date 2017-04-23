@@ -82,6 +82,10 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
         end   = read.reference_end
         ave_sq = sum(read.query_qualities) / float(len(read.query_qualities)) #average sequencing quality
         snp = {} # dict
+        # count sequencing depth of each position
+        for x in read.get_reference_positions(): # add 1 to seq_depth array
+            if reg_s <= x <= reg_e: # only consider pos within target region
+                seq_depth[x-reg_s] += 1
         ''' 
         read_pos, ref_pos, ref_seq = x[0:3]
         Soft clipping: (0, None, None)
@@ -89,9 +93,6 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
         Insertion: (88, None, None)
         Match(SNP): (116, 29052381, 'a') (117, 29052382, 'C')
         '''
-        for x in read.get_reference_positions(): # add 1 to seq_depth array
-            if reg_s <= x <= reg_e: # only consider pos within target region
-                seq_depth[x-reg_s] += 1
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True): # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]
             if ref_seq is not None and reg_s<=ref_pos<=reg_e: # Match(SNP and non SNP) and Deletions
@@ -123,7 +124,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     tree.add_root(binTree.Marker(0, 'root'))
     tree.setdefault(1,1)
     bak_queue = posList.PositionalList() # a back up positional list
-    phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, log)
+    phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log)
     bak_queue = None
     del bak_queue
 
