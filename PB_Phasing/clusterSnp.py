@@ -57,18 +57,22 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
                     v = 1 # 1/snp_qual : without/with weight
                     if pat[x]==0:
                         tree.add_value_left(x-1, v, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
+                        '''
                         # cross over
                         if pat[x-1] == 0:
                             tree.add_value_right(x-1, v, 1) # cross over
                         else:
                             tree.add_value_right(x-1, v, 0) # cross over
+                        '''
                     elif pat[x]==1:
                         tree.add_value_right(x-1, v, pat[x-1])
+                        '''
                         # cross over
                         if pat[x-1] == 0:
                             tree.add_value_left(x-1, v, 1) # cross over
                         else:
                             tree.add_value_left(x-1, v, 0) # cross over
+                        '''
             cursor = read_queue.after(cursor) # cursor point to next node
 
         cursor = read_queue.first()
