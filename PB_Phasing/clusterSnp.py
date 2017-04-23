@@ -48,31 +48,25 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
             for x in range(level_s, level_e+1): # exculde root level (index 0)
                 if (pat[x-1]==0 or pat[x-1]==1) and (pat[x]==0 or pat[x]==1): # parent's left  node add one
                     '''
-                    pos1 =  level_pos[x] # heter-snp position
-                    pos0 =  level_pos[x-1] # heter-snp position
                     snp_alt, snp_qual = read_snp.get(k, ['R', ave_sq]) # 
                     v = snp_qual # 1/snp_qual : without/with weight
                     '''
-                    pos = level_pos[x] - reg_s
                     v = 1 # 1/snp_qual : without/with weight
+                    c = 0.05 # cross over
                     if pat[x]==0:
                         tree.add_value_left(x-1, v, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
-                        '''
                         # cross over
                         if pat[x-1] == 0:
-                            tree.add_value_right(x-1, v, 1) # cross over
+                            tree.add_value_right(x-1, c, 1) # cross over
                         else:
-                            tree.add_value_right(x-1, v, 0) # cross over
-                        '''
+                            tree.add_value_right(x-1, c, 0) # cross over
                     elif pat[x]==1:
                         tree.add_value_right(x-1, v, pat[x-1])
-                        '''
                         # cross over
                         if pat[x-1] == 0:
-                            tree.add_value_left(x-1, v, 1) # cross over
+                            tree.add_value_left(x-1, c, 1) # cross over
                         else:
-                            tree.add_value_left(x-1, v, 0) # cross over
-                        '''
+                            tree.add_value_left(x-1, c, 0) # cross over
             cursor = read_queue.after(cursor) # cursor point to next node
 
         cursor = read_queue.first()

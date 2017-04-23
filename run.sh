@@ -33,4 +33,4 @@ cp $dir/phase_0.best.sorted.bam ~/D*
 cp $dir/phase_1.best.sorted.bam ~/D*
 cp $dir/phase_0.best.sorted.bam.bai ~/D*
 cp $dir/phase_1.best.sorted.bam.bai ~/D*
-cp $dir/hit.txt ~/D*
+cp $dir/hit*.txt ~/D*
