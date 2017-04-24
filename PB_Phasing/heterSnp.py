@@ -58,7 +58,7 @@ class Base(object):
         base_c = ['A','C','G','T','R'] # base code
         return (base_c[first], base_c[second])
 
-def HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, max_heter, min_heter, log):
+def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, log):
     '''Retrun a dict of heter SNP marker positions.
     read_queue is the SNP positional list
     heter_snp is the candidate heter SNP position.
@@ -98,14 +98,13 @@ def HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, ma
         if max3 > 0:
             print('max3\t%d\t%d\t%d' % (max3,seq_depth[x-reg_s],snp_sum[x].getD()))
         print('%d\t%d' % (int(100*d_ap), int(100*d_ap_o)))
-        '''
-        max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
         next1_b, next2_b = None, None
         if x+1 <= reg_e:
             next1_b = seq_base[x-reg_s+1]
         if x+2 <= reg_e:
             next2_b = seq_base[x-reg_s+2]
-
+        '''
+        max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
         if seq_depth[x-reg_s] < 8:
             heter_snp[x] = 0 # discard
         elif ref_ap > max_heter: # Sequencing Error
@@ -114,15 +113,15 @@ def HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, ma
             heter_snp[x] = 3
         elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
             if 'R' not in max2_bases: # double heter snp
-                heter_snp[x] = 4 #alignment error
+                heter_snp[x] = 4 # alignment error
                 print('x-x snp', x)
             elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
-                heter_snp[x] = 4
+                heter_snp[x] = 4 # alignment error
                 print('Alignment error snp', x)
-            elif d_ap > 0.1: # deletion should less than 20% of physical coverage
-                heter_snp[x] = 5 # discard
-                print('Find a deletion align error', x)
                 '''
+                elif d_ap > 0.1: # deletion should less than 20% of physical coverage
+                    heter_snp[x] = 5 # discard
+                    print('Find a deletion align error', x)
                 elif next1_b != None and next1_b == next2_b and (next1_b==max2_bases[0] or next1_b==max2_bases[1]):
                     #repeat region alignment error.
                     heter_snp[x] = 6
