@@ -59,10 +59,11 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     # init varibls for Phasing #
     heter_snp = {} 
     ''' All possible position of SNPs.
-    key is pos, vuale is one of types: 1=seq error(<min_heter), 2=heter snp, 3=homo snp(>min_heter). 
+    key is pos, vuale is one of types: 1=seq error(<min_heter), 2=heter snp, 3=homo snp(>min_heter), 4=alignment error. 
     Init when traverse reads in BAM file and determine when traverse SNPs in positional list 
     '''
-    seq_depth = [0]*(reg_e-reg_s+1) # region sequencing depth accurate to base
+    seq_depth = [0]*(reg_e-reg_s+1) # selected region sequencing depth accurate to base
+    seq_base = [None]*(reg_e-reg_s+1) # selected region reference sequence
 
     # init a list for SNPs #
     read_queue = posList.PositionalList() # initialize a positional list
@@ -93,8 +94,15 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
         Insertion: (88, None, None)
         Match(SNP): (116, 29052381, 'a') (117, 29052382, 'C')
         '''
+        # read information entry
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True): # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]
+            if ref_pos is not None and reg_s<=ref_pos<=reg_e and ref_seq.isupper(): # add reference sequence to seq_base
+                ind = ref_pos - reg_s
+                if seq_base[ind] is None:
+                    seq_base[ind] = ref_seq
+                else:
+                    assert seq_base[ind] == ref_seq ,'Not same as prev base.'
             if ref_seq is not None and reg_s<=ref_pos<=reg_e: # Match(SNP and non SNP) and Deletions
                 snp_pos = ref_pos
                 if read_pos is None: # Deletion variant
@@ -114,22 +122,27 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     assert read_queue.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
     del target, read ,qname, start, end, snp, ave_sq, snp_pos, snp_alt, snp_qual
 
+    print(seq_base)
+    return 0
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
-    seq_depth = None # seq_depth mem release
+    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
+    seq_depth, ref_seq = None, None # mem release
     del seq_depth
+    del ref_seq
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
     tree.add_root(binTree.Marker(0, 'root'))
     tree.setdefault(1,1)
     bak_queue = posList.PositionalList() # a back up positional list
-    phase_0, phase_1, pos_level = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log)
-    bak_queue = None
+    phase_0, phase_1, pos_level, read_queue, heter_snp = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log)
+    bak_queue, subtree = None, None
     del bak_queue
+    del subtree
+    return 0
 
     ##### Reads phasing. #####
-    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, homo_snp, log)
+    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, output_dir)
 
     ##### Reads' Qname print out. #####
     out = os.path.join(output, 'phase_0.txt') # path of log.txt
