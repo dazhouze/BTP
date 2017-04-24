@@ -86,28 +86,49 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
     # determine the SNP types: 1=seq error, 2=heter SNP, 3=homo SNP, 0=unknown
     for x in heter_snp: # candidate heter snp positions
         ref_ap = 1 - snp_sum[x].count()/seq_depth[x-reg_s] # ref allele property
-        a_ap = snp_sum[x].getA()/seq_depth[x-reg_s] # Base A allele property
-        c_ap = snp_sum[x].getC()/seq_depth[x-reg_s] # Base C allele property
-        g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property
-        t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property
-        d_ap = snp_sum[x].getD()/seq_depth[x-reg_s] # Deletion allele property
-
-        #print('%.2f' % max(a_ap, c_ap, g_ap, t_ap)) # for all SNPs' allele property
+        a_ap = snp_sum[x].getA()/seq_depth[x-reg_s] # Base A allele property of alignment coverage
+        c_ap = snp_sum[x].getC()/seq_depth[x-reg_s] # Base C allele property of alignment coverage
+        g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property of alignment coverage
+        t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property of alignment coverage
+        #d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]+snp_sum[x].getD()) # Deletion allele property of physical coverage
+        d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]) # Deletion allele property of alignment coverage
+        '''
+        print('%.2f' % max(a_ap, c_ap, g_ap, t_ap)) # for all SNPs' allele property
+        max3 = third([snp_sum[x].getA(), snp_sum[x].getC(),snp_sum[x].getG(),snp_sum[x].getT(),snp_sum[x].getD()])
+        if max3 > 0:
+            print('max3\t%d\t%d\t%d' % (max3,seq_depth[x-reg_s],snp_sum[x].getD()))
+        print('%d\t%d' % (int(100*d_ap), int(100*d_ap_o)))
+        next1_b, next2_b = None, None
+        if x+1 <= reg_e:
+            next1_b = seq_base[x-reg_s+1]
+        if x+2 <= reg_e:
+            next2_b = seq_base[x-reg_s+2]
+        '''
+        max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
         if seq_depth[x-reg_s] < 8:
             heter_snp[x] = 0 # discard
-            next
-        elif third([a_ap, c_ap, g_ap, t_ap, ref_ap, d_ap]) > 0.1: # alignment error
-            heter_snp[x] = 4 # discard
-            next
-        elif ref_ap > max_heter: # seq error
+        elif ref_ap > max_heter: # Sequencing Error
             heter_snp[x] = 1
-            next
         elif max(a_ap, c_ap, g_ap, t_ap) > max_heter: # homo snp
             heter_snp[x] = 3
-            next
         elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
-            heter_snp[x] = 2
-            next
+            if 'R' not in max2_bases: # double heter snp
+                heter_snp[x] = 4 # alignment error
+                print('x-x snp', x)
+            elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
+                heter_snp[x] = 4 # alignment error
+                print('Alignment error snp', x)
+                '''
+                elif d_ap > 0.1: # deletion should less than 20% of physical coverage
+                    heter_snp[x] = 5 # discard
+                    print('Find a deletion align error', x)
+                elif next1_b != None and next1_b == next2_b and (next1_b==max2_bases[0] or next1_b==max2_bases[1]):
+                    #repeat region alignment error.
+                    heter_snp[x] = 6
+                    print('Find a repeat error', x)
+                '''
+            else:
+                heter_snp[x] = 2
 
     result_heter = {} # heter snp marker result dict
     result_homo  = {} # homo snp result dict
@@ -132,12 +153,12 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
                 elif v == 3: # homo snp
                     ho += 1
                     result_homo.setdefault(k, 1) # return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
-                    log_f.write('homo\t%s\t%d\n' % (chrom, k))
+                    #log_f.write('homo\t%s\t%d\n' % (chrom, k))
                 elif v == 4: # alignment error
                     ae += 1
-                    log_f.write('align_error\t%s\t%d\n' % (chrom, k))
+                    log_f.write('align\t%s\t%d\n' % (chrom, k))
                     
-        log_f.write('***\nHomo SNP: %d\nHeter SNP: %d\nSeq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\nAlignmene Error: %d\n' % (ho,he,se,dis,ae))
+        log_f.write('***\nPrimary SNP result\nHomo SNP: %d\nHeter SNP: %d\nSeq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\nAlignmene Error: %d\n' % (ho,he,se,dis,ae))
     return result_heter, result_homo # only return the heter snp marker and homo snp pos, seq error cost too much memory
 
 def third(vs):

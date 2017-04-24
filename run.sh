@@ -1,7 +1,6 @@
 #!/bin/bash
 dir=./test
-rm -f $dir/*
-
+rm -rf $dir/
 # low long region 91k
 #python phasing.py -s 28497412   -e 28588898
 # A gene
@@ -26,11 +25,22 @@ $trans $dir/phase_0.best.sam > $dir/phase_0.best.bam
 $trans $dir/phase_1.best.sam > $dir/phase_1.best.bam
 samtools sort -o $dir/phase_0.best.sorted.bam $dir/phase_0.best.bam
 samtools sort -o $dir/phase_1.best.sorted.bam $dir/phase_1.best.bam
+rm $dir/phase_*.sam
+rm $dir/*best.bam
 samtools index $dir/phase_0.best.sorted.bam
 samtools index $dir/phase_1.best.sorted.bam
 
-cp $dir/phase_0.best.sorted.bam ~/D*
-cp $dir/phase_1.best.sorted.bam ~/D*
-cp $dir/phase_0.best.sorted.bam.bai ~/D*
-cp $dir/phase_1.best.sorted.bam.bai ~/D*
-cp $dir/hit.txt ~/D*
+canu -pacbio-raw $dir/phase_0.fq -p A -d $dir/phase_0 genomeSize=8k useGrid=false
+canu -pacbio-raw $dir/phase_1.fq -p A -d $dir/phase_1 genomeSize=8k useGrid=false
+bwa mem $refe $dir/phase_0/A.contigs.fasta >  $dir/phase_0.contigs.sam
+bwa mem $refe $dir/phase_1/A.contigs.fasta >  $dir/phase_1.contigs.sam
+$trans $dir/phase_0.contigs.sam > $dir/phase_0.contigs.bam
+$trans $dir/phase_1.contigs.sam > $dir/phase_1.contigs.bam
+rm $dir/phase_0.contigs.sam
+rm $dir/phase_1.contigs.sam
+samtools index $dir/phase_0.contigs.bam
+samtools index $dir/phase_1.contigs.bam
+
+cp $dir/*.bam ~/D*
+cp $dir/*.bai ~/D*
+cp $dir/hit* ~/D*
