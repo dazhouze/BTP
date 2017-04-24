@@ -122,8 +122,6 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     assert read_queue.first().getNode().getElement().getQname() != 'Begin', 'Fisrt item is not removed.'
     del target, read ,qname, start, end, snp, ave_sq, snp_pos, snp_alt, snp_qual
 
-    print(seq_base)
-    return 0
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
     heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
     seq_depth, ref_seq = None, None # mem release

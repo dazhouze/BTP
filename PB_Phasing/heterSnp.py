@@ -90,7 +90,8 @@ def HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, ma
         c_ap = snp_sum[x].getC()/seq_depth[x-reg_s] # Base C allele property of alignment coverage
         g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property of alignment coverage
         t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property of alignment coverage
-        d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]+snp_sum[x].getD()) # Deletion allele property of physical coverage
+        #d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]+snp_sum[x].getD()) # Deletion allele property of physical coverage
+        d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]) # Deletion allele property of alignment coverage
         '''
         print('%.2f' % max(a_ap, c_ap, g_ap, t_ap)) # for all SNPs' allele property
         max3 = third([snp_sum[x].getA(), snp_sum[x].getC(),snp_sum[x].getG(),snp_sum[x].getT(),snp_sum[x].getD()])
@@ -100,27 +101,35 @@ def HeterSNP(read_queue, heter_snp, seq_depth, seq_base, chrom, reg_s, reg_e, ma
         '''
         max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
         next1_b, next2_b = None, None
-        if (x-reg_s+1) in seq_base:
+        if x+1 <= reg_e:
             next1_b = seq_base[x-reg_s+1]
-        if (x-reg_s+2) in seq_base:
+        if x+2 <= reg_e:
             next2_b = seq_base[x-reg_s+2]
 
         if seq_depth[x-reg_s] < 8:
             heter_snp[x] = 0 # discard
         elif ref_ap > max_heter: # Sequencing Error
             heter_snp[x] = 1
-        elif d_ap > 0.2: # deletion should less than 20% of physical coverage
-            heter_snp[x] = 1 # discard
-        elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
-            heter_snp[x] = 4
-        # repeat check
-        elif next1_b != None and next1b == next2_b and (next1b==max2_bases[0] or next1b==max2_bases[1]):
-            '''repeat region alignment error.'''
-            heter_snp[x] = 4
         elif max(a_ap, c_ap, g_ap, t_ap) > max_heter: # homo snp
             heter_snp[x] = 3
         elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
-            heter_snp[x] = 2
+            if 'R' not in max2_bases: # double heter snp
+                heter_snp[x] = 4 #alignment error
+                print('x-x snp', x)
+            elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
+                heter_snp[x] = 4
+                print('Alignment error snp', x)
+            elif d_ap > 0.1: # deletion should less than 20% of physical coverage
+                heter_snp[x] = 5 # discard
+                print('Find a deletion align error', x)
+                '''
+                elif next1_b != None and next1_b == next2_b and (next1_b==max2_bases[0] or next1_b==max2_bases[1]):
+                    #repeat region alignment error.
+                    heter_snp[x] = 6
+                    print('Find a repeat error', x)
+                '''
+            else:
+                heter_snp[x] = 2
 
     result_heter = {} # heter snp marker result dict
     result_homo  = {} # homo snp result dict

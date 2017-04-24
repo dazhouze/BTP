@@ -58,22 +58,22 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
             for d in range(level_s, level_e+1): # exculde root level (index 0)
                 x = d - level_s + 1 # index of pat array
                 if (pat[x-1]==0 or pat[x-1]==1) and (pat[x]==0 or pat[x]==1): # parent's left  node add one
-                    v = 100 # 1/snp_qual : without/with weight
+                    v = 1 # 1/snp_qual : without/with weight
                     c = 1 # cross over
                     if pat[x]==0:
                         tree.add_value_left(d-1, v, pat[x-1]) # find depth-1, add_value_left means add left to depth x-1 node
                         # cross over
                         if pat[x-1] == 0:
-                            tree.add_value_right(d-1, c, 1) # cross over
+                            tree.add_cross_right(d-1, c, 1) # cross over
                         else:
-                            tree.add_value_right(d-1, c, 0) # cross over
+                            tree.add_cross_right(d-1, c, 0) # cross over
                     elif pat[x]==1:
                         tree.add_value_right(d-1, v, pat[x-1])
                         # cross over
                         if pat[x-1] == 0:
-                            tree.add_value_left(d-1, c, 1) # cross over
+                            tree.add_cross_left(d-1, c, 1) # cross over
                         else:
-                            tree.add_value_left(d-1, c, 0) # cross over
+                            tree.add_cross_left(d-1, c, 0) # cross over
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         tree.pruning(tree.root(), level_e+1) # every walk pruing
@@ -162,7 +162,7 @@ def pattern(start, end, read_snp, heter_snp, ave_sq, level_s, level_e, level_pos
 def clean(level_clean, heter_snp, pos_level, level_pos):
     for x in level_clean: 
         pos = level_pos[x]
-        print(' -- homo/ambiguous-heter snp:', pos, x)
+        print('  - rm homo/ambiguous-heter snp:', pos, x)
         del heter_snp[pos]
     pos_level = None
     level_pos = None

@@ -412,6 +412,11 @@ class LinkedBinaryTree(object):
                             else:
                                 print('Wrong')
 
+    def significant(self, v1, v2):
+        '''Return if v1 v2 is significant'''
+        pass
+
+
     def add_value_left(self, d, v, direct):
         '''Add value=v to all node element in depth=d.
            dir == 1 is right
@@ -453,6 +458,42 @@ class LinkedBinaryTree(object):
                         #mar.setNum(mar.getNum() + 1)
                         node.setElement(mar)
                         assert prev_v != node.getElement().getValue(), 'Value add error'
+
+    def add_cross_left(self, d, c, direct):
+        '''Add cross=v to all node element in depth=d.
+        '''
+        if not self.is_empty():
+            for other in self.__subtree_preorder(self.root()):
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                if dep == d and dir == direct: # make sure parent's  is same as dir
+                    left_c = self.left(other)
+                    if left_c is not None:
+                        node = self.__validate(left_c)
+                        mar = node.getElement()
+                        prev_c = mar.getCross()
+                        mar.setCross(prev_c + c)
+                        node.setElement(mar)
+                        assert prev_c != node.getElement().getCross(), 'Value add error'
+
+    def add_cross_right(self, d, c, direct):
+        '''Add cross=v to all node element in depth=d.
+        '''
+        if not self.is_empty():
+            for other in self.__subtree_preorder(self.root()):
+                node = self.__validate(other)
+                dep = node.getElement().getDepth()  # depth of node
+                dir = node.getElement().getDir() # direction of node 
+                if dep == d and dir == direct: # make sure parent's  is same as dir
+                    right_c = self.right(other)
+                    if right_c is not None:
+                        node = self.__validate(right_c)
+                        mar = node.getElement()
+                        prev_c = mar.getCross()
+                        mar.setCross(prev_c + c)
+                        node.setElement(mar)
+                        assert prev_c != node.getElement().getCross(), 'Value add error'
 
     def linkage_result(self):
         '''Get conclusion of heter-snp-marker linkage infomation.'''
