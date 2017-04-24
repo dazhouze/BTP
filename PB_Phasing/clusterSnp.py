@@ -34,7 +34,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
         # level_s go back if last round not long enough
         if level_e == len(heter_snp):
             level_s = level_e - walk_len + 1
-        print(' - Level:%d-%d Read:%d Marker:%d' % (level_s, level_e, len(read_queue), len(level_pos)))
+        #print(' - Level:%d-%d Read:%d Marker:%d' % (level_s, level_e, len(read_queue), len(level_pos)))
 
         tree.setdefault(level_e, 0) # value must be 0
         # determine heter-snp-marker pattern of each read
@@ -87,7 +87,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
 
     tree.preorder_indent(tree.root())
     phase_0, phase_1 = tree.linkage_result()
-    print(phase_0, phase_1)
+    #print(phase_0, phase_1)
 
     # move bak_queue to read_queue
     cursor = bak_queue.first()
@@ -109,7 +109,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
         for x in range(0, len(phase_0)):
             pos = level_pos[x+1]
             log_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
-    print(phase_0, phase_1)
+    #print(phase_0, phase_1)
     return phase_0, phase_1, pos_level, read_queue, heter_snp
 
 def rightMost(l, i): # pruning level
@@ -162,7 +162,7 @@ def pattern(start, end, read_snp, heter_snp, ave_sq, level_s, level_e, level_pos
 def clean(level_clean, heter_snp, pos_level, level_pos):
     for x in level_clean: 
         pos = level_pos[x]
-        print('  - rm homo/ambiguous-heter snp:', pos, x)
+        #print('  - rm homo/ambiguous-heter snp:', pos, x)
         del heter_snp[pos]
     pos_level = None
     level_pos = None

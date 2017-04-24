@@ -401,6 +401,7 @@ class LinkedBinaryTree(object):
                         right_v = self.__validate(right_c).getElement().getValue()  # right child element value
                         left_v += self.__validate(left_c).getElement().getCross()
                         right_v += self.__validate(right_c).getElement().getCross()
+                        print('%d\t%d' % (left_v, right_v))
                         if left_v is not None and right_v is not None:
                             if left_v > right_v: # left child element value is larger, delete right child tree
                                   self.delete_subtree(right_c)
