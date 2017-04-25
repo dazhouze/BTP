@@ -84,6 +84,7 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
                 raise ValueError('Base %s is not in ACGT.' % snp_alt)
 
     # determine the SNP types: 1=seq error, 2=heter SNP, 3=homo SNP, 0=unknown
+    print(' - Classify deteced SNPs.')
     for x in heter_snp: # candidate heter snp positions
         ref_ap = 1 - snp_sum[x].count()/seq_depth[x-reg_s] # ref allele property
         a_ap = snp_sum[x].getA()/seq_depth[x-reg_s] # Base A allele property of alignment coverage
@@ -114,10 +115,10 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
         elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
             if 'R' not in max2_bases: # double heter snp
                 heter_snp[x] = 4 # alignment error
-                print('x-x snp', x)
+                print('    rm double-heter SNP:%d' % x)
             elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
                 heter_snp[x] = 4 # alignment error
-                print('Alignment error snp', x)
+                print('    rm mis-aliged SNP:%d' % x)
                 '''
                 elif d_ap > 0.1: # deletion should less than 20% of physical coverage
                     heter_snp[x] = 5 # discard

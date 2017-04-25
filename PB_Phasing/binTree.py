@@ -408,12 +408,12 @@ class LinkedBinaryTree(object):
                                 if sig is True:
                                     self.delete_subtree(right_c)
                                 else: # just delete right child to delete it as homo snp
-                                    self.delete_subtree(right_c)
+                                    return dep + 1
                             elif left_v < right_v: # right child element value is larger, delete left child tree
                                 if sig is True:
                                     self.delete_subtree(left_c)
                                 else: # just delete right child to delete it as homo snp
-                                    self.delete_subtree(right_c)
+                                    return dep + 1
                             elif left_v == right_v == 0: # no link information 
                                 if left_cross > right_cross: # use cross information
                                     self.delete_subtree(right_c)
@@ -423,10 +423,11 @@ class LinkedBinaryTree(object):
                                     raise ValueError('depth', dep, 'Should be break point.')
                             else: # right == left and != 0
                                 print('Wrong')
+            return None
 
     def significant(self, v1, v2):
         '''Return if v1 v2 is significant'''
-        return abs(v1-v2)/(v1+v2) > 0.6
+        return abs(v1-v2)/(v1+v2) > 0.55
 
 
     def add_value_left(self, d, v, direct):
@@ -542,11 +543,8 @@ class LinkedBinaryTree(object):
         '''Clean tree below depth d if exists homo snp, and return homo snp levels.'''
         check = {} # dict for check
         result = [] # homo snp result list
-        delete_p = [] # Position need to be delete
         for other in self.__subtree_preorder(self.root()):
             dep = self.__validate(other).getElement().getDepth()  # depth of node
-            if dep == d+1:
-                delete_p.append(other)
             if dep > d:
                 dir = self.__validate(other).getElement().getDir()  # dir
                 check.setdefault(dep, [])
@@ -556,9 +554,22 @@ class LinkedBinaryTree(object):
                 result.append(k)
         if len(result) == 0:
             return None
+        # delete slice tree
+        self.delete_slice_tree(d)
+        return result
+
+    def delete_slice_tree(self, d):
+        '''Delete slice tree after level pin'''
+        d = d + 1
+        delete_p = [] # Position need to be delete
+        for other in self.__subtree_preorder(self.root()):
+            dep = self.__validate(other).getElement().getDepth()  # depth of node
+            if dep == d:
+                delete_p.append(other)
         for x in delete_p:
             self.delete_subtree(x)
-        return result
+
+        
 
 if __name__ == '__main__':
     import cpuCheck, os

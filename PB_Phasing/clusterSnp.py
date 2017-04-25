@@ -21,7 +21,8 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
     i = None # mem release
     del i # mem release
 
-    walk_len = 5 # local tree walk step length
+    #walk_len = 5 # local tree walk step length
+    walk_len = 3 # local tree walk step length
     assert walk_len > 2, 'walk_len must larger than 2'
     assert walk_len < len(heter_snp), 'walk_len must small than slice tree len'
     level_pin = 1
@@ -77,11 +78,17 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
                             tree.add_cross_left(d-1, c, 0) # cross over
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
-        tree.pruning(tree.root(), level_e+1) # every walk pruing
+        # clean alignment error snps and ambiguous snps
+        mis_snp = tree.pruning(tree.root(), level_e+1) # alignment error level
+        if mis_snp is not None:
+            heter_snp, pos_level, level_pos = align_clean(mis_snp, heter_snp, pos_level, level_pos) # alignment error in heter_snp dict
+            tree.delete_slice_tree(level_pin)
+            continue
+        #tree.pruning(tree.root(), level_e+1) # every walk pruing
         # clean homo snps and ambiguous snps
-        level_clean = tree.clean(level_pin, walk_len)# find these homo snp's level
-        if level_clean is not None:
-            heter_snp, pos_level, level_pos = clean(level_clean, heter_snp, pos_level, level_pos) # clean homo snp in heter_snp dict
+        mis_snp = tree.clean(level_pin, walk_len)# find these homo snp's level
+        if mis_snp is not None:
+            heter_snp, pos_level, level_pos = homo_clean(mis_snp, heter_snp, pos_level, level_pos) # clean homo snp in heter_snp dict
         else:
             level_pin = level_e # renew level_pin equall to next level_s
         # end of walk through heter_snp
@@ -161,10 +168,25 @@ def pattern(start, end, read_snp, heter_snp, ave_sq, level_s, level_e, level_pos
             pat.append(3)
     return pat
 
-def clean(level_clean, heter_snp, pos_level, level_pos):
-    for x in level_clean: 
+def align_clean(mis_snp, heter_snp, pos_level, level_pos):
+    pos = level_pos[mis_snp]
+    print('    rm seq-error/mis-aligned SNP:%d\tlevel:%d' % (pos, mis_snp))
+    del heter_snp[pos]
+    pos_level = None
+    level_pos = None
+    pos_level = {}
+    level_pos = {}
+    i = 0 # index of tree level
+    for k in sorted(heter_snp):
+        i += 1
+        pos_level.setdefault(k, i)
+        level_pos.setdefault(i, k)
+    return heter_snp, pos_level, level_pos
+
+def homo_clean(mis_snp, heter_snp, pos_level, level_pos):
+    for x in mis_snp: 
         pos = level_pos[x]
-        print('  - rm homo/ambiguous-heter snp:', pos, x)
+        print('    rm homo/ambiguous-heter SNP:%d\tlevel:%d' % (pos, x))
         del heter_snp[pos]
     pos_level = None
     level_pos = None

@@ -7,7 +7,8 @@ rm -rf $dir/
 python phasing.py -s 29910247   -e 29913661 -o $dir 
 # 7 k
 #python phasing.py -s 29053005 -e 29060759 -o $dir
-
+cp $dir/hit* ~/D*
+exit
 python fetch.py $dir/phase_0.txt $dir/phase_1.txt
 # BWA Alignment Command
 align="bwa mem -x pacbio"
@@ -43,4 +44,3 @@ samtools index $dir/phase_1.contigs.bam
 
 cp $dir/*.bam ~/D*
 cp $dir/*.bai ~/D*
-cp $dir/hit* ~/D*
