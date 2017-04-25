@@ -402,11 +402,18 @@ class LinkedBinaryTree(object):
                         left_cross = self.__validate(left_c).getElement().getCross() # value + crossover
                         right_cross = self.__validate(right_c).getElement().getCross() # value + crossover
                         #print('%d\t%d' % (left_v, right_v))
+                        sig = self.significant(left_v, right_v) # test two child if significant
                         if left_v is not None and right_v is not None:
                             if left_v > right_v: # left child element value is larger, delete right child tree
-                                self.delete_subtree(right_c)
+                                if sig is True:
+                                    self.delete_subtree(right_c)
+                                else: # just delete right child to delete it as homo snp
+                                    self.delete_subtree(right_c)
                             elif left_v < right_v: # right child element value is larger, delete left child tree
-                                self.delete_subtree(left_c)
+                                if sig is True:
+                                    self.delete_subtree(left_c)
+                                else: # just delete right child to delete it as homo snp
+                                    self.delete_subtree(right_c)
                             elif left_v == right_v == 0: # no link information 
                                 if left_cross > right_cross: # use cross information
                                     self.delete_subtree(right_c)
@@ -419,7 +426,7 @@ class LinkedBinaryTree(object):
 
     def significant(self, v1, v2):
         '''Return if v1 v2 is significant'''
-        pass
+        return abs(v1-v2)/(v1+v2) > 0.6
 
 
     def add_value_left(self, d, v, direct):
