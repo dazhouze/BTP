@@ -427,8 +427,8 @@ class LinkedBinaryTree(object):
 
     def significant(self, v1, v2):
         '''Return if v1 v2 is significant'''
-        return abs(v1-v2)/(v1+v2) > 0.55
-
+        return abs(v1-v2)/(v1+v2) > 0.45
+        #return abs(v1-v2)/(v1+v2) > 0.6
 
     def add_value_left(self, d, v, direct):
         '''Add value=v to all node element in depth=d.

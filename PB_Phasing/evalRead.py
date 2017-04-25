@@ -4,7 +4,7 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, output_dir):
+def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, output_dir):
     import math, os.path
     hit = os.path.join(output_dir, 'hit.txt') # path of log.txt
     hit_f = open(hit, 'w')
@@ -49,13 +49,14 @@ def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, output_dir):
                 elif snp_alt != phase_0[ind] and snp_alt != phase_1[ind]:
                         conf_n += 1
 
-        #if cons_0_n == cons_1_n == 0: # no marker
-        #    phase_0_q.append(qname)
-        #    phase_1_q.append(qname)
-        if cons_0_n > cons_1_n and cons_1_n < 0.1*len(heter_snp):
+        if cons_0_n == cons_1_n == conf_n == 0 and reg_s < (start+end)/2 < reg_e: # no marker
             phase_0_q.append(qname)
-        if cons_1_n > cons_0_n and cons_0_n < 0.1*len(heter_snp):
             phase_1_q.append(qname)
-        hit_f.write('%d %d %d %d %d %d\n' % (cons_0_n, cons_1_n, conf_n, int(100*cons_0_v), int(100*cons_1_v), int(100*conf_v)))
+        if (cons_0_n + cons_1_n + conf_n) > 0.1*len(heter_snp) and (cons_0_n + cons_1_n + conf_n) > 2:
+            if cons_0_n > cons_1_n and (cons_1_n+conf_n) < 0.1*len(heter_snp):
+                phase_0_q.append(qname)
+            if cons_1_n > cons_0_n and (cons_0_n+conf_n) < 0.1*len(heter_snp):
+                phase_1_q.append(qname)
+            hit_f.write('%d %d %d %d %d %d\n' % (cons_0_n, cons_1_n, conf_n, int(100*cons_0_v), int(100*cons_1_v), int(100*conf_v)))
     hit_f.close()
     return phase_0_q, phase_1_q

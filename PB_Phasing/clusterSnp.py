@@ -55,6 +55,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log):
                 continue
             read_snp = ele.getSnp() # read heter-snp-marker dict
             ave_sq = ele.getAveSq()
+
             pat = pattern(start, end, read_snp, heter_snp, ave_sq, level_s, level_e, level_pos) # heter snp pattern
             #print(pat)
             for d in range(level_s, level_e+1): # exculde root level (index 0)
