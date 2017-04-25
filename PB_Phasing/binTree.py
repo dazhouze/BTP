@@ -31,12 +31,13 @@ class Marker(object):
     '''To store in element of node. 
     Reduce the compute complex
     '''
-    __slots__ = '__depth', '__value', '__dir', '__cross'
-    def __init__(self, depth=0, value=0, dir=0, cross=0):
+    __slots__ = '__depth', '__value', '__dir', '__cross', '__clean'
+    def __init__(self, depth=0, value=0, dir=0, cross=0, clean=0):
         self.__depth = depth
         self.__value = value
         self.__cross = cross # cross over value
         self.__dir = dir # 0 is left, 1 is right
+        self.__clean = clean # 0 is ok, 1 is need to be clean
 
     def getDepth(self):
         return self.__depth
@@ -50,6 +51,9 @@ class Marker(object):
     def getCross(self):
         return self.__cross
 
+    def getClean(self):
+        return self.__clean
+
     def setValue(self, v):
         self.__value = v
 
@@ -58,6 +62,9 @@ class Marker(object):
 
     def setCross(self, c):
         self.__cross = c
+
+    def setClean(self, c=1):
+        self.__clean = c
 
 class LinkedBinaryTree(object):
     '''Linked representeation of a binary tree structure.'''
@@ -384,7 +391,7 @@ class LinkedBinaryTree(object):
                 node.setRight(None)
                 other = None
 
-    def pruning(self, p, d):
+    def pruning(self, p):
         '''Decide the SNP linkage result(based on element value).
         And crop non SNP linkage branch and subtree.
         And return the root of tree or the break point(new root of tree)
@@ -393,42 +400,41 @@ class LinkedBinaryTree(object):
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.getElement().getDepth()  # left child element value
-                if 1 <= dep < d: # only consider node with depth less than d
-                    left_c  = self.left(other)  # left child position
-                    right_c = self.right(other) # right child position
-                    if left_c is not None and right_c is not None:
-                        left_v = self.__validate(left_c).getElement().getValue()  # left child element value
-                        right_v = self.__validate(right_c).getElement().getValue()  # right child element value
-                        left_cross = self.__validate(left_c).getElement().getCross() # value + crossover
-                        right_cross = self.__validate(right_c).getElement().getCross() # value + crossover
-                        #print('%d\t%d' % (left_v, right_v))
-                        sig = self.significant(left_v, right_v) # test two child if significant
-                        if left_v is not None and right_v is not None:
-                            if left_v > right_v: # left child element value is larger, delete right child tree
-                                if sig is True:
-                                    self.delete_subtree(right_c)
-                                else: # just delete right child to delete it as homo snp
-                                    return dep + 1
-                            elif left_v < right_v: # right child element value is larger, delete left child tree
-                                if sig is True:
-                                    self.delete_subtree(left_c)
-                                else: # just delete right child to delete it as homo snp
-                                    return dep + 1
-                            elif left_v == right_v == 0: # no link information 
-                                if left_cross > right_cross: # use cross information
-                                    self.delete_subtree(right_c)
-                                elif right_cross > left_cross:
-                                    self.delete_subtree(left_c)
-                                else: # no link info and crossover info
-                                    raise ValueError('depth', dep, 'Should be break point.')
-                            else: # right == left and != 0
-                                print('Wrong at', dep,'-', dep+1, left_v, '=', right_v)
-                                return dep + 1
-            return None
+                if dep == 0: # root
+                    continue
+                #if dep < d: # only consider node with depth less than d
+                left_c  = self.left(other)  # left child position
+                right_c = self.right(other) # right child position
+                if left_c is not None and right_c is not None:
+                    left_v = self.__validate(left_c).getElement().getValue()  # left child element value
+                    right_v = self.__validate(right_c).getElement().getValue()  # right child element value
+                    left_cross = self.__validate(left_c).getElement().getCross() # value + crossover
+                    right_cross = self.__validate(right_c).getElement().getCross() # value + crossover
+                    #print('%d\t%d' % (left_v, right_v))
+                    sig = self.significant(left_v, right_v) # test two child if significant
+                    if left_v is not None and right_v is not None:
+                        if left_v > right_v: # left child element value is larger, delete right child tree
+                            self.delete_subtree(right_c)
+                            if sig is not True:
+                                self.__validate(left_c).getElement().setClean(1)  # left child element need to clean as seq/align error
+                        elif left_v < right_v: # right child element value is larger, delete left child tree
+                            self.delete_subtree(left_c)
+                            if sig is not True:
+                                self.__validate(right_c).getElement().setClean(1)  # right child element need to clean as seq/align error
+                        elif left_v == right_v == 0: # no link information 
+                            if left_cross > right_cross: # use cross information
+                                self.delete_subtree(right_c)
+                            elif right_cross > left_cross:
+                                self.delete_subtree(left_c)
+                            else: # no link info and crossover info
+                                raise ValueError('depth', dep, 'Should be break point.')
+                        else: # right == left and != 0
+                            print('Wrong at', dep,'-', dep+1, left_v, '=', right_v)
+                            return dep + 1
 
     def significant(self, v1, v2):
         '''Return if v1 v2 is significant'''
-        return abs(v1-v2)/(v1+v2) > 0.4
+        return abs(v1-v2)/(v1+v2) > 0.01
         #return abs(v1-v2)/(v1+v2) > 0.6
 
     def add_value_left(self, d, v, direct):
@@ -540,24 +546,41 @@ class LinkedBinaryTree(object):
                 self.add_left(other,  Marker(dep+1, v, 0))
                 self.add_right(other, Marker(dep+1, v, 1))
 
-    def clean(self, d, walk_len=5):
+    def homo_check(self, p):
         '''Clean tree below depth d if exists homo snp, and return homo snp levels.'''
         check = {} # dict for check
-        result = [] # homo snp result list
+        depth_p = {} # k:depth v:position of node
+        for other in self.__subtree_preorder(p):
+            node = self.__validate(other).getElement()
+            dep = node.getDepth()  # depth of node
+            dir = node.getDir()  # dir
+            if dep == 0: # root
+                continue
+            check.setdefault(dep, [])
+            check[dep].append(dir)
+            depth_p.setdefault(dep, [])
+            depth_p[dep].append(other)
+        for k,v in check.items(): # k is dep, v is dir
+            if v[0] == v[1]: # homo snp
+                x = depth_p[k] # x is position list
+                self.__validate(x[0]).getElement().setClean(2)  # set it need to be clean as homo snp
+                self.__validate(x[1]).getElement().setClean(2)  # set it need to be clean as homo snp
+
+    def clean(self, level_s):
+        '''Clean the tree, rm seq/align error and homo snp'''
         for other in self.__subtree_preorder(self.root()):
-            dep = self.__validate(other).getElement().getDepth()  # depth of node
-            if dep > d:
-                dir = self.__validate(other).getElement().getDir()  # dir
-                check.setdefault(dep, [])
-                check[dep].append(dir)
-        for k,v in check.items():
-            if v[0] == v[1]:
-                result.append(k)
-        if len(result) == 0:
-            return None
-        # delete slice tree
-        self.delete_slice_tree(d)
-        return result
+            node = self.__validate(other).getElement()
+            dep = node.getDepth()  # depth of node
+            clean_v = node.getClean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
+            if clean_v == 1:
+                print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
+                self.delete_slice_tree(level_s)
+                return dep 
+            elif clean_v == 2:
+                print('    rm homo/ambiguous-heter SNP at level:%d' % dep)
+                self.delete_slice_tree(level_s)
+                return dep 
+        return None
 
     def delete_slice_tree(self, d):
         '''Delete slice tree after level pin'''
@@ -569,7 +592,6 @@ class LinkedBinaryTree(object):
                 delete_p.append(other)
         for x in delete_p:
             self.delete_subtree(x)
-
         
 
 if __name__ == '__main__':
