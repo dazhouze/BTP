@@ -422,12 +422,13 @@ class LinkedBinaryTree(object):
                                 else: # no link info and crossover info
                                     raise ValueError('depth', dep, 'Should be break point.')
                             else: # right == left and != 0
-                                print('Wrong')
+                                print('Wrong at', dep,'-', dep+1, left_v, '=', right_v)
+                                return dep + 1
             return None
 
     def significant(self, v1, v2):
         '''Return if v1 v2 is significant'''
-        return abs(v1-v2)/(v1+v2) > 0.45
+        return abs(v1-v2)/(v1+v2) > 0.4
         #return abs(v1-v2)/(v1+v2) > 0.6
 
     def add_value_left(self, d, v, direct):
