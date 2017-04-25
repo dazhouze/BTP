@@ -117,8 +117,8 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
     heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
-    seq_depth = None # mem release
-    del seq_depth
+    #seq_depth = None # mem release
+    #del seq_depth
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
@@ -126,10 +126,8 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     tree.setdefault(1,1)
     bak_queue = posList.PositionalList() # a back up positional list
     phase_0, phase_1, pos_level, read_queue, heter_snp = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log)
-    bak_queue, subtree = None, None
+    bak_queue = None
     del bak_queue
-    del subtree
-    return 0
 
     ##### Reads phasing. #####
     phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, output_dir)

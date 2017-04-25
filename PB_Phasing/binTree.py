@@ -399,18 +399,22 @@ class LinkedBinaryTree(object):
                     if left_c is not None and right_c is not None:
                         left_v = self.__validate(left_c).getElement().getValue()  # left child element value
                         right_v = self.__validate(right_c).getElement().getValue()  # right child element value
-                        left_v += self.__validate(left_c).getElement().getCross()
-                        right_v += self.__validate(right_c).getElement().getCross()
-                        print('%d\t%d' % (left_v, right_v))
+                        left_cross = self.__validate(left_c).getElement().getCross() # value + crossover
+                        right_cross = self.__validate(right_c).getElement().getCross() # value + crossover
+                        #print('%d\t%d' % (left_v, right_v))
                         if left_v is not None and right_v is not None:
                             if left_v > right_v: # left child element value is larger, delete right child tree
-                                  self.delete_subtree(right_c)
+                                self.delete_subtree(right_c)
                             elif left_v < right_v: # right child element value is larger, delete left child tree
-                                  self.delete_subtree(left_c)
-                            elif left_v==0 and right_v==0: 
-                                self.preorder_indent(self.root())
-                                raise ValueError('depth', dep, 'Should be break point.')
-                            else:
+                                self.delete_subtree(left_c)
+                            elif left_v == right_v == 0: # no link information 
+                                if left_cross > right_cross: # use cross information
+                                    self.delete_subtree(right_c)
+                                elif right_cross > left_cross:
+                                    self.delete_subtree(left_c)
+                                else: # no link info and crossover info
+                                    raise ValueError('depth', dep, 'Should be break point.')
+                            else: # right == left and != 0
                                 print('Wrong')
 
     def significant(self, v1, v2):
