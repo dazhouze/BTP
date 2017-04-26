@@ -22,27 +22,32 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
 
     ##### init output directory #####
     output_dir = os.path.abspath(output)
-    if not os.path.exists(output):
+    if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    log = os.path.join(output, 'log.txt') # path of log.txt
-    with open(log, 'w') as log_f:
-        log_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nmax_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s, reg_e, max_heter, min_heter))
+    log = os.path.join(output, 'log') # path of log folder
+    if not os.path.exists(log):
+        os.makedirs(log)
+    snp_p = os.path.join(log, 'snp.txt') # path of snp.txt
+    tree_p = os.path.join(log, 'tree.txt') # path of snp phasing result tree.txt
+    sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
+    with open(sum_p, 'w') as sum_f:
+        sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nmax_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s, reg_e, max_heter, min_heter))
 
     ##### Entry read information #####
     read_queue = posList.PositionalList() # initialize a positional list
     read_queue, heter_snp, seq_depth = detectSnp.DetectSNP(chrom, reg_s, reg_e, input, read_queue)
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, log) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
+    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
     #seq_depth = None # mem release
     #del seq_depth
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
     tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
-    tree.add_root(binTree.Marker(0, 'root'))
+    tree.add_root(binTree.Marker(0,'root',0)) # root
     tree.setdefault(1,1)
     bak_queue = posList.PositionalList() # a back up positional list
-    phase_0, phase_1, pos_level, read_queue, heter_snp = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, log)
+    phase_0, phase_1, pos_level, read_queue, heter_snp = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p)
     bak_queue = None
     del bak_queue
 

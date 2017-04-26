@@ -7,7 +7,7 @@ rm -rf $dir/
 python phasing.py -s 29910247   -e 29913661 -o $dir 
 # 7 k
 #python phasing.py -s 29053005 -e 29060759 -o $dir
-cp $dir/hit* ~/D*
+cp $dir/log/* ~/D*
 exit
 
 

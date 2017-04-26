@@ -4,10 +4,10 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, output_dir):
+def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, log):
     import math, os.path
-    hit = os.path.join(output_dir, 'hit.txt') # path of log.txt
-    hit_f = open(hit, 'w')
+    hit_p = os.path.join(log, 'hit.txt') # path of log.txt
+    hit_f = open(hit_p, 'w')
     phase_0_q, phase_1_q = [], []
     for x in read_queue: # x is Read object
         qname = x.getQname()
