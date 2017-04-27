@@ -362,15 +362,15 @@ class LinkedBinaryTree(object):
                 node = self.__validate(other)
                 dep = node.getElement().getDepth()  # depth of node
                 dir = node.getElement().getDir() # direction of node 
-                val = node.getElement().getValue() # direction of node 
-                print(2*dep*' '+ str(dir) + ' ' + str(val) )
+                num = node.getElement().getNum() # direction of node 
+                print(2*dep*' '+ str(dir) + ' ' + str(num) )
 
     def preorder_indent(self, p, d=0):
         node = self.__validate(p)
         dep = d + node.getElement().getDepth()  # depth of node
         dir = node.getElement().getDir() # direction of node 
-        val = node.getElement().getValue() # direction of node 
-        print(2*dep*' '+ str(dir) + ' -> ' + str(val) )
+        num = node.getElement().getNum() # direction of node 
+        print(2*dep*' '+ str(dir) + ' -> ' + str(num) )
         for c in self.children(p):
             self.preorder_indent(c, d)
 
@@ -398,7 +398,7 @@ class LinkedBinaryTree(object):
                 node.setRight(None)
                 other = None
 
-    def pruning(self, p, tree_p):
+    def pruning(self, p, heter_snp, level_pos, tree_p):
         '''Decide the SNP linkage result(based on element value).
         And crop non SNP linkage branch and subtree.
         And return the root of tree or the break point(new root of tree)
@@ -410,7 +410,8 @@ class LinkedBinaryTree(object):
                 dep = node.getElement().getDepth()  # left child element value
                 if dep == 0: # root
                     continue
-                #if dep < d: # only consider node with depth less than d
+                if self.num_children(other) == 0: # leaf
+                    continue
                 left_p  = self.left(other)  # left child position
                 right_p = self.right(other) # right child position
                 if left_p is not None and right_p is not None:
@@ -418,38 +419,43 @@ class LinkedBinaryTree(object):
                     right_num = self.__validate(right_p).getElement().getNum()  # right child element link num
                     left_value = self.__validate(left_p).getElement().getValue()  # left child element value
                     right_value = self.__validate(right_p).getElement().getValue()  # right child element value
-                    left_pross = self.__validate(left_p).getElement().getCross() # value + crossover
-                    right_pross = self.__validate(right_p).getElement().getCross() # value + crossover
+                    left_cross = self.__validate(left_p).getElement().getCross() # value + crossover
+                    right_cross = self.__validate(right_p).getElement().getCross() # value + crossover
+
+                    ind = level_pos[dep+1]
+                    heter_base = heter_snp[ind] # heter_snp index of node = dep-1; heter_base: heter snp bases
                     #print('%d\t%d' % (left_num, right_num))
-                    #sig = self.significant(left_num, right_num, left_value, right_value, left_pross, right_pross) # test two child if significant
-                    n_dir = 0 # 
-                    c_dir = 0 # 
+                    num_dir, cross_dir = 0, 0 # link num direction result, crossover link num direction result 
                     if right_num > left_num:
-                        n_dir = 1
-                    if right_pross > left_pross:
-                        c_dir = 1
-                    sig = True
-                    com = n_dir==c_dir # compare link num and crossover 
-                    if com is True:
-                        pruning_f.write('%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n' % (int(100*left_value),int(100*right_value),left_num,right_num,left_pross,right_pross, n_dir, c_dir))
-                    #sig = self.significant(left_num, right_num) # test two child if significant
+                        num_dir = 1
+                    if right_cross > left_cross:
+                        cross_dir = 1
+                    com = (num_dir == cross_dir) # compare link num and crossover 
+                    sig_num = self.significant(left_num, right_num) # test two child if significant
+                    sig_cross = self.significant(left_cross, right_cross) # test two child if significant
+                    AE = self.align_error(num_dir, cross_dir, sig_num, sig_cross, heter_base) # if it is alignment error
+
+                    #print(dep, left_num, right_num, left_cross, right_cross, AE)
+                    if com is True and AE is not True:
+                        pruning_f.write('%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n' % (int(100*left_value),int(100*right_value),left_num,right_num,left_cross,right_cross, max(right_num, left_num), min(right_num, left_num)))
+                    #sig = True
                     if left_num is not None and right_num is not None:
                         if left_num > right_num: # left child element value is larger, delete right child tree
                             self.delete_subtree(right_p)
-                            if sig is not True:
-                                self.__validate(left_p).getElement().setClean(1)  # left child element need to clean as seq/align error
                             if com is not True:
                                 self.__validate(left_p).getElement().setClean(2)  # left child element need to clean as homo snp
+                            if AE is True:
+                                self.__validate(left_p).getElement().setClean(1)  # left child element need to clean as seq/align error
                         elif left_num < right_num: # right child element value is larger, delete left child tree
                             self.delete_subtree(left_p)
-                            if sig is not True:
-                                self.__validate(right_p).getElement().setClean(1)  # right child element need to clean as seq/align error
                             if com is not True:
                                 self.__validate(right_p).getElement().setClean(2)  # right child element need to clean as homo snp
+                            if AE is True:
+                                self.__validate(right_p).getElement().setClean(1)  # right child element need to clean as seq/align error
                         elif left_num == right_num == 0: # no link information 
-                            if left_pross > right_pross: # use cross information
+                            if left_cross > right_cross: # use cross information
                                 self.delete_subtree(right_p)
-                            elif right_pross > left_pross:
+                            elif right_cross > left_cross:
                                 self.delete_subtree(left_p)
                             else: # no link info and crossover info
                                 raise ValueError('depth', dep, 'Should be break point.')
@@ -457,9 +463,21 @@ class LinkedBinaryTree(object):
                             print('Wrong at', dep,'-', dep+1, left_num, '=', right_num)
                             return dep + 1
 
+    def align_error(self, num_dir, cross_dir, sig_num, sig_cross, heter_base):
+        node_base = heter_base[num_dir]
+        cross_base = heter_base[cross_dir]
+        if cross_base == 'R' and sig_cross is True and sig_num is not True:
+            return True
+        if node_base == 'R' and sig_num is True and sig_cross is not True:
+            return True
+        return False
+
     def significant(self, v1, v2):
-        '''Return if v1 v2 is significant'''
-        return abs(v1-v2)/(v1+v2) > 0.6
+        '''Return True if SNP(same depth) is significant'''
+        min_num = min(v1, v2)
+        if min_num == 0:
+            return True
+        return abs(v1-v2)/min_num >= 0.55
 
     def add_value_left(self, d, v, direct):
         '''Add value=v to all node element in depth=d.
@@ -568,25 +586,27 @@ class LinkedBinaryTree(object):
 
     def clean(self, level_s):
         '''Clean the tree, rm seq/align error and homo snp'''
-        clean_dep = None
+        mis_level = None
         clean_type = 0
         for other in self.__subtree_preorder(self.root()):
             mar = self.__validate(other).getElement()
             dep = mar.getDepth()  # depth of mar
-            clean_v = mar.getClean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
-            clean_type = clean_v
-            clean_dep = dep
-            if clean_v == 1:
+            dept =  self.depth(other)
+            clean_type = mar.getClean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
+            mis_level = dep 
+            if clean_type == 1:
                 self.delete_subtree(other)
-            elif clean_v == 2:
+                break
+            if clean_type == 2:
                 self.delete_subtree(other)
+                break
         if clean_type == 1:
             print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
         elif clean_type == 2:
             print('    rm homo/ambiguous-heter SNP at level:%d' % dep)
         else:
-            clean_dep = None
-        return clean_dep
+            mis_level = None
+        return mis_level
 
 if __name__ == '__main__':
     import cpuCheck, os

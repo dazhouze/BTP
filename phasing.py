@@ -39,7 +39,8 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     read_queue, heter_snp, seq_depth = detectSnp.DetectSNP(chrom, reg_s, reg_e, input, read_queue)
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp, homo_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
+    heter_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP. homo_snp dict: k is position, v is 1
+    print(heter_snp)
     #seq_depth = None # mem release
     #del seq_depth
 

@@ -132,7 +132,7 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
                 heter_snp[x] = 2
 
     result_heter = {} # heter snp marker result dict
-    result_homo  = {} # homo snp result dict
+    #result_homo  = {} # homo snp result dict
     result_alig = {}  # alignment error result dict
     ho, he, se, dis, ae = 0, 0, 0, 0, 0 # homo snp number, heter snp marker number, sequencing error snp number, discard snp number, alignment error snp number
     with open(snp_p, 'w') as snp_f:
@@ -153,14 +153,14 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
                     snp_f.write('heter\t%s\t%d\t%s\t%s\n' % (chrom, k, max2_bases[0], max2_bases[1]))
                 elif v == 3: # homo snp
                     ho += 1
-                    result_homo.setdefault(k, 1) # return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
+                    #result_homo.setdefault(k, 1) # return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
                     #snp_f.write('homo\t%s\t%d\n' % (chrom, k))
                 elif v == 4: # alignment error
                     ae += 1
                     snp_f.write('align\t%s\t%d\n' % (chrom, k))
                     
         snp_f.write('***\nPrimary SNP result\nHomo SNP: %d\nHeter SNP: %d\nSeq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\nAlignmene Error: %d\n' % (ho,he,se,dis,ae))
-    return result_heter, result_homo # only return the heter snp marker and homo snp pos, seq error cost too much memory
+    return result_heter # only return the heter snp marker and homo snp pos, seq error cost too much memory
 
 def third(vs):
     values = vs

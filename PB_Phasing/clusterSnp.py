@@ -4,12 +4,37 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
+'''
+heter_snp list
+    0-start
+
+pos_level dict
+    1-start
+level_pos dict
+    1-start
+pat list:
+    1-start
+tree:
+    1-start
+'''
+
 def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p):
     '''Clustering heterozygous SNP marker by optimised binary tree algorithm.
     Use slice tree.
     Back up read queue.
     Clean homo snp tree.
     '''
+
+    ######### test
+    test_dict = {}
+    i = 0
+    for k in sorted(heter_snp):
+        test_dict.setdefault(k,heter_snp[k])
+        i+=1
+        if i> 10:
+            break
+    heter_snp = test_dict
+    ######### test
     pos_level = {} # start from 1. tree level dict: k is sorted heter_snp position, v is level in tree
     level_pos = {} # start from 1. k, v reverse of pos_level
     i = 0 # index of tree level
@@ -22,7 +47,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     del i # mem release
 
     #walk_len = 5 # local tree walk step length
-    walk_len = 4 # local tree walk step length
+    walk_len = 5 # local tree walk step length
     assert walk_len > 2, 'walk_len must larger than 2'
     assert walk_len < len(heter_snp), 'walk_len must small than slice tree len'
     level_s = 1
@@ -82,9 +107,10 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         # clean alignment error snps and ambiguous snps
-        tree.pruning(tree.root(), tree_p) # alignment error and snp error check
+        tree.pruning(tree.root(), heter_snp, level_pos, tree_p) # alignment error and snp error check
         #tree.homo_check(tree.root()) # homo snp check
         mis_level = tree.clean(level_s) # clean tree
+        print(mis_level,'mis_level') 
         if mis_level is not None:
             heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos) # alignment error in heter_snp dict
             level_s = mis_level - 1
@@ -106,7 +132,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     assert len(bak_queue) == 0, 'bak queue is not clean up'
 
     # link level pos and base
-    assert len(heter_snp) == len(phase_0), 'length not equal'
+    assert len(heter_snp) == len(phase_0), 'heter snp length %d\tphase snp:%d' % (len(heter_snp), len(phase_0))
     for k in range(1, len(phase_0)+1): # k is level, v is pos
         v = level_pos[k]
         phase_0[k-1] = heter_snp[v][phase_0[k-1]]

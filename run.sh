@@ -32,7 +32,9 @@ rm $dir/phase_*.sam
 rm $dir/*best.bam
 samtools index $dir/phase_0.best.sorted.bam
 samtools index $dir/phase_1.best.sorted.bam
-
+cp $dir/*.bam ~/D*
+cp $dir/*.bai ~/D*
+exit
 canu -pacbio-raw $dir/phase_0.fq -p A -d $dir/phase_0 genomeSize=8k useGrid=false
 canu -pacbio-raw $dir/phase_1.fq -p A -d $dir/phase_1 genomeSize=8k useGrid=false
 bwa mem $refe $dir/phase_0/A.contigs.fasta >  $dir/phase_0.contigs.sam
