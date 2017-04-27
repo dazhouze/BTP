@@ -24,17 +24,6 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     Back up read queue.
     Clean homo snp tree.
     '''
-
-    ######### test
-    test_dict = {}
-    i = 0
-    for k in sorted(heter_snp):
-        test_dict.setdefault(k,heter_snp[k])
-        i+=1
-        if i>= 10:
-            break
-    heter_snp = test_dict
-    ######### test
     pos_level = {} # start from 1. tree level dict: k is sorted heter_snp position, v is level in tree
     level_pos = {} # start from 1. k, v reverse of pos_level
     i = 0 # index of tree level

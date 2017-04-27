@@ -477,7 +477,7 @@ class LinkedBinaryTree(object):
         min_num = min(v1, v2)
         if min_num == 0:
             return True
-        return abs(v1-v2)/min_num >= 0.55
+        return abs(v1-v2)/min_num >= 0.35
 
     def add_value_left(self, d, v, direct):
         '''Add value=v to all node element in depth=d.

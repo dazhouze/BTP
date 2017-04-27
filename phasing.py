@@ -30,6 +30,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     snp_p = os.path.join(log, 'snp.txt') # path of snp.txt
     tree_p = os.path.join(log, 'tree.txt') # path of snp phasing result tree.txt
     heter_p = os.path.join(log, 'heter_snp.txt') # path of phased heter snp.txt
+    hit_p = os.path.join(log, 'hit.txt') # path of log.txt
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
     with open(sum_p, 'w') as sum_f:
         sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nmax_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s, reg_e, max_heter, min_heter))
@@ -54,7 +55,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     del bak_queue
 
     ##### Reads phasing. #####
-    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, output_dir)
+    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
     ##### Reads' Qname print out. #####
     out = os.path.join(output, 'phase_0.txt') # path of log.txt
