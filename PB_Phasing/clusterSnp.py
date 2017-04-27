@@ -31,7 +31,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     for k in sorted(heter_snp):
         test_dict.setdefault(k,heter_snp[k])
         i+=1
-        if i> 10:
+        if i>= 10:
             break
     heter_snp = test_dict
     ######### test

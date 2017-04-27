@@ -591,14 +591,13 @@ class LinkedBinaryTree(object):
         for other in self.__subtree_preorder(self.root()):
             mar = self.__validate(other).getElement()
             dep = mar.getDepth()  # depth of mar
-            dept =  self.depth(other)
             clean_type = mar.getClean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
             mis_level = dep 
             if clean_type == 1:
-                self.delete_subtree(other)
+                self.delete_depth(dep)
                 break
             if clean_type == 2:
-                self.delete_subtree(other)
+                self.delete_depth(dep)
                 break
         if clean_type == 1:
             print('    rm seq-error/mis-aligned SNP at level:%d' % dep)
@@ -607,6 +606,13 @@ class LinkedBinaryTree(object):
         else:
             mis_level = None
         return mis_level
+
+    def delete_depth(self, d):
+        for other in self.__subtree_postorder(self.root()):
+            mar = self.__validate(other).getElement()
+            dep = mar.getDepth()  # depth of mar
+            if dep >= d:
+                self.delete_subtree(other)
 
 if __name__ == '__main__':
     import cpuCheck, os
