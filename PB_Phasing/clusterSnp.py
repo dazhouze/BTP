@@ -4,7 +4,7 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p):
+def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p):
     '''Clustering heterozygous SNP marker by optimised binary tree algorithm.
     Use slice tree.
     Back up read queue.
@@ -83,7 +83,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             # end of cursor traverse read_queue
         # clean alignment error snps and ambiguous snps
         tree.pruning(tree.root(), tree_p) # alignment error and snp error check
-        tree.homo_check(tree.root()) # homo snp check
+        #tree.homo_check(tree.root()) # homo snp check
         mis_level = tree.clean(level_s) # clean tree
         if mis_level is not None:
             heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos) # alignment error in heter_snp dict
@@ -112,12 +112,12 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         phase_0[k-1] = heter_snp[v][phase_0[k-1]]
         phase_1[k-1] = heter_snp[v][phase_1[k-1]]
 
-    with open(tree_p, 'w') as tree_f:
-        tree_f.write('\n***\nHeterzygous SNP Markers Phaseing Result:\n')
-        tree_f.write('Chromosome\tPosition\tPhase_0\tPhase_1\n')
+    with open(heter_p, 'a') as heter_f:
+        heter_f.write('\n***\nHeterzygous SNP Markers Phaseing Result:\n')
+        heter_f.write('Chromosome\tPosition\tPhase_0\tPhase_1\n')
         for x in range(0, len(phase_0)):
             pos = level_pos[x+1]
-            tree_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
+            heter_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
     print(phase_0, phase_1)
     return phase_0, phase_1, pos_level, read_queue, heter_snp
 
