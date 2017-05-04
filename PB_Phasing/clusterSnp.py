@@ -68,15 +68,13 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
                 cursor = next_c                
                 continue
             read_snp = ele.getSnp() # read heter-snp-marker dict
-            ave_sq = ele.getAveSq()
-
-            pat = pattern(start, end, read_snp, heter_snp, ave_sq, level_s, level_e, level_pos) # heter snp pattern
+            pat = pattern(start, end, read_snp, heter_snp, level_s, level_e, level_pos) # heter snp pattern
             #print(pat)
             for d in range(level_s, level_e+1): # exculde root level (index 0)
                 x = d - level_s + 1 # index of pat array
-                prev_b = pat[x-1][0] # previous snp base (0/1)
-                now_b = pat[x][0] # this snp base (0/1)
-                v = pat[x][1] # this snp_qual
+                prev_b = pat[x-1] # previous snp base (0/1)
+                now_b = pat[x] # this snp base (0/1)
+                v = 1 # link num
                 c = 1 # cross over
                 if (prev_b==0 or prev_b==1) and (now_b==0 or now_b==1): # parent's left  node add one
                     if now_b==0:
@@ -163,28 +161,23 @@ def first_max(pos_level, coor): # cursor go back level
         if k > coor:
             return v
 
-def pattern(start, end, read_snp, heter_snp, ave_sq, level_s, level_e, level_pos):
-    pat = [ [3, 0] for x in range(0, (level_e-level_s+2))] # heter snp pattern
+def pattern(start, end, read_snp, heter_snp, level_s, level_e, level_pos):
+    pat = [3]*(level_e-level_s+2) # heter snp pattern
     for x in range(level_s, level_e+1):
         k = level_pos[x]
         ind = x - level_s + 1
-        snp_alt, snp_qual = read_snp.get(k, ['R', ave_sq]) # set snp is ref-allele first
+        snp_alt, snp_qual = read_snp.get(k, ['R', 0]) # set snp is ref-allele first
         if start<= k <= end:
             if snp_alt == heter_snp[k][0]: # snp allele is the maximum allele property base
-                pat[ind][0] = 0
-                pat[ind][1] = snp_qual
+                pat[ind] = 0
             elif snp_alt == heter_snp[k][1]: # snp allele is the sec-max allele property base
-                pat[ind][0] = 1
-                pat[ind][1] = snp_qual
+                pat[ind] = 1
             elif snp_alt is None: # deletion variants(None)
-                pat[ind][0] = 2
-                pat[ind][1] = snp_qual
+                pat[ind] = 2
             else: # other allele or 
-                pat[ind][0] = 2
-                pat[ind][1] = snp_qual
+                pat[ind] = 2
                 assert not isinstance(snp_alt, list), 'Get Value error'
         else: # out of read region
-            #pat.append(3)
             pass
     return pat
 
