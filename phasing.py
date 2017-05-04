@@ -54,15 +54,12 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     tree.add_root(binTree.Marker(0, 'root', 0)) # root
     tree.setdefault(1, 1)
     bak_queue = posList.PositionalList() # a back up positional list
-    phase_0, phase_1, pos_level, read_queue, heter_snp = \
-    clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, \
-                          chrom, reg_s, reg_e, tree_p, heter_p)
+    phase_0, phase_1, pos_level, read_queue, heter_snp = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
     bak_queue = None
     del bak_queue
 
     ##### Reads phasing. #####
-    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, \
-                                               read_queue, heter_snp, reg_s, reg_e, hit_p)
+    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
     ##### Reads' Qname print out. #####
     out = os.path.join(output, 'phase_0.txt') # path of log.txt
@@ -89,8 +86,7 @@ if __name__ == '__main__': # Run the program.
 
     # set default value
     output = 'test' # output dirctory
-    input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/\
-            merged5YH.best.ccs.sort.bam' # input BAM/SAM file
+    input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     chrom = 'chr6' # chromosome name
     reg_s = 28476797 # start coordinate of the region
     reg_e = 33449354 # end coordinate of the region

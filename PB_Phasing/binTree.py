@@ -144,7 +144,7 @@ class LinkedBinaryTree(object):
 
         def __ne__(self, other):
             '''Return True if other dose not represent the same location.'''
-            return self != other
+            return not self == other
 
     def __validate(self, p):
         '''Return associated node, if position is valid.'''

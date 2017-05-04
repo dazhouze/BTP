@@ -71,7 +71,7 @@ class PositionalList(object):
 
         def __ne__(self, other):
             '''Retrun True if other does not represent the same loaction.'''
-            return self != other
+            return not self == other
 
     ##### utility method #####
     def __validate(self, p):

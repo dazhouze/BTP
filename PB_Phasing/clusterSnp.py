@@ -58,7 +58,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
               (level_s, level_e, len(read_queue), len(level_pos)))
         #tree.preorder_indent(tree.root())
 
-        tree.setdefault(level_e, 0.0) # value must be 0
+        tree.setdefault(level_e, 0) # value must be 0
         # determine heter-snp-marker pattern of each read
         cursor = read_queue.first() # read queue first Position
         while cursor != None:
