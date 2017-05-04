@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+''' Double linked list for reads information.'''
+
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
 '''
-Position class: 
-    __init__(): 
-        __container: a ref to a instance of the Positional list 
-        __node: a ref to a intance of __Node class    p    
-                                                   <-|_|->  
-    __eq__() __ne__()                      
+Position class:
+    __init__():
+        __container: a ref to a instance of the Positional list
+        __node: a ref to a intance of __Node class    p
+                                                   <-|_|->
+    __eq__() __ne__()
     element()
     __make_position()
     __validate()
 
-__Node class: is the base unit.   
+__Node class: is the base unit.
        _
     <-|_|->
          __init__()
@@ -24,7 +26,7 @@ __Node class: is the base unit.
          getElement() setElement()
 
 PositionalList class: positional deque.
-       _      _      _      _ 
+       _      _      _      _
     <-|_|-><-|_|-><-|_|-><-|_|->
     basic func:
         __init__()
@@ -50,11 +52,13 @@ class PositionalList(object):
             '''Constructor should not be invoked by user.'''
             self.__container = container # instance of PositionList class
             self.__node = node # instance of __Node class
-            
+
         def getContainer(self):
+            ''' Return container'''
             return self.__container
 
         def getNode(self):
+            ''' Return node'''
             return self.__node
 
         def getElement(self):
@@ -67,7 +71,7 @@ class PositionalList(object):
 
         def __ne__(self, other):
             '''Retrun True if other does not represent the same loaction.'''
-            return not (self == other)
+            return self != other
 
     ##### utility method #####
     def __validate(self, p):
@@ -97,21 +101,27 @@ class PositionalList(object):
             self.__next = n
 
         def getPrev(self):
+            ''' Return previous node Position.'''
             return self.__prev
 
         def getNext(self):
+            ''' Return next node Position.'''
             return self.__next
 
         def getElement(self):
+            ''' Return element Position.'''
             return self.__element
 
         def setPrev(self, p):
+            ''' Set previous node Position.'''
             self.__prev = p
 
         def setNext(self, n):
+            ''' Set next node Position.'''
             self.__next = n
 
         def setElement(self, e):
+            ''' Set element Position.'''
             self.__element = e
 
     ##### Positional list class #####
@@ -145,7 +155,7 @@ class PositionalList(object):
         '''Return the Position just before Position p (or None if p is first).'''
         node = self.__validate(p)
         return self.__make_position(node.getPrev())
-    
+
     def after(self, p):
         '''Return the Position just after Position p (or None if p is last).'''
         node = self.__validate(p)
@@ -187,7 +197,7 @@ class PositionalList(object):
     def add_last(self, e):
         '''Insert element e at the back of the list and return new position.'''
         return self.__insert_between(e, self.__trailer.getPrev(), self.__trailer)
-    
+
     def add_before(self, p, e):
         '''Insert element e into list after Positon p and return new Postion.'''
         original = self.__validate(p)
@@ -226,23 +236,15 @@ if __name__ == '__main__':
     print('length of PositionalList:%d'%len(PL))
     print(PL.first().getNode().getElement())
     for x in PL:
-        print(x, end = ' ')
+        print(x, end=' ')
     print('')
     p = PL.first()
     while p:
-        print(p.getElement(), end = '')
+        print(p.getElement(), end='')
         p = PL.after(p)
     print('')
     n = PL.delete(p1)
     p = PL.first()
     while p:
-        print(p.getElement(), end = '')
+        print(p.getElement(), end='')
         p = PL.after(p)
-
-    TA = PositionalList()
-    p = TA.add_first(' ')
-    for x in 'HEHE':
-        p = TA.add_after(p, x)
-    PL.link(PL.last(), TA.first())
-    for x in PL:
-        print(x)

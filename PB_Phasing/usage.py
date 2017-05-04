@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+''' Help information of the program'''
+
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
 def Usage():
+    ''' Help and usage information. '''
     info = '''
 Program: phasing.py 
 Version: 0.2.0
@@ -23,6 +26,7 @@ Usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s st
     print(info)
 
 def Check(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
+    ''' Paramters check.'''
     import sys
     if reg_e <= reg_s:
         print('\n*** Error -e value should > -s value')
@@ -34,5 +38,10 @@ def Check(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
         sys.exit()
     return 0
 
+def author():
+    ''' Return the author's name in Chinese.'''
+    print('''Auther:\n\t_________  _________\n\t| __|__ |  |___|___|\n\t|___|___|  |___|___|\n\t\
+|  ___  |      |      \n\t| |___| |      |      \n\t/       |      |     ''')
+    
 if __name__ == '__main__':
-    Check('in', 'out', 'chr6', 100, 1000, 0.5,  0.6)
+    Check('in', 'out', 'chr6', 100, 1000, 0.5, 0.6)

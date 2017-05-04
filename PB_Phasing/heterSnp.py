@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+''' Filter sequencing error SNPs.'''
+
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
@@ -15,38 +17,48 @@ class Base(object):
         self.__d = d # Deletion number
 
     def addA(self):
+        ''' Add 1 to allele.'''
         self.__a += 1
 
     def addC(self):
+        ''' Add 1 to allele.'''
         self.__c += 1
 
     def addG(self):
+        ''' Add 1 to allele.'''
         self.__g += 1
 
     def addT(self):
+        ''' Add 1 to allele.'''
         self.__t += 1
 
     def addD(self):
+        ''' Add 1 to allele.'''
         self.__d += 1
 
     def getA(self):
+        ''' Return allele count.'''
         return self.__a
 
     def getC(self):
+        ''' Return allele count.'''
         return self.__c
 
     def getG(self):
+        ''' Return allele count.'''
         return self.__g
 
     def getT(self):
+        ''' Return allele count.'''
         return self.__t
 
     def getD(self): # Deletions number
+        ''' Return allele count.'''
         return self.__d
 
     def count(self):
         '''Return the sum of A C G T allele number.'''
-        return (self.__a + self.__c + self.__g + self.__t)
+        return self.__a + self.__c + self.__g + self.__t
 
     def max2(self, dep):
         '''Return a tuple of the 2 maximum allele(A C G T Ref) of this position.'''
@@ -55,7 +67,7 @@ class Base(object):
         first = bases.index(max(bases)) # largest item index
         bases[first] = -1 # "remove" the largest item
         second = bases.index(max(bases)) # get the second largest item
-        base_c = ['A','C','G','T','R'] # base code
+        base_c = ['A', 'C', 'G', 'T', 'R'] # base code
         return (base_c[first], base_c[second])
 
 def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p):
@@ -91,20 +103,8 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
         c_ap = snp_sum[x].getC()/seq_depth[x-reg_s] # Base C allele property of alignment coverage
         g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property of alignment coverage
         t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property of alignment coverage
-        #d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]+snp_sum[x].getD()) # Deletion allele property of physical coverage
         d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]) # Deletion allele property of alignment coverage
-        '''
-        print('%.2f' % max(a_ap, c_ap, g_ap, t_ap)) # for all SNPs' allele property
-        max3 = third([snp_sum[x].getA(), snp_sum[x].getC(),snp_sum[x].getG(),snp_sum[x].getT(),snp_sum[x].getD()])
-        if max3 > 0:
-            print('max3\t%d\t%d\t%d' % (max3,seq_depth[x-reg_s],snp_sum[x].getD()))
-        print('%d\t%d' % (int(100*d_ap), int(100*d_ap_o)))
-        next1_b, next2_b = None, None
-        if x+1 <= reg_e:
-            next1_b = seq_base[x-reg_s+1]
-        if x+2 <= reg_e:
-            next2_b = seq_base[x-reg_s+2]
-        '''
+
         max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
         if seq_depth[x-reg_s] < 8:
             heter_snp[x] = 0 # discard
@@ -119,28 +119,19 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
             elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
                 heter_snp[x] = 4 # alignment error
                 print('    rm mis-aliged SNP:%d' % x)
-                '''
-                elif d_ap > 0.1: # deletion should less than 20% of physical coverage
-                    heter_snp[x] = 5 # discard
-                    print('Find a deletion align error', x)
-                elif next1_b != None and next1_b == next2_b and (next1_b==max2_bases[0] or next1_b==max2_bases[1]):
-                    #repeat region alignment error.
-                    heter_snp[x] = 6
-                    print('Find a repeat error', x)
-                '''
             else:
                 heter_snp[x] = 2
 
     result_heter = {} # heter snp marker result dict
-    #result_homo  = {} # homo snp result dict
     result_alig = {}  # alignment error result dict
-    ho, he, se, dis, ae = 0, 0, 0, 0, 0 # homo snp number, heter snp marker number, sequencing error snp number, discard snp number, alignment error snp number
+    # homo, heter snp marker number; sequencing error number, discard snp number, alignment error number
+    ho, he, se, dis, ae = 0, 0, 0, 0, 0
     with open(snp_p, 'w') as snp_f:
         snp_f.write('\n***\nHeterzygous SNP Markers and Homozygous SNPs :\n')
         snp_f.write('Base Code: 0=A 1=C 2=G 3=t 4=Ref.\n')
         snp_f.write('Tpye\tChromosome\tPosition\tSNP_1\tSNP_2\n')
         for k in sorted(heter_snp): # k is position and v is type 1:seq error 2:heter 3:homo
-            if reg_s<= k <= reg_e: # only within region
+            if reg_s <= k <= reg_e: # only within region
                 v = heter_snp[k]
                 if v == 0: # discard snp
                     dis += 1
@@ -149,20 +140,26 @@ def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, m
                 elif v == 2: # heter snp
                     he += 1
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
-                    result_heter.setdefault(k, max2_bases) # return the tuple of 2 maximum allele 0:A 1:C 2:G 3:T 4:Ref
-                    snp_f.write('heter\t%s\t%d\t%s\t%s\n' % (chrom, k, max2_bases[0], max2_bases[1]))
+                    # return the tuple of 2 maximum allele 0:A 1:C 2:G 3:T 4:Ref
+                    result_heter.setdefault(k, max2_bases)
+                    snp_f.write('heter\t%s\t%d\t%s\t%s\n' % \
+                                (chrom, k, max2_bases[0], max2_bases[1]))
                 elif v == 3: # homo snp
                     ho += 1
-                    #result_homo.setdefault(k, 1) # return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
+                    ## return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
+                    #result_homo.setdefault(k, 1)
                     #snp_f.write('homo\t%s\t%d\n' % (chrom, k))
                 elif v == 4: # alignment error
                     ae += 1
                     snp_f.write('align\t%s\t%d\n' % (chrom, k))
-                    
-        snp_f.write('***\nPrimary SNP result\nHomo SNP: %d\nHeter SNP: %d\nSeq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\nAlignmene Error: %d\n' % (ho,he,se,dis,ae))
+
+        snp_f.write('***\nPrimary SNP result\nHomo SNP: %d\nHeter SNP: %d\n\
+                    Seq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n\
+                    Alignmene Error: %d\n' % (ho, he, se, dis, ae))
     return result_heter # only return the heter snp marker and homo snp pos, seq error cost too much memory
 
 def third(vs):
+    ''' Return thrid maximum allele.'''
     values = vs
     first = values.index(max(values)) # largest item index
     values[first] = -1 # "remove" the largest item
