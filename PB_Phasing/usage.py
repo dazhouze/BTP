@@ -6,14 +6,14 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def Usage():
+def usage():
     ''' Help and usage information. '''
     info = '''
 Program: phasing.py 
 Version: 0.2.0
 Contact: Zhou Ze <zhouze@genomocis.cn>
 
-Usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s start_coor -e end_coor
+usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s start_coor -e end_coor
 \t-h For help information.
 \t-b Input BAM file, only sorted by position is allowed (samtools sort default paramter).
 \t-o Output directory.
@@ -25,16 +25,16 @@ Usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s st
     '''
     print(info)
 
-def Check(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
+def check(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     ''' Paramters check.'''
     import sys
     if reg_e <= reg_s:
         print('\n*** Error -e value should > -s value')
-        Usage()
+        usage()
         sys.exit()
     elif min_heter > max_heter or max_heter > 1:
         print('\n*** Error: -p value should > -d value')
-        Usage()
+        usage()
         sys.exit()
     return 0
 
@@ -44,4 +44,4 @@ def author():
 |  ___  |      |      \n\t| |___| |      |      \n\t/       |      |     ''')
     
 if __name__ == '__main__':
-    Check('in', 'out', 'chr6', 100, 1000, 0.5, 0.6)
+    check('in', 'out', 'chr6', 100, 1000, 0.5, 0.6)

@@ -4,14 +4,14 @@
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p):
+def evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p):
     ''' Evaluat all read in the region through phased SNPs.'''
     hit_f = open(hit_p, 'w')
     phase_0_q, phase_1_q = [], []
     for x in read_queue: # x is Read object
-        qname = x.getQname()
-        start, end = x.getStart(), x.getEnd()
-        read_snp = x.getSnp() # read heter-snp-marker dict
+        qname = x.get_qname()
+        start, end = x.get_start(), x.get_end()
+        read_snp = x.get_snp() # read heter-snp-marker dict
         cons_0_n = 0 # consistence number(same as heter-snp-marker)
         cons_1_n = 0 # consistence number(same as heter-snp-marker)
         conf_n = 0 # conflict number(diff from heter-snp-marker)

@@ -21,7 +21,7 @@ tree:
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p):
+def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p):
     '''Clustering heterozygous SNP marker by optimised binary tree algorithm.
     Use slice tree.
     Back up read queue.
@@ -62,8 +62,8 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         # determine heter-snp-marker pattern of each read
         cursor = read_queue.first() # read queue first Position
         while cursor != None:
-            ele = cursor.getElement() # element
-            start, end = ele.getStart(), ele.getEnd()
+            ele = cursor.get_element() # element
+            start, end = ele.get_start(), ele.get_end()
             if last_min(pos_level, start) > level_e: # already go through 5 level
                 break
             # read queue back up to reduce traverse time
@@ -73,7 +73,7 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
                 bak_queue.add_last(node)
                 cursor = next_c
                 continue
-            read_snp = ele.getSnp() # read heter-snp-marker dict
+            read_snp = ele.get_snp() # read heter-snp-marker dict
             # heter snp pattern
             pat = pattern(start, end, read_snp, heter_snp, level_s, level_e, level_pos)
             #print(pat)
@@ -106,10 +106,9 @@ def Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         tree.pruning(tree.root(), heter_snp, level_pos, tree_p)
         # clean alignment error snps and ambiguous snps
         mis_level = tree.clean(level_s) # clean tree
-        print(mis_level, 'mis_level')
         if mis_level is not None:
             # alignment error in heter_snp dict
-            heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos)
+            heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p)
             level_s = mis_level - 1
         else:
             level_s = level_e # renew level_s equall to next level_s
@@ -195,11 +194,13 @@ def pattern(start, end, read_snp, heter_snp, level_s, level_e, level_pos):
             pass
     return pat
 
-def level_clean(mis_level, heter_snp, pos_level, level_pos):
+def level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p):
     ''' Clean the level because of homo snp and alignemnt error.
         Clean the SNP in heter_snp, pos_level and level_pos.
     '''
     pos = level_pos[mis_level]
+    with open(heter_p, 'a') as heter_f:
+        heter_f.write('mis_align\t%d\n' % pos)
     del heter_snp[pos]
     pos_level = None
     level_pos = None

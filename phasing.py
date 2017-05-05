@@ -19,7 +19,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     '''
     import os.path
     import pysam
-    from PB_Phasing import posList, binTree, detectSnp, heterSnp, clusterSnp, evalRead
+    from PB_Phasing import positional_list, binary_tree, detect_SNP, rm_error_SNP, clustering_SNP, evaluate_read
 
     ##### init output directory #####
     output_dir = os.path.abspath(output)
@@ -39,27 +39,25 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
                                                          reg_e, max_heter, min_heter))
 
     ##### Entry read information #####
-    read_queue = posList.PositionalList() # initialize a positional list
-    read_queue, heter_snp, seq_depth = detectSnp.DetectSNP(chrom, reg_s, reg_e, input, read_queue)
+    read_queue = positional_list.PositionalList() # initialize a positional list
+    read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input, read_queue)
 
     ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
-    heter_snp = heterSnp.HeterSNP(read_queue, heter_snp, seq_depth, \
+    heter_snp = rm_error_SNP.remove(read_queue, heter_snp, seq_depth, \
                                   chrom, reg_s, reg_e, max_heter, min_heter, snp_p) # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
     print(heter_snp)
-    #seq_depth = None # mem release
-    #del seq_depth
 
     ##### Heterozygous SNP clustering by construct binary tree. #####
-    tree = binTree.LinkedBinaryTree() # init a heter-snp-marker tree
-    tree.add_root(binTree.Marker(0, 'root', 0)) # root
+    tree = binary_tree.LinkedBinaryTree() # init a heter-snp-marker tree
+    tree.add_root(binary_tree.Marker(0, 'root', 0)) # root
     tree.setdefault(1, 1)
-    bak_queue = posList.PositionalList() # a back up positional list
-    phase_0, phase_1, pos_level, read_queue, heter_snp = clusterSnp.Clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
+    bak_queue = positional_list.PositionalList() # a back up positional list
+    phase_0, phase_1, pos_level, read_queue, heter_snp = clustering_SNP.clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
     bak_queue = None
     del bak_queue
 
     ##### Reads phasing. #####
-    phase_0_q, phase_1_q = evalRead.Evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
+    phase_0_q, phase_1_q = evaluate_read.evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
     ##### Reads' Qname print out. #####
     out = os.path.join(output, 'phase_0.txt') # path of log.txt
@@ -80,7 +78,7 @@ if __name__ == '__main__': # Run the program.
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hvb:o:p:d:s:e:m:")
     except getopt.GetoptError as err:
-        usage.Usage()
+        usage.usage()
         print(err)  # will print something like "option -a not recognized"
         sys.exit(2)
 
@@ -96,11 +94,11 @@ if __name__ == '__main__': # Run the program.
     # set command line opts value, if any
     for o, a in opts:
         if o == '-h':
-            usage.Usage()
+            usage.usage()
             sys.exit()
 
         if o == '-v':
-            usage.Usage()
+            usage.usage()
             usage.author()
             sys.exit()
 
@@ -126,5 +124,5 @@ if __name__ == '__main__': # Run the program.
             min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
 
     # Run the program
-    usage.Check(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
+    usage.check(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
     main(input, output, chrom, reg_s, reg_e, max_heter, min_heter)

@@ -70,14 +70,14 @@ class Base(object):
         base_c = ['A', 'C', 'G', 'T', 'R'] # base code
         return (base_c[first], base_c[second])
 
-def HeterSNP(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p):
+def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p):
     '''Retrun a dict of heter SNP marker positions.
     read_queue is the SNP positional list
     heter_snp is the candidate heter SNP position.
     '''
     snp_sum = {} # SNP info(kind and frequence) summary by position
     for x in read_queue: # x is Read object
-        for k, v in x.getSnp().items(): # SNP dict k:pos v:[alt, qual]
+        for k, v in x.get_snp().items(): # SNP dict k:pos v:[alt, qual]
             snp_pos = k
             snp_alt = v[0]
             snp_qual = v[1]
