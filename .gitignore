@@ -16,7 +16,6 @@
 # Directory
 __*/
 *__/
-test/
 
 # Python
 *.py[cod]
