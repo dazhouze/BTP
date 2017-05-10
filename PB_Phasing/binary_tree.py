@@ -466,7 +466,7 @@ class LinkedBinaryTree(object):
                                          max(right_num, left_num), min(right_num, left_num)))
                     if left_num is not None and right_num is not None:
                         # left child element value is larger, delete right child tree
-                        if left_num > right_num:
+                        if left_num >= right_num:
                             self.delete_subtree(right_p)
                             if com is not True:
                                 # left child element need to clean as homo snp
@@ -489,10 +489,10 @@ class LinkedBinaryTree(object):
                             elif right_cross > left_cross:
                                 self.delete_subtree(left_p)
                             else: # no link info and crossover info
-                                raise ValueError('depth', dep, 'Should be break point.')
-                        else: # right == left and != 0
-                            print('Wrong at', dep, '-', dep+1, left_num, '=', right_num)
-                            return dep + 1
+                                #raise ValueError('depth', dep, 'Should be break point.')
+                                # break point
+                                self.delete_subtree(right_p) # rm right subtree (all 2 node in same level)
+
 
     def align_error(self, num_direct, cross_direct, sig_num, sig_cross, heter_base):
         '''Return True if SNP is an alignment error.'''
