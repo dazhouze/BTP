@@ -1,16 +1,11 @@
 #!/bin/bash
-dir=./test
+dir=./HLA_A
+gene=A
 rm -rf $dir/
-# low long region 91k
-#python phasing.py -s 28497412   -e 28588898
 # A gene
-python phasing.py -s 29910247   -e 29913661 -o $dir 
-# 7 k
-#python phasing.py -s 29053005 -e 29060759 -o $dir
-cp $dir/log/* ~/D*
-#exit
+python phasing.py -s 29910247 -e 29913661 -o $dir 
 
-
+# fetch fastq
 python fetch.py $dir/phase_0.txt $dir/phase_1.txt
 # BWA Alignment Command
 align="bwa mem -x pacbio"
@@ -32,19 +27,14 @@ rm $dir/phase_*.sam
 rm $dir/*best.bam
 samtools index $dir/phase_0.best.sorted.bam
 samtools index $dir/phase_1.best.sorted.bam
-cp $dir/*.bam ~/D*
-cp $dir/*.bai ~/D*
-exit
-canu -pacbio-raw $dir/phase_0.fq -p A -d $dir/phase_0 genomeSize=8k useGrid=false
-canu -pacbio-raw $dir/phase_1.fq -p A -d $dir/phase_1 genomeSize=8k useGrid=false
-bwa mem $refe $dir/phase_0/A.contigs.fasta >  $dir/phase_0.contigs.sam
-bwa mem $refe $dir/phase_1/A.contigs.fasta >  $dir/phase_1.contigs.sam
+#Canu assembly
+canu -pacbio-raw $dir/phase_0.fq -p $gene -d $dir/phase_0 genomeSize=8k useGrid=false
+canu -pacbio-raw $dir/phase_1.fq -p $gene -d $dir/phase_1 genomeSize=8k useGrid=false
+bwa mem $refe $dir/phase_0/$gene.contigs.fasta >  $dir/phase_0.contigs.sam
+bwa mem $refe $dir/phase_1/$gene.contigs.fasta >  $dir/phase_1.contigs.sam
 $trans $dir/phase_0.contigs.sam > $dir/phase_0.contigs.bam
 $trans $dir/phase_1.contigs.sam > $dir/phase_1.contigs.bam
 rm $dir/phase_0.contigs.sam
 rm $dir/phase_1.contigs.sam
 samtools index $dir/phase_0.contigs.bam
 samtools index $dir/phase_1.contigs.bam
-
-cp $dir/*.bam ~/D*
-cp $dir/*.bai ~/D*
