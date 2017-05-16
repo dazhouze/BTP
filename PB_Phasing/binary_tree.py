@@ -32,13 +32,14 @@ __version__ = '0.2.0'
 class Marker(object):
     '''To store in element of node. Reduce the compute complex.'''
 
-    __slots__ = '__depth', '__num', '__direct', '__cross', '__clean'
+    __slots__ = '__depth', '__num', '__direct', '__cross', '__clean', '__significant'
     def __init__(self, depth, num, direct, cross=0, clean=0):
         self.__depth = depth
         self.__direct = direct # 0 is left, 1 is right
         self.__num = num # link num
         self.__cross = cross # cross over value
         self.__clean = clean # 0 is ok, 1 is need to be clean
+        self.__significant = True
 
     def get_depth(self):
         '''Return depth information of the class Marker'''
@@ -60,6 +61,10 @@ class Marker(object):
         '''Return if need to be clean informatino info of the class Marker'''
         return self.__clean
 
+    def get_sig(self):
+        '''Return if linkage number is significant.'''
+        return self.__significant
+
     def set_depth(self, d):
         '''Set depth information of the class Marker'''
         self.__depth = d
@@ -76,6 +81,10 @@ class Marker(object):
         '''Set if need to be clean informatino info of the class Marker'''
         self.__clean = l
 
+    def set_sig(self, s):
+        '''Set if linkage number is sinificant.'''
+        self.__significant = s
+
     def delete(self):
         '''Set all term as None.'''
         self.__depth = None
@@ -83,6 +92,7 @@ class Marker(object):
         self.__num = None
         self.__cross = None
         self.__clean = None
+        self.__significant = None
 
 class LinkedBinaryTree(object):
     '''Linked representeation of a binary tree structure.'''
@@ -454,11 +464,8 @@ class LinkedBinaryTree(object):
                     right_num = right_mar.get_num()  # right child element link num
                     left_cross = left_mar.get_cross() # value + crossover
                     right_cross = right_mar.get_cross() # value + crossover
-                    '''
-                    pos = level_pos[dep+1]
-                    # heter_snp index of node = dep-1; heter_base: heter snp bases
-                    heter_base = heter_snp[pos]
-                    '''
+
+                    '''homo snp removing.'''
                     # link num directection result, crossover link num directection result
                     num_direct, cross_direct = 0, 0
                     if right_num > left_num:
@@ -466,10 +473,13 @@ class LinkedBinaryTree(object):
                     if right_cross > left_cross:
                         cross_direct = 1
                     com = (num_direct == cross_direct) # compare link num and crossover direction
+
+                    '''linkage number and crossover significant check.'''
                     # test two children's linkage number if significant
                     sig_num = self.significant(left_num, right_num)
                     # test two children's crossover if significant
                     sig_cross = self.significant(left_cross, right_cross)
+
                     # if it is alignment error
                     ae = sig_num is not True and sig_cross is not True
                     if com is True and ae is not True:
@@ -589,21 +599,30 @@ class LinkedBinaryTree(object):
                         mar.set_cross(prev_c + c)
                         assert prev_c != mar.get_cross(), 'Value add error'
 
-    def linkage_result(self):
-        '''Get conclusion of heter-snp-marker linkage infomation.'''
-        h = self.height()
-        sub_l = []*h #left
-        sub_r = []*h #right
+    def linkage_result(self, l):
+        '''Get conclusion of heter-snp-marker linkage infomation.
+        l is length of heter_snp.
+        Result list: [0/1 in heter_snp, if break point, if significant]
+        '''
+        sub_l = [[None, None, None] for x in range(0, l)] # list for sub left tree
         for other in self.__subtree_preorder(self.left(self.root())):# sub left tree
-            node = self.__validate(other)
-            dep = node.get_element().get_depth()  # depth of node
-            direct = node.get_element().get_dir() # directection of node
-            sub_l.append(direct)
+            node = self.__validate(other) # node in tree
+            mar = node.get_element() # class Marker
+            dep = mar.get_depth()  # depth of Marker
+            direct = mar.get_dir() # directection of Marker
+            break_point =  mar.get_num() == -1 # linkage number of Marker == -1 is break point
+            significant = mar.get_sig() # significant of Marker's linkage number
+            sub_l[dep-1] = [direct, break_point, significant]
+
+        sub_r = [[None, None, None] for x in range(0, l)] # list for sub right tree
         for other in self.__subtree_preorder(self.right(self.root())):# sub right tree
-            node = self.__validate(other)
-            dep = node.get_element().get_depth()  # depth of node
-            direct = node.get_element().get_dir() # directection of node
-            sub_r.append(direct)
+            node = self.__validate(other) # node in tree
+            mar = node.get_element() # class Marker
+            dep = mar.get_depth()  # depth of Marker
+            direct = mar.get_dir() # directection of Marker
+            break_point =  mar.get_num() == -1 # linkage number of Marker == -1 is break point
+            significant = mar.get_sig() # significant of Marker's linkage number
+            sub_r[dep-1] = [direct, break_point, significant]
         return sub_l, sub_r
 
     def setdefault(self, p, d, n):

@@ -52,28 +52,24 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     level_s = 1
     while level_s < len(heter_snp):
         ''' Every time grow walk_len level.'''
-        # determine the start level and end level of each round
+        ''' determine the start level and end level of each round.'''
         level_e = level_s + walk_len # new level end
         if level_e > len(heter_snp):
             level_e = len(heter_snp)
         # level_s go back if last round not long enough
-        '''
-        if level_e == len(heter_snp):
-            level_s = level_e - walk_len
-        '''
         print(' - Level:%d-%d Read:%d Marker:%d' % \
               (level_s, level_e, len(read_queue), len(level_pos)))
 
         tree.setdefault(tree_pointer[level_s][0], level_e, 0)
         tree.setdefault(tree_pointer[level_s][1], level_e, 0)
-        # determine heter-snp-marker pattern of each read
+        '''Determine heter-snp-marker pattern of each read.'''
         cursor = read_queue.first() # read queue first Position
         while cursor != None:
             ele = cursor.get_element() # element
             start, end = ele.get_start(), ele.get_end()
             if last_min(pos_level, start) > level_e: # already go through 5 level
                 break
-            # read queue back up to reduce traverse time
+            '''Read queue back up to reduce traverse time.'''
             if  end < level_pos[level_s]: # reads end before of the 5 level need to be delete
                 next_c = read_queue.after(cursor) # cursor point to next node
                 node = read_queue.delete(cursor)
@@ -91,12 +87,12 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
                 v = 1 # link num
                 c = 1 # cross over
                 if (prev_b == 0 or prev_b == 1) and (now_b == 0 or now_b == 1):
-                    # parent's left node add one
+                    '''Add value to  parent's left node.'''
                     if now_b == 0:
-                        # find depth-1, add_value_left means add left to depth x-1 node
+                        '''Find depth-1, add_value_left means add left to depth x-1 node.'''
                         tree.add_value_left(tree_pointer[level_s][0],d-1, v, prev_b)
                         tree.add_value_left(tree_pointer[level_s][1],d-1, v, prev_b)
-                        # cross over
+                        '''Crossover.'''
                         if prev_b == 0:
                             tree.add_cross_right(tree_pointer[level_s][0], d-1, c, 1) # cross over
                             tree.add_cross_right(tree_pointer[level_s][1], d-1, c, 1) # cross over
@@ -106,7 +102,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
                     elif now_b == 1:
                         tree.add_value_right(tree_pointer[level_s][0], d-1, v, prev_b)
                         tree.add_value_right(tree_pointer[level_s][1], d-1, v, prev_b)
-                        # cross over
+                        '''Crossover.'''
                         if prev_b == 0:
                             tree.add_cross_left(tree_pointer[level_s][0],d-1, c, 1) # cross over
                             tree.add_cross_left(tree_pointer[level_s][1],d-1, c, 1) # cross over
@@ -115,20 +111,20 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
                             tree.add_cross_left(tree_pointer[level_s][1], d-1, c, 0) # cross over
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
-        # alignment error and snp error check
+        '''Alignment error and snp error check.'''
         pointers = tree.pruning(tree_pointer[level_s][0], tree_p)
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
         pointers = tree.pruning(tree_pointer[level_s][1], tree_p)
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
-        # clean alignment error snps and ambiguous snps
+        '''Clean alignment error snps and ambiguous snps.'''
         mis_level = tree.clean(tree_pointer[level_s]) # clean tree
         if mis_level is not None:
-            # delete subtree at and after mis_level
+            '''Delete subtree at and after mis_level.'''
             tree.delete_depth(tree_pointer[level_s][0], mis_level)
             tree.delete_depth(tree_pointer[level_s][1], mis_level)
-            # alignment error in heter_snp dict
+            '''Remove homo snp and alignment error snp in heter_snp dict.'''
             heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p)
             tree_pointer.pop(mis_level)
             level_s = mis_level - 1
@@ -137,7 +133,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         # end of walk through heter_snp
 
     tree.preorder_indent(tree.root())
-    phase_0, phase_1 = tree.linkage_result()
+    phase_0, phase_1 = tree.linkage_result(len(heter_snp)) # [0/1 in heter_snp, if break point, if significant]
     #print(phase_0, phase_1)
 
     # move bak_queue to read_queue

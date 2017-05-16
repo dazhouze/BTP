@@ -9,7 +9,7 @@ Store all SNPs inforamtion.
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-##### Data structure #####
+''' Data structure '''
 class Read(object):
     ''' Store all usefull information of a read. (one line in BAM file.)'''
     __slots__ = '__qname', '__start', '__end', '__ave_sq', '__snp' #streamline memeory usage
@@ -62,33 +62,34 @@ def detection(chrom, reg_s, reg_e, input, read_queue):
     # initialize the first item in read_queue list and store the position in varible p
     p = read_queue.add_first(Read('Begin', 0, 0, 0, None))
 
-    # Identify SAM/BAM file to open different pysam IO handle. #
+    '''Identify SAM/BAM file to open different pysam IO handle.'''
     if os.path.splitext(input)[1] == '.bam': # BAM file
         bamfile = pysam.AlignmentFile(input, "rb") # file handle of BAM file
     else:
         raise IOError('Please choose a BAM file.(sorted by position)')
     target = bamfile.fetch(chrom, reg_s, reg_e) # iterable method of target region read
 
-    ##### Detect all SNP in all read #####
+    ''' Detect all SNP in all read '''
     for read in target:
         qname = read.query_name
         start = read.reference_start
         end = read.reference_end
-        # average sequencing quality
+        # average sequencing quality.
         ave_sq = sum(read.query_qualities) / float(len(read.query_qualities))
         snp = {} # dict
-        # count sequencing depth of each position
+        '''Count sequencing depth of each position.'''
         for x in read.get_reference_positions(): # add 1 to seq_depth array
             if reg_s <= x <= reg_e: # only consider pos within target region
                 seq_depth[x-reg_s] += 1
         '''
+        Examples:
         read_pos, ref_pos, ref_seq = x[0:3]
         Soft clipping: (0, None, None)
         Deletion: (None, 29052325, 'A')
         Insertion: (88, None, None)
         Match(SNP): (116, 29052381, 'a') (117, 29052382, 'C')
         '''
-        # read information entry
+        '''Read information entry'''
         for x in read.get_aligned_pairs(matches_only=False, with_seq=True):
             # tuple of read pos, ref pos, ref seq
             read_pos, ref_pos, ref_seq = x[0:3]

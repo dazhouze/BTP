@@ -95,7 +95,7 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
             else:
                 raise ValueError('Base %s is not in ACGT.' % snp_alt)
 
-    # determine the SNP types: 1=seq error, 2=heter SNP, 3=homo SNP, 0=unknown
+    ''' Determine the SNP types: 1=seq error, 2=heter SNP, 3=homo SNP, 0=unknown.'''
     print(' - Classify deteced SNPs.')
     for x in heter_snp: # candidate heter snp positions
         ref_ap = 1 - snp_sum[x].count()/seq_depth[x-reg_s] # ref allele property
@@ -104,19 +104,17 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
         g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property of alignment coverage
         t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property of alignment coverage
         d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]) # Deletion allele property of alignment coverage
-
         max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
-        if seq_depth[x-reg_s] < 8:
+
+        if seq_depth[x-reg_s] < 8: # low depth
             heter_snp[x] = 0 # discard
         elif ref_ap > max_heter: # Sequencing Error
             heter_snp[x] = 1
-        #elif max(a_ap, c_ap, g_ap, t_ap) > max_heter: # homo snp
-        #    heter_snp[x] = 3
         elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
             if 'R' not in max2_bases: # double heter snp
                 heter_snp[x] = 4 # alignment error
                 print('    rm double-heter SNP:%d' % x)
-            elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # Alignment Error
+            elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # third largest allele too large
                 heter_snp[x] = 4 # alignment error
                 print('    rm mis-aliged SNP:%d' % x)
             else:
@@ -144,11 +142,6 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
                     result_heter.setdefault(k, max2_bases)
                     snp_f.write('heter\t%s\t%d\t%s\t%s\n' % \
                                 (chrom, k, max2_bases[0], max2_bases[1]))
-                elif v == 3: # homo snp
-                    ho += 1
-                    ## return the tuple of 2 maximum alleles 0:A 1:C 2:G 3:T 4:Ref
-                    #result_homo.setdefault(k, 1)
-                    #snp_f.write('homo\t%s\t%d\n' % (chrom, k))
                 elif v == 4: # alignment error
                     ae += 1
                     snp_f.write('error\t%s\t%d\n' % (chrom, k))

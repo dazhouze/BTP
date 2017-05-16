@@ -15,7 +15,7 @@ def evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e,
         cons_0_n = 0 # consistence number(same as heter-snp-marker)
         cons_1_n = 0 # consistence number(same as heter-snp-marker)
         conf_n = 0 # conflict number(diff from heter-snp-marker)
-        # phase_0 , phase_1 heter-snp-marker hit count
+        '''phase_0 , phase_1 heter-snp-marker hit count.'''
         for k in heter_snp: # k is pos, v is tuple of alt
             if start <= k <= end: # heter-snp-marker is in read region
                 v = read_snp.get(k, ['R', 0])

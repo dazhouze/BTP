@@ -1,5 +1,6 @@
 dir=./HLA_B
 gene=B
+rm -rf $dir
 python3 phasing.py -s 31321649 -e 31324989 -o $dir 
 
 # fetch fastq
@@ -26,10 +27,10 @@ samtools index $dir/phase_0.best.sorted.bam
 samtools index $dir/phase_1.best.sorted.bam
 #Canu assembly
 ####
-/share/app/canu/Linux-amd64/bin/canu -pacbio-raw $dir/phase_0.fq -p $gene -d $dir/phase_0 genomeSize=10k useGrid=false
+canu -pacbio-raw $dir/phase_0.fq -p $gene -d $dir/phase_0 genomeSize=10k useGrid=false
 canu -pacbio-raw $dir/phase_1.fq -p $gene -d $dir/phase_1 genomeSize=8k useGrid=false
-bwa mem $refe $dir/phase_0/$gene.contigs.fasta >  $dir/phase_0.contigs.sam
-bwa mem $refe $dir/phase_1/$gene.contigs.fasta >  $dir/phase_1.contigs.sam
+bwa mem $refe $dir/phase_0/$gene.con*.fasta >  $dir/phase_0.contigs.sam
+bwa mem $refe $dir/phase_1/$gene.con*.fasta >  $dir/phase_1.contigs.sam
 $trans $dir/phase_0.contigs.sam > $dir/phase_0.contigs.bam
 $trans $dir/phase_1.contigs.sam > $dir/phase_1.contigs.bam
 rm $dir/phase_0.contigs.sam

@@ -21,7 +21,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     import pysam
     from PB_Phasing import positional_list, binary_tree, detect_SNP, filter_SNP, clustering_SNP, evaluate_read
 
-    ##### init output directory #####
+    ''' init output directory '''
     output_dir = os.path.abspath(output)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -34,16 +34,16 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     hit_p = os.path.join(log, 'read_eval.txt') # reads evaluation
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
 
-    ##### Entry read information #####
+    ''' Entry read information '''
     read_queue = positional_list.PositionalList() # initialize a positional list
     read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input, read_queue)
 
-    ##### Identify heterozygous SNP marker; seq error and homo SNP (within block) #####
+    ''' Identify heterozygous SNP marker; seq error and homo SNP (within block) '''
     # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
     heter_snp = filter_SNP.remove(read_queue, heter_snp, seq_depth, \
                                   chrom, reg_s, reg_e, max_heter, min_heter, snp_p) 
 
-    ##### Heterozygous SNP clustering by construct binary tree. #####
+    ''' Heterozygous SNP clustering by construct binary tree. '''
     tree = binary_tree.LinkedBinaryTree() # init a heter-snp-marker tree
     tree.add_root(binary_tree.Marker(0, 'root', 0)) # root
     tree.setdefault(tree.root(), 1, 1)
@@ -52,10 +52,10 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     bak_queue = None
     del bak_queue
 
-    ##### Reads phasing. #####
+    ''' Reads phasing. '''
     phase_0_q, phase_1_q = evaluate_read.evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
-    ##### Reads' Qname print out. #####
+    ''' Reads' Qname print out. '''
     out = os.path.join(output, 'phase_0.txt') # path of phase_0 qname
     with open(out, 'w') as out_f:
         for x in phase_0_q:
@@ -84,7 +84,7 @@ if __name__ == '__main__': # Run the program.
         print(err)  # will print something like "option -a not recognized"
         sys.exit(2)
 
-    # set default value
+    '''Set default value.'''
     output = 'HLA_test' # output dirctory
     input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
     chrom = 'chr6' # chromosome name
@@ -93,7 +93,7 @@ if __name__ == '__main__': # Run the program.
     max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
     min_heter = 0.25 # #lower heter snp cutoff, alt fre/seq depth
 
-    # set command line opts value, if any
+    '''Set command line opts value, if any.'''
     for o, a in opts:
         if o == '-h':
             usage.usage()
@@ -125,6 +125,6 @@ if __name__ == '__main__': # Run the program.
         elif o == '-d':
             min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
 
-    # Run the program
+    '''Run the program.'''
     usage.check(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
     main(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
