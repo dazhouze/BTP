@@ -131,37 +131,16 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         else:
             level_s = level_e # renew level_s equall to next level_s
         # end of walk through heter_snp
-
     tree.preorder_indent(tree.root())
-    phase_0, phase_1 = tree.linkage_result(len(heter_snp)) # [0/1 in heter_snp, if break point, if significant]
-    #print(phase_0, phase_1)
-
-    # move bak_queue to read_queue
-    cursor = bak_queue.first()
-    while cursor != None:
-        next_c = bak_queue.after(cursor) # cursor point to next node
-        node = bak_queue.delete(cursor)
-        read_queue.add_last(node)
-        cursor = next_c
-    assert len(bak_queue) == 0, 'bak queue is not clean up'
-
-    # link level pos and base
-    assert len(heter_snp) == len(phase_0), 'heter snp length %d\tphase snp:%d' % \
-                                                    (len(heter_snp), len(phase_0))
-    for k in range(1, len(phase_0)+1): # k is level, v is pos
-        v = level_pos[k]
-        phase_0[k-1] = heter_snp[v][phase_0[k-1]]
-        phase_1[k-1] = heter_snp[v][phase_1[k-1]]
 
     with open(heter_p, 'w') as heter_f:
-        heter_f.write('***\nHeterzygous SNP Markers Phaseing Result:\n')
-        heter_f.write('Chromosome\tPosition\tPhase_0\tPhase_1\n')
-        for x in range(0, len(phase_0)):
-            pos = level_pos[x+1]
-            heter_f.write('%s\t%d\t%s\t%s\n' % (chrom, pos, phase_0[x], phase_1[x]))
-    print(phase_0, phase_1)
+        phase_0, phase_1, phase_pos = tree.linkage_result(len(heter_snp), heter_snp, level_pos, chrom, heter_f)
+    
+    read_queue = move_back(bak_queue, read_queue) # move bak_queue back to read_queue
 
-    return phase_0, phase_1, pos_level, read_queue, heter_snp
+    #print(phase_0)
+    #print(phase_1)
+    return phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp
 
 def last_min(pos_level, coor): # pruning level
     '''Return the last (the largest) k's value of dict less than v:'''
@@ -224,3 +203,14 @@ def level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p):
         pos_level.setdefault(k, i)
         level_pos.setdefault(i, k)
     return heter_snp, pos_level, level_pos
+
+def move_back(bak_queue, read_queue):
+    '''Move bak_queue to read_queue.'''
+    cursor = bak_queue.first()
+    while cursor != None:
+        next_c = bak_queue.after(cursor) # cursor point to next node
+        node = bak_queue.delete(cursor)
+        read_queue.add_last(node)
+        cursor = next_c
+    assert len(bak_queue) == 0, 'bak queue is not clean up'
+    return read_queue

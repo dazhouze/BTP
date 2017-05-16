@@ -400,15 +400,15 @@ class LinkedBinaryTree(object):
             for other in self.__subtree_inorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
-                direct = node.get_element().get_dir() # directection of node
-                num = node.get_element().get_num() # directection of node
+                direct = node.get_element().get_dir() # direction of node
+                num = node.get_element().get_num() # direction of node
                 print(2*dep*' '+ str(direct) + ' ' + str(num))
 
     def preorder_indent(self, p, d=0):
         node = self.__validate(p)
         dep = d + node.get_element().get_depth()  # depth of node
-        direct = node.get_element().get_dir() # directection of node
-        num = node.get_element().get_num() # directection of node
+        direct = node.get_element().get_dir() # direction of node
+        num = node.get_element().get_num() # direction of node
         print(2*dep*' '+ str(direct) + ' -> ' + str(num))
         for c in self.children(p):
             self.preorder_indent(c, d)
@@ -448,12 +448,13 @@ class LinkedBinaryTree(object):
         if not self.is_empty():
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
-                #print(other, node.get_element())
                 dep = node.get_element().get_depth()  # left child element value
                 if dep == 0: # root
                     continue
+                '''
                 if self.num_children(other) == 0: # leaf
                     continue
+                '''
                 left_p = self.left(other)  # left child position
                 right_p = self.right(other) # right child position
                 if left_p is not None and right_p is not None:
@@ -466,7 +467,7 @@ class LinkedBinaryTree(object):
                     right_cross = right_mar.get_cross() # value + crossover
 
                     '''homo snp removing.'''
-                    # link num directection result, crossover link num directection result
+                    # link num direction result, crossover link num direction result
                     num_direct, cross_direct = 0, 0
                     if right_num > left_num:
                         num_direct = 1
@@ -474,38 +475,40 @@ class LinkedBinaryTree(object):
                         cross_direct = 1
                     com = (num_direct == cross_direct) # compare link num and crossover direction
 
-                    '''linkage number and crossover significant check.'''
-                    # test two children's linkage number if significant
+                    '''Test two children's linkage number if significant.'''
                     sig_num = self.significant(left_num, right_num)
-                    # test two children's crossover if significant
+                    left_mar.set_sig(sig_num) # set class Marker's linkage significance (T/F)
+                    right_mar.set_sig(sig_num) # set class Marker's linkage significance (T/F)
+                    '''Test two children's crossover if significant.'''
                     sig_cross = self.significant(left_cross, right_cross)
 
-                    # if it is alignment error
+                    '''Alignment error check.'''
                     ae = sig_num is not True and sig_cross is not True
-                    if com is True and ae is not True:
+
+                    if com is True and ae is not True: # good heter snp marker
                         pruning_f.write('%d\t%d\t%d\t%d\t%d\t%d\n' % \
                                         (left_num, right_num, left_cross, right_cross, \
                                          max(right_num, left_num), min(right_num, left_num)))
                     if left_num is not None and right_num is not None:
-                        # left child element value is larger, delete right child tree
                         if left_num >= right_num:
+                            '''Left child element value is larger, delete right child tree.'''
                             result.append(left_p) # add left child node Position to result list
                             self.delete_subtree(right_p)
                             if com is not True:
-                                # left child element need to clean as homo snp
+                                '''Left child element need to clean as homo snp.'''
                                 self.__validate(left_p).get_element().set_clean(2)
                             if ae is True:
-                                # left child element need to clean as seq/align error
+                                '''Left child element need to clean as seq/align error.'''
                                 self.__validate(left_p).get_element().set_clean(1)
-                        # right child element value is larger, delete left child tree
                         elif left_num < right_num:
+                            '''Right child element value is larger, delete left child tree.'''
                             result.append(right_p) # add right child node Position to result list
                             self.delete_subtree(left_p)
                             if com is not True:
-                                # right child element need to clean as homo snp
+                                '''Right child element need to clean as homo snp.'''
                                 self.__validate(right_p).get_element().set_clean(2)
                             if ae is True:
-                                # right child element need to clean as seq/align error
+                                '''Right child element need to clean as seq/align error.'''
                                 self.__validate(right_p).get_element().set_clean(1)
                         elif left_num == right_num == 0: # no link information
                             if left_cross > right_cross: # use cross information
@@ -515,10 +518,10 @@ class LinkedBinaryTree(object):
                                 result.append(right_p) # add right child node Position to result list
                                 self.delete_subtree(left_p)
                             else: # no link info and crossover info
-                                #raise ValueError('depth', dep, 'Should be break point.')
-                                # break point
+                                '''Break point.'''
                                 result.append(left_p) # add left child node Position to result list
                                 self.delete_subtree(right_p) # rm right subtree (all 2 node in same level)
+                                left_mar.set_num(-1) # set linkage num as -1, for break point
         return result # result list: tree node Position
 
     def significant(self, v1, v2):
@@ -538,7 +541,7 @@ class LinkedBinaryTree(object):
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
-                direct = node.get_element().get_dir() # directection of node
+                direct = node.get_element().get_dir() # direction of node
                 if dep == d and direct == directect: # make sure parent's  is same as direct
                     left_c = self.left(other)
                     if left_c is not None:
@@ -557,7 +560,7 @@ class LinkedBinaryTree(object):
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
-                direct = node.get_element().get_dir() # directection of node
+                direct = node.get_element().get_dir() # direction of node
                 if dep == d and direct == directect: # make sure parent's  is same as direct
                     right_c = self.right(other) # left child position
                     if right_c is not None:
@@ -574,7 +577,7 @@ class LinkedBinaryTree(object):
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
-                direct = node.get_element().get_dir() # directection of node
+                direct = node.get_element().get_dir() # direction of node
                 if dep == d and direct == directect: # make sure parent's  is same as direct
                     left_c = self.left(other)
                     if left_c is not None:
@@ -590,7 +593,7 @@ class LinkedBinaryTree(object):
             for other in self.__subtree_preorder(p):
                 node = self.__validate(other)
                 dep = node.get_element().get_depth()  # depth of node
-                direct = node.get_element().get_dir() # directection of node
+                direct = node.get_element().get_dir() # direction of node
                 if dep == d and direct == directect: # make sure parent's  is same as direct
                     right_c = self.right(other)
                     if right_c is not None:
@@ -599,31 +602,62 @@ class LinkedBinaryTree(object):
                         mar.set_cross(prev_c + c)
                         assert prev_c != mar.get_cross(), 'Value add error'
 
-    def linkage_result(self, l):
+    def linkage_result(self, l, heter_snp, level_pos, chrom, heter_f):
         '''Get conclusion of heter-snp-marker linkage infomation.
         l is length of heter_snp.
         Result list: [0/1 in heter_snp, if break point, if significant]
         '''
-        sub_l = [[None, None, None] for x in range(0, l)] # list for sub left tree
+        heter_f.write('***\nHeterzygous SNP Markers Phaseing Result:\n')
+        heter_f.write('Chromosome\tPosition\tPhase_0\tPhase_1\tFragment\n')
+        heter_print = [[None, None, None] for x in range(0, len(heter_snp))] # for result print
+
+        sub_l = [] # list for sub left tree
+        sub_r = [] # list for sub right tree
+        phase_s, phase_e = -1, -1 # phase region start and end
+        phase_pos = [] # list for phased snps' region start and end
+        temp_array = [] # temporary array for a fragment without break point
+        frag = 0 # fragment caused by break point
         for other in self.__subtree_preorder(self.left(self.root())):# sub left tree
             node = self.__validate(other) # node in tree
             mar = node.get_element() # class Marker
-            dep = mar.get_depth()  # depth of Marker
-            direct = mar.get_dir() # directection of Marker
-            break_point =  mar.get_num() == -1 # linkage number of Marker == -1 is break point
+            dep, direct = mar.get_depth(), mar.get_dir() # depth and direction of Marker
+            pos = level_pos[dep] # heter snp pos
+            base = heter_snp[pos][direct] # base of Marker: ACGT and Ref
             significant = mar.get_sig() # significant of Marker's linkage number
-            sub_l[dep-1] = [direct, break_point, significant]
+            if phase_s == -1: # inite value
+                phase_s = pos
+            if mar.get_num() == -1: # linkage number of Marker == -1 is break point
+                sub_l.append(temp_array)
+                temp_array = [] # renew temp_array as an empty one
+                frag += 1
+                phase_pos.append([phase_s, pos])
+                phase_s = -1 # re-inite
+            temp_array.append([base, significant])
+            heter_print[dep-1][0], heter_print[dep-1][2] = base, frag
+        sub_l.append(temp_array)
+        temp_array = [] # renew temp_array as an empty one
+        frag = 0
+        phase_pos.append([phase_s, pos])
 
-        sub_r = [[None, None, None] for x in range(0, l)] # list for sub right tree
         for other in self.__subtree_preorder(self.right(self.root())):# sub right tree
             node = self.__validate(other) # node in tree
             mar = node.get_element() # class Marker
-            dep = mar.get_depth()  # depth of Marker
-            direct = mar.get_dir() # directection of Marker
-            break_point =  mar.get_num() == -1 # linkage number of Marker == -1 is break point
+            dep, direct = mar.get_depth(), mar.get_dir() # depth and direction of Marker
+            pos = level_pos[dep] # heter snp pos
+            base = heter_snp[pos][direct] # base of Marker: ACGT and Ref
             significant = mar.get_sig() # significant of Marker's linkage number
-            sub_r[dep-1] = [direct, break_point, significant]
-        return sub_l, sub_r
+            if mar.get_num() == -1: # linkage number of Marker == -1 is break point
+                sub_r.append(temp_array)
+                temp_array = [] # renew temp_array as an empty one
+            temp_array.append([base, significant])
+            heter_print[dep-1][1], heter_print[dep-1][2] = base, frag
+        sub_r.append(temp_array)
+
+        for x in range(0, len(heter_print)):
+            pos = level_pos[x+1]
+            heter_f.write('%s\t%d\t%s\t%s\t%d\n' % (chrom, pos, heter_print[x][0], heter_print[x][1], heter_print[x][2]))
+
+        return sub_l, sub_r, phase_pos
 
     def setdefault(self, p, d, n):
         '''Init 2 child of depth d and set default v.

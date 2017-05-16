@@ -125,9 +125,8 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
     # homo, heter snp marker number; sequencing error number, discard snp number, alignment error number
     ho, he, se, dis, ae = 0, 0, 0, 0, 0
     with open(snp_p, 'w') as snp_f:
-        snp_f.write('\n***\nHeterzygous SNP Markers and Homozygous SNPs :\n')
-        snp_f.write('Base Code: 0=A 1=C 2=G 3=t 4=Ref.\n')
-        snp_f.write('Tpye\tChromosome\tPosition\tSNP_1\tSNP_2\n')
+        snp_f.write('***\nHeterzygous SNP Markers and Homozygous SNPs :\n\
+                    Tpye\tChromosome\tPosition\tSNP_1\tSNP_2\n')
         for k in sorted(heter_snp): # k is position and v is type 1:seq error 2:heter 3:homo
             if reg_s <= k <= reg_e: # only within region
                 v = heter_snp[k]
@@ -140,15 +139,15 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
                     # return the tuple of 2 maximum allele 0:A 1:C 2:G 3:T 4:Ref
                     result_heter.setdefault(k, max2_bases)
-                    snp_f.write('heter\t%s\t%d\t%s\t%s\n' % \
+                    snp_f.write('Candidate\t%s\t%d\t%s\t%s\n' % \
                                 (chrom, k, max2_bases[0], max2_bases[1]))
                 elif v == 4: # alignment error
                     ae += 1
-                    snp_f.write('error\t%s\t%d\n' % (chrom, k))
+                    snp_f.write('Error\t%s\t%d\n' % (chrom, k))
 
-        snp_f.write('***\nPrimary SNP result\nHomo SNP: %d\nHeter SNP: %d\n\
+        snp_f.write('***\nPrimary SNP result\nCandidate SNPs: %d\n\
                     Seq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n\
-                    Alignmene Error: %d\n' % (ho, he, se, dis, ae))
+                    Alignmene Error: %d\n' % (he, se, dis, ae))
     return result_heter # only return the heter snp marker and homo snp pos, seq error cost too much memory
 
 def third(vs):
