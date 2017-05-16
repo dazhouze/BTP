@@ -37,8 +37,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
         sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\n\
                     max_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s,\
                                                          reg_e, max_heter, min_heter))
-    print(' - Start detect: chr:%s, start:%d, end:%d\n' % (chrom, reg_s, reg_e))
-    print(' - Input:%s\nOutput:%s\n' % (input, output))
+    print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input, output))
 
     ''' Entry read information '''
     read_queue = positional_list.PositionalList() # initialize a positional list
@@ -54,20 +53,24 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     tree.add_root(binary_tree.Marker(0, 'root', 0)) # root
     tree.setdefault(tree.root(), 1, 1)
     bak_queue = positional_list.PositionalList() # a back up positional list
-    phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp = clustering_SNP.clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
+    phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp = clustering_SNP.clustering\
+        (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
 
-    ''' Reads phasing. '''
-    phase_0_q, phase_1_q = evaluate_read.evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
+    ''' Reads evaluation. '''
+    phase_0_q, phase_1_q = evaluate_read.evaluation\
+        (phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
     ''' Reads' Qname print out. '''
-    out = os.path.join(output, 'phase_0.txt') # path of phase_0 qname
-    with open(out, 'w') as out_f:
-        for x in phase_0_q:
-            out_f.write('%s\n' % x)
-    out = os.path.join(output, 'phase_1.txt') # path of phase_1 qname
-    with open(out, 'w') as out_f:
-        for x in phase_1_q:
-            out_f.write('%s\n' % x)
+    for fragment in range(0, len(phase_0_q)):
+        '''fragment caused by break point(uncovered region on reference genome).'''
+        out = os.path.join(output, 'phase_0.%d.txt' % fragment) # path of phase_0 qname
+        with open(out, 'w') as out_f:
+            for x in phase_0_q[fragment]:
+                out_f.write('%s\n' % x)
+        out = os.path.join(output, 'phase_1.%d.txt' % fragment) # path of phase_1 qname
+        with open(out, 'w') as out_f:
+            for x in phase_1_q[fragment]:
+                out_f.write('%s\n' % x)
 
     with open(sum_p, 'a') as sum_f: # path of summary
         sum_f.write('Detected reads number: %d\nDetected heter-SNPs number: %d\n'\

@@ -402,14 +402,14 @@ class LinkedBinaryTree(object):
                 dep = node.get_element().get_depth()  # depth of node
                 direct = node.get_element().get_dir() # direction of node
                 num = node.get_element().get_num() # direction of node
-                print(2*dep*' '+ str(direct) + ' ' + str(num))
+                print(dep*' '+ str(direct) + ' ' + str(num))
 
     def preorder_indent(self, p, d=0):
         node = self.__validate(p)
         dep = d + node.get_element().get_depth()  # depth of node
         direct = node.get_element().get_dir() # direction of node
         num = node.get_element().get_num() # direction of node
-        print(2*dep*' '+ str(direct) + ' -> ' + str(num))
+        print(dep*' '+ str(direct) + ' -> ' + str(num))
         for c in self.children(p):
             self.preorder_indent(c, d)
 
@@ -438,7 +438,7 @@ class LinkedBinaryTree(object):
                 node.set_right(None)
                 other = None
 
-    def pruning(self, p, tree_p):
+    def pruning(self, p, tree_p, subtree_dir):
         '''Decide the SNP linkage result(based on element value).
         And crop non SNP linkage branch and subtree.
         And return the root of tree or the break point(new root of tree)
@@ -490,7 +490,7 @@ class LinkedBinaryTree(object):
                                         (left_num, right_num, left_cross, right_cross, \
                                          max(right_num, left_num), min(right_num, left_num)))
                     if left_num is not None and right_num is not None:
-                        if left_num >= right_num:
+                        if left_num >= right_num > 0:
                             '''Left child element value is larger, delete right child tree.'''
                             result.append(left_p) # add left child node Position to result list
                             self.delete_subtree(right_p)
@@ -500,7 +500,7 @@ class LinkedBinaryTree(object):
                             if ae is True:
                                 '''Left child element need to clean as seq/align error.'''
                                 self.__validate(left_p).get_element().set_clean(1)
-                        elif left_num < right_num:
+                        elif right_num > left_num > 0:
                             '''Right child element value is larger, delete left child tree.'''
                             result.append(right_p) # add right child node Position to result list
                             self.delete_subtree(left_p)
@@ -519,9 +519,14 @@ class LinkedBinaryTree(object):
                                 self.delete_subtree(left_p)
                             else: # no link info and crossover info
                                 '''Break point.'''
-                                result.append(left_p) # add left child node Position to result list
-                                self.delete_subtree(right_p) # rm right subtree (all 2 node in same level)
-                                left_mar.set_num(-1) # set linkage num as -1, for break point
+                                if subtree_dir == 0: # left subtree
+                                    result.append(left_p) # add left child node Position to result list
+                                    self.delete_subtree(right_p)
+                                    left_mar.set_num(-1) # set linkage num as -1, for break point
+                                else: # right subtree
+                                    result.append(right_p) # add right child node Position to result list
+                                    self.delete_subtree(left_p)
+                                    right_mar.set_num(-1) # set linkage num as -1, for break point
         return result # result list: tree node Position
 
     def significant(self, v1, v2):
@@ -611,8 +616,8 @@ class LinkedBinaryTree(object):
         heter_f.write('Chromosome\tPosition\tPhase_0\tPhase_1\tFragment\n')
         heter_print = [[None, None, None] for x in range(0, len(heter_snp))] # for result print
 
-        sub_l = [] # list for sub left tree
-        sub_r = [] # list for sub right tree
+        sub_l = [] # 2D list for sub left tree
+        sub_r = [] # 2D list for sub right tree
         phase_s, phase_e = -1, -1 # phase region start and end
         phase_pos = [] # list for phased snps' region start and end
         temp_array = [] # temporary array for a fragment without break point
@@ -636,7 +641,6 @@ class LinkedBinaryTree(object):
             heter_print[dep-1][0], heter_print[dep-1][2] = base, frag
         sub_l.append(temp_array)
         temp_array = [] # renew temp_array as an empty one
-        frag = 0
         phase_pos.append([phase_s, pos])
 
         for other in self.__subtree_preorder(self.right(self.root())):# sub right tree

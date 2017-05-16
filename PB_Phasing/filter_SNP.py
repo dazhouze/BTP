@@ -75,6 +75,7 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
     read_queue is the SNP positional list
     heter_snp is the candidate heter SNP position.
     '''
+    print(' - Start SNPs filtering.')
     snp_sum = {} # SNP info(kind and frequence) summary by position
     for x in read_queue: # x is Read object
         for k, v in x.get_snp().items(): # SNP dict k:pos v:[alt, qual]
@@ -148,6 +149,7 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
         snp_f.write('***\nPrimary SNP result\nCandidate SNPs: %d\n\
                     Seq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n\
                     Alignmene Error: %d\n' % (he, se, dis, ae))
+    print(' - Finished SNPs filtering. Candidate SNPs: %d' % he)
     return result_heter # only return the heter snp marker and homo snp pos, seq error cost too much memory
 
 def third(vs):

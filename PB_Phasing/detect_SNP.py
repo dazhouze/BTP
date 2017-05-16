@@ -50,6 +50,7 @@ def detection(chrom, reg_s, reg_e, input, read_queue):
     import os
     import pysam
 
+    print(' - Start reads detection. %s:%d-%d %d bp' % (chrom, reg_s, reg_e, (reg_e-reg_s)))
     # init varibls for Phasing #
     heter_snp = {}
     ''' All possible position of SNPs.
@@ -113,5 +114,5 @@ def detection(chrom, reg_s, reg_e, input, read_queue):
     read_queue.delete(read_queue.first()) # move first "begin" item, by test:
     assert read_queue.first().get_node().get_element().get_qname() != 'Begin', \
                                                     'Fisrt item is not removed.'
-    print(' - Detected reads:%d' % len(read_queue))
+    print(' - Finished detection. Detected reads: %d' % len(read_queue))
     return read_queue, heter_snp, seq_depth

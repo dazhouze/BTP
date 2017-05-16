@@ -29,6 +29,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     Back up read queue.
     Clean homo snp tree.
     '''
+    print(' - Start clustering SNPs.')
     # start from 1. tree level dict: k is sorted heter_snp position, v is level in tree
     pos_level = {}
     # start from 1. k, v reverse of pos_level
@@ -57,9 +58,8 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         if level_e > len(heter_snp):
             level_e = len(heter_snp)
         # level_s go back if last round not long enough
-        print(' - Level:%d-%d Read:%d Marker:%d' % \
+        print('  - Level:%d-%d Read:%d Marker:%d' % \
               (level_s, level_e, len(read_queue), len(level_pos)))
-
         tree.setdefault(tree_pointer[level_s][0], level_e, 0)
         tree.setdefault(tree_pointer[level_s][1], level_e, 0)
         '''Determine heter-snp-marker pattern of each read.'''
@@ -112,10 +112,10 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         '''Alignment error and snp error check.'''
-        pointers = tree.pruning(tree_pointer[level_s][0], tree_p)
+        pointers = tree.pruning(tree_pointer[level_s][0], tree_p, 0) # left subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
-        pointers = tree.pruning(tree_pointer[level_s][1], tree_p)
+        pointers = tree.pruning(tree_pointer[level_s][1], tree_p, 1) # right subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
         '''Clean alignment error snps and ambiguous snps.'''
@@ -131,6 +131,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         else:
             level_s = level_e # renew level_s equall to next level_s
         # end of walk through heter_snp
+    print(' - Finish construct phased SNPs tree.')
     tree.preorder_indent(tree.root())
 
     with open(heter_p, 'w') as heter_f:
