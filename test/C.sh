@@ -1,4 +1,3 @@
-#!/bin/bash
 dir=./HLA_C
 gene=C
 rm -rf $dir/

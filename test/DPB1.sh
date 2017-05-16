@@ -1,4 +1,3 @@
-#!/bin/bash
 dir=./HLA_DPB1
 gene=DPB1
 python3 phasing.py -s 33043703 -e 3305747 -o $dir 

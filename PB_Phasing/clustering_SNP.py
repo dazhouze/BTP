@@ -7,6 +7,8 @@ Remove homo SNP and alignment error SNPS.
 
 heter_snp list
     0-start
+tree_pointer list
+    0-start
 
 pos_level dict
     1-start

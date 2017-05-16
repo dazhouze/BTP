@@ -56,16 +56,16 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     phase_0_q, phase_1_q = evaluate_read.evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
     ##### Reads' Qname print out. #####
-    out = os.path.join(output, 'phase_0.txt') # path of log.txt
+    out = os.path.join(output, 'phase_0.txt') # path of phase_0 qname
     with open(out, 'w') as out_f:
         for x in phase_0_q:
             out_f.write('%s\n' % x)
-    out = os.path.join(output, 'phase_1.txt') # path of log.txt
+    out = os.path.join(output, 'phase_1.txt') # path of phase_1 qname
     with open(out, 'w') as out_f:
         for x in phase_1_q:
             out_f.write('%s\n' % x)
 
-    with open(sum_p, 'w') as sum_f:
+    with open(sum_p, 'w') as sum_f: # path of summary
         sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\n\
                     max_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s,\
                                                          reg_e, max_heter, min_heter))

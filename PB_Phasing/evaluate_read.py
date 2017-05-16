@@ -38,7 +38,7 @@ def evaluation(phase_0, phase_1, pos_level, read_queue, heter_snp, reg_s, reg_e,
             print('no marker')
         # one read at lease cover 10% of or 3 heter marker
         if (cons_0_n + cons_1_n + conf_n) > 0.1*len(heter_snp) or (cons_0_n + cons_1_n + conf_n) > 3:
-            if cons_1_n > 0.9*(cons_0_n + conf_n): # phase 1 read
+            if cons_1_n > (cons_0_n + conf_n): # phase 1 read
                 phase_1_q.append(qname)
             else:
                 phase_0_q.append(qname)
