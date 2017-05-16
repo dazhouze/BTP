@@ -624,7 +624,7 @@ class LinkedBinaryTree(object):
         frag = 0 # fragment caused by break point (equal to i in sub_l/sub_r)
         j = 0 # column index of sub_l/sub_r 
         pos_index = {} # dict k is dep of tree and v is indexes in sub_l/sub_r (phase 0/1)
-        for other in self.__subtree_preorder(self.left(self.root())):# sub left tree
+        for other in self.__subtree_preorder(self.left(self.root())): # sub left tree
             node = self.__validate(other) # node in tree
             mar = node.get_element() # class Marker
             dep, direct = mar.get_depth(), mar.get_dir() # depth and direction of Marker
@@ -634,11 +634,11 @@ class LinkedBinaryTree(object):
             if phase_s == -1: # inite value
                 phase_s = pos
             if mar.get_num() == -1: # linkage number of Marker == -1 is break point
-                sub_l.append(temp_array)
-                temp_array = [] # renew temp_array as an empty one
                 frag += 1
                 j = 0
-                phase_pos.append([phase_s, pos])
+                sub_l.append(temp_array)
+                temp_array = [] # renew temp_array as an empty one
+                phase_pos.append([phase_s, level_pos[dep-1]])
                 phase_s = -1 # re-inite
             pos_index.setdefault(pos, (frag, j)) # k is depth in tree, v is tuple of indexes in sub_l
             j += 1
