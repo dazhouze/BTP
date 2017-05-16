@@ -60,6 +60,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         # level_s go back if last round not long enough
         print('  - Level:%d-%d Read:%d Marker:%d' % \
               (level_s, level_e, len(read_queue), len(level_pos)))
+
         tree.setdefault(tree_pointer[level_s][0], level_e, 0)
         tree.setdefault(tree_pointer[level_s][1], level_e, 0)
         '''Determine heter-snp-marker pattern of each read.'''
@@ -115,9 +116,12 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         pointers = tree.pruning(tree_pointer[level_s][0], tree_p, 0) # left subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
+        tree.preorder_indent(tree.root())
         pointers = tree.pruning(tree_pointer[level_s][1], tree_p, 1) # right subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
+            print(x+1, pointers[x])
+        tree.preorder_indent(tree.root())
         '''Clean alignment error snps and ambiguous snps.'''
         mis_level = tree.clean(tree_pointer[level_s]) # clean tree
         if mis_level is not None:

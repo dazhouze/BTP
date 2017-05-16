@@ -490,7 +490,7 @@ class LinkedBinaryTree(object):
                                         (left_num, right_num, left_cross, right_cross, \
                                          max(right_num, left_num), min(right_num, left_num)))
                     if left_num is not None and right_num is not None:
-                        if left_num >= right_num > 0:
+                        if left_num > right_num >= 0 or left_num >= right_num > 0:
                             '''Left child element value is larger, delete right child tree.'''
                             result.append(left_p) # add left child node Position to result list
                             self.delete_subtree(right_p)
@@ -500,7 +500,7 @@ class LinkedBinaryTree(object):
                             if ae is True:
                                 '''Left child element need to clean as seq/align error.'''
                                 self.__validate(left_p).get_element().set_clean(1)
-                        elif right_num > left_num > 0:
+                        elif right_num > left_num >= 0:
                             '''Right child element value is larger, delete left child tree.'''
                             result.append(right_p) # add right child node Position to result list
                             self.delete_subtree(left_p)
