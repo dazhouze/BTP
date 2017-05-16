@@ -53,12 +53,12 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     tree.add_root(binary_tree.Marker(0, 'root', 0)) # root
     tree.setdefault(tree.root(), 1, 1)
     bak_queue = positional_list.PositionalList() # a back up positional list
-    phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp = clustering_SNP.clustering\
+    phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp = clustering_SNP.clustering\
         (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
 
     ''' Reads evaluation. '''
     phase_0_q, phase_1_q = evaluate_read.evaluation\
-        (phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp, reg_s, reg_e, hit_p)
+        (phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, reg_s, reg_e, hit_p)
 
     ''' Reads' Qname print out. '''
     for fragment in range(0, len(phase_0_q)):

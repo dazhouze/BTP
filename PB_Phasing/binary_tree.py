@@ -621,7 +621,9 @@ class LinkedBinaryTree(object):
         phase_s, phase_e = -1, -1 # phase region start and end
         phase_pos = [] # list for phased snps' region start and end
         temp_array = [] # temporary array for a fragment without break point
-        frag = 0 # fragment caused by break point
+        frag = 0 # fragment caused by break point (equal to i in sub_l/sub_r)
+        j = 0 # column index of sub_l/sub_r 
+        pos_index = {} # dict k is dep of tree and v is indexes in sub_l/sub_r (phase 0/1)
         for other in self.__subtree_preorder(self.left(self.root())):# sub left tree
             node = self.__validate(other) # node in tree
             mar = node.get_element() # class Marker
@@ -635,8 +637,11 @@ class LinkedBinaryTree(object):
                 sub_l.append(temp_array)
                 temp_array = [] # renew temp_array as an empty one
                 frag += 1
+                j = 0
                 phase_pos.append([phase_s, pos])
                 phase_s = -1 # re-inite
+            pos_index.setdefault(pos, (frag, j)) # k is depth in tree, v is tuple of indexes in sub_l
+            j += 1
             temp_array.append([base, significant])
             heter_print[dep-1][0], heter_print[dep-1][2] = base, frag
         sub_l.append(temp_array)
@@ -661,7 +666,7 @@ class LinkedBinaryTree(object):
             pos = level_pos[x+1]
             heter_f.write('%s\t%d\t%s\t%s\t%d\n' % (chrom, pos, heter_print[x][0], heter_print[x][1], heter_print[x][2]))
 
-        return sub_l, sub_r, phase_pos
+        return sub_l, sub_r, phase_pos, pos_index
 
     def setdefault(self, p, d, n):
         '''Init 2 child of depth d and set default v.

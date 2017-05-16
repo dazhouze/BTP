@@ -116,12 +116,9 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         pointers = tree.pruning(tree_pointer[level_s][0], tree_p, 0) # left subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
-        tree.preorder_indent(tree.root())
         pointers = tree.pruning(tree_pointer[level_s][1], tree_p, 1) # right subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
-            print(x+1, pointers[x])
-        tree.preorder_indent(tree.root())
         '''Clean alignment error snps and ambiguous snps.'''
         mis_level = tree.clean(tree_pointer[level_s]) # clean tree
         if mis_level is not None:
@@ -129,7 +126,8 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             tree.delete_depth(tree_pointer[level_s][0], mis_level)
             tree.delete_depth(tree_pointer[level_s][1], mis_level)
             '''Remove homo snp and alignment error snp in heter_snp dict.'''
-            heter_snp, pos_level, level_pos = level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p)
+            heter_snp, pos_level, level_pos = level_clean\
+                (mis_level, heter_snp, pos_level, level_pos, heter_p)
             tree_pointer.pop(mis_level)
             level_s = mis_level - 1
         else:
@@ -139,13 +137,14 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
     tree.preorder_indent(tree.root())
 
     with open(heter_p, 'w') as heter_f:
-        phase_0, phase_1, phase_pos = tree.linkage_result(len(heter_snp), heter_snp, level_pos, chrom, heter_f)
+        phase_0, phase_1, phase_pos , pos_index = tree.linkage_result\
+            (len(heter_snp), heter_snp, level_pos, chrom, heter_f)
     
     read_queue = move_back(bak_queue, read_queue) # move bak_queue back to read_queue
 
     #print(phase_0)
     #print(phase_1)
-    return phase_0, phase_1, phase_pos, pos_level, read_queue, heter_snp
+    return phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp
 
 def last_min(pos_level, coor): # pruning level
     '''Return the last (the largest) k's value of dict less than v:'''

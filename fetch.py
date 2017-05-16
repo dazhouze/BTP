@@ -53,13 +53,11 @@ if __name__ == '__main__':
     import os, sys
     f1 = sys.argv[1]
     f2 = sys.argv[2]
+    out1 = sys.argv[3]
+    out2 = sys.argv[4]
     print('Get Qname from:%s\t%s' % (f1, f2))
     ccs=['/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH01/data/m150721_013320_42266_c100807592550000001823171810291583_s1_p0.1.ccs.fastq' , '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH01/data/m150721_013320_42266_c100807592550000001823171810291583_s1_p0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH01/data/m150721_013320_42266_c100807592550000001823171810291583_s1_p0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH04/data/m151029_075523_42266_c100877892550000001823193803261610_s1_p0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH04/data/m151029_075523_42266_c100877892550000001823193803261610_s1_p0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH04/data/m151029_075523_42266_c100877892550000001823193803261610_s1_p0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH05/data/m151029_121436_42266_c100877892550000001823193803261611_s1_p0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH05/data/m151029_121436_42266_c100877892550000001823193803261611_s1_p0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH05/data/m151029_121436_42266_c100877892550000001823193803261611_s1_p0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH06/data/m160301_070351_42266_c100916372550000001823203004301600_s1_X0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH06/data/m160301_070351_42266_c100916372550000001823203004301600_s1_X0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH06/data/m160301_070351_42266_c100916372550000001823203004301600_s1_X0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH07/data/m160301_112718_42266_c100916372550000001823203004301601_s1_X0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH07/data/m160301_112718_42266_c100916372550000001823203004301601_s1_X0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH07/data/m160301_112718_42266_c100916372550000001823203004301601_s1_X0.3.ccs.fastq']
     for x in ccs:
         if not os.path.exists(x):
             raise ValueError('File not exists:%s' % x)
-    out1 = os.path.dirname(f1)
-    out1 = os.path.join(out1, 'phase_0.fq')
-    out2 = os.path.dirname(f2)
-    out2 = os.path.join(out2, 'phase_1.fq')
     main(ccs, f1, f2, out1, out2)

@@ -4,7 +4,7 @@ rm -rf $dir
 python3 phasing.py -s 32627241 -e 32634466 -o $dir 
 
 # fetch fastq
-python3 fetch.py $dir/phase_0.0.txt $dir/phase_1.0.txt
+python3 fetch.py $dir/phase_0.0.txt $dir/phase_1.0.txt $dir/phase_0.0.fq $dir/phase_1.0.fq
 # BWA Alignment Command
 align="bwa mem -x pacbio"
 # Homo Sapiens Reference Renome hg19
