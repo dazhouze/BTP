@@ -50,7 +50,7 @@ def detection(chrom, reg_s, reg_e, input, read_queue):
     import os
     import pysam
 
-    print(' - Start reads detection. %s:%d-%d %d bp' % (chrom, reg_s, reg_e, (reg_e-reg_s)))
+    print(' - Start reads detection. %s:%d-%d length: %d bp' % (chrom, reg_s, reg_e, (reg_e-reg_s)))
     # init varibls for Phasing #
     heter_snp = {}
     ''' All possible position of SNPs.

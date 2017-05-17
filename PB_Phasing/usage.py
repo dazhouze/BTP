@@ -20,20 +20,23 @@ usage: phasing.py -b *mergedCCS.bestHitted.sorted.bam -o /output/directory -s st
 \t-m Target chromesome Name in BAM/SAM file.(default = \'chr6\')
 \t-s Start coordinate of the region.
 \t-e End coordinate of the region.
-\t-p Upper heter-SNP proportion cutoff, alt fre/seq depth.(default = 0.75)
-\t-d Lowwer heter-SNP proportion cutoff, alt fre/seq depth.(default = 0.25)
+\t-r Sequencing error SNP proportion cutoff, alt_allele/seq_depth.(default = 0.25)
     '''
     print(info)
 
-def check(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
+def check(input, output, chrom, reg_s, reg_e, seq_error):
     ''' Paramters check.'''
     import sys
     if reg_e <= reg_s:
-        print('\n*** Error -e value should > -s value')
+        print('\n*** Parameter error: -e value should > -s value')
         usage()
         sys.exit()
-    elif min_heter > max_heter or max_heter > 1:
-        print('\n*** Error: -p value should > -d value')
+    elif seq_error < 0:
+        print('\n*** Parameter error: -r value should > 0')
+        usage()
+        sys.exit()
+    elif seq_error > 0.5:
+        print('\n*** Parameter error: -r value should < 0.5')
         usage()
         sys.exit()
     return 0
@@ -44,4 +47,4 @@ def author():
 |  ___  |      |      \n\t| |___| |      |      \n\t/       |      |     ''')
     
 if __name__ == '__main__':
-    check('in', 'out', 'chr6', 100, 1000, 0.5, 0.6)
+    check('in', 'out', 'chr6', 100, 1000, 0.3)

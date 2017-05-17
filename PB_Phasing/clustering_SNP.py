@@ -191,7 +191,7 @@ def level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p):
         Clean the SNP in heter_snp, pos_level and level_pos.
     '''
     pos = level_pos[mis_level]
-    print('at position: %d' % pos)
+    print('%d' % pos)
     '''
     with open(heter_p, 'a') as heter_f:
         heter_f.write('mis_align\t%d\n' % pos)

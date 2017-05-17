@@ -70,7 +70,7 @@ class Base(object):
         base_c = ['A', 'C', 'G', 'T', 'R'] # base code
         return (base_c[first], base_c[second])
 
-def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min_heter, snp_p):
+def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp_p):
     '''Retrun a dict of heter SNP marker positions.
     read_queue is the SNP positional list
     heter_snp is the candidate heter SNP position.
@@ -99,32 +99,33 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
     ''' Determine the SNP types: 1=seq error, 2=heter SNP, 3=homo SNP, 0=unknown.'''
     print(' - Classify deteced SNPs.')
     for x in heter_snp: # candidate heter snp positions
-        ref_ap = 1 - snp_sum[x].count()/seq_depth[x-reg_s] # ref allele property
+        alt_ap = snp_sum[x].count()/seq_depth[x-reg_s] # all snp allele property
+        ref_ap = 1 - alt_ap # ref allele property
         a_ap = snp_sum[x].getA()/seq_depth[x-reg_s] # Base A allele property of alignment coverage
         c_ap = snp_sum[x].getC()/seq_depth[x-reg_s] # Base C allele property of alignment coverage
         g_ap = snp_sum[x].getG()/seq_depth[x-reg_s] # Base G allele property of alignment coverage
         t_ap = snp_sum[x].getT()/seq_depth[x-reg_s] # Base T allele property of alignment coverage
         d_ap = snp_sum[x].getD()/(seq_depth[x-reg_s]) # Deletion allele property of alignment coverage
         max2_bases = snp_sum[x].max2(seq_depth[x-reg_s])
-
+        
         if seq_depth[x-reg_s] < 8: # low depth
             heter_snp[x] = 0 # discard
-        elif ref_ap > max_heter: # Sequencing Error
+        elif alt_ap < seq_error: # sequencing Error
             heter_snp[x] = 1
-        elif min_heter < max(a_ap, c_ap, g_ap, t_ap) < max_heter: # heter snp
-            if 'R' not in max2_bases: # double heter snp
+        else:
+            if 'R' not in max2_bases: # double heter snp (probably caused by alignment error)
                 heter_snp[x] = 4 # alignment error
-                print('    rm double-heter SNP:%d' % x)
+                print('    rm double-heter SNP: %d' % x)
             elif third([a_ap, c_ap, g_ap, t_ap, ref_ap]) > 0.05: # third largest allele too large
                 heter_snp[x] = 4 # alignment error
-                print('    rm mis-aliged SNP:%d' % x)
+                print('    rm aliged-error SNP: %d' % x)
             else:
                 heter_snp[x] = 2
 
     result_heter = {} # heter snp marker result dict
     result_alig = {}  # alignment error result dict
     # homo, heter snp marker number; sequencing error number, discard snp number, alignment error number
-    ho, he, se, dis, ae = 0, 0, 0, 0, 0
+    he, se, dis, ae = 0, 0, 0, 0
     with open(snp_p, 'w') as snp_f:
         snp_f.write('***\nHeterzygous SNP Markers and Homozygous SNPs :\n\
                     Tpye\tChromosome\tPosition\tSNP_1\tSNP_2\n')
@@ -135,10 +136,9 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, max_heter, min
                     dis += 1
                 elif v == 1: # sequecing error snp
                     se += 1
-                elif v == 2: # heter snp
+                elif v == 2: # candidate heter snp
                     he += 1
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
-                    # return the tuple of 2 maximum allele 0:A 1:C 2:G 3:T 4:Ref
                     result_heter.setdefault(k, max2_bases)
                     snp_f.write('Candidate\t%s\t%d\t%s\t%s\n' % \
                                 (chrom, k, max2_bases[0], max2_bases[1]))

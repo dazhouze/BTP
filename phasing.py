@@ -10,7 +10,7 @@ Binary tree.
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
+def main(input, output, chrom, reg_s, reg_e, seq_error):
     '''
     input: SAM/BAM file path
     output: output directory path
@@ -35,8 +35,8 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
     with open(sum_p, 'w') as sum_f: # path of summary
         sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\n\
-                    max_heter:%.2f, min_heter:%.2f\n' % (input, output, chrom, reg_s,\
-                                                         reg_e, max_heter, min_heter))
+                    seq_error:%.2f\n' % (input, output, chrom, reg_s,\
+                                                         reg_e, seq_error))
     print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input, output))
 
     ''' Entry read information '''
@@ -46,7 +46,7 @@ def main(input, output, chrom, reg_s, reg_e, max_heter, min_heter):
     ''' Identify heterozygous SNP marker; seq error and homo SNP (within block) '''
     # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
     heter_snp = filter_SNP.remove(read_queue, heter_snp, seq_depth, \
-                                  chrom, reg_s, reg_e, max_heter, min_heter, snp_p) 
+                                  chrom, reg_s, reg_e, seq_error, snp_p) 
 
     ''' Heterozygous SNP clustering by construct binary tree. '''
     tree = binary_tree.LinkedBinaryTree() # init a heter-snp-marker tree
@@ -82,7 +82,7 @@ if __name__ == '__main__': # Run the program.
     import sys
     from PB_Phasing import usage
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvb:o:p:d:s:e:m:")
+        opts, args = getopt.getopt(sys.argv[1:], "hvb:o:p:r:s:e:m:")
     except getopt.GetoptError as err:
         usage.usage()
         print(err)  # will print something like "option -a not recognized"
@@ -94,8 +94,7 @@ if __name__ == '__main__': # Run the program.
     chrom = 'chr6' # chromosome name
     reg_s = 28476797 # start coordinate of the region
     reg_e = 33449354 # end coordinate of the region
-    max_heter = 0.75 # upper heter snp cutoff, alt fre/seq depth
-    min_heter = 0.25 # #lower heter snp cutoff, alt fre/seq depth
+    seq_error = 0.25 # sequencing error snp cutoff, alt_allele/seq_depth
 
     '''Set command line opts value, if any.'''
     for o, a in opts:
@@ -123,12 +122,9 @@ if __name__ == '__main__': # Run the program.
         elif o == '-e':
             reg_e = int(a) # end coordinate of the region
 
-        elif o == '-p':
-            max_heter = float(a) # upper heter snp cutoff, alt fre/seq depth
-
-        elif o == '-d':
-            min_heter = float(a) # lower heter snp cutoff, alt fre/seq depth
+        elif o == '-r':
+            seq_error = float(a) # upper heter snp cutoff, alt fre/seq depth
 
     '''Run the program.'''
-    usage.check(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
-    main(input, output, chrom, reg_s, reg_e, max_heter, min_heter)
+    usage.check(input, output, chrom, reg_s, reg_e, seq_error)
+    main(input, output, chrom, reg_s, reg_e, seq_error)
