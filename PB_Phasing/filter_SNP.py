@@ -112,6 +112,8 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp
             heter_snp[x] = 0 # discard
         elif alt_ap < seq_error: # sequencing Error
             heter_snp[x] = 1
+        elif alt_ap > (1 - seq_error): # homo snp
+            heter_snp[x] = 3
         else:
             if 'R' not in max2_bases: # double heter snp (probably caused by alignment error)
                 heter_snp[x] = 4 # alignment error
@@ -125,7 +127,7 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp
     result_heter = {} # heter snp marker result dict
     result_alig = {}  # alignment error result dict
     # homo, heter snp marker number; sequencing error number, discard snp number, alignment error number
-    he, se, dis, ae = 0, 0, 0, 0
+    he, ho, se, dis, ae = 0, 0, 0, 0, 0
     with open(snp_p, 'w') as snp_f:
         snp_f.write('***\nHeterzygous SNP Markers and Homozygous SNPs :\n\
                     Tpye\tChromosome\tPosition\tSNP_1\tSNP_2\n')
@@ -140,15 +142,19 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp
                     he += 1
                     max2_bases = snp_sum[k].max2(seq_depth[k-reg_s])
                     result_heter.setdefault(k, max2_bases)
-                    snp_f.write('Candidate\t%s\t%d\t%s\t%s\n' % \
+                    snp_f.write('heter\t%s\t%d\t%s\t%s\n' % \
+                                (chrom, k, max2_bases[0], max2_bases[1]))
+                elif v == 3: # homo snp
+                    ho += 1
+                    snp_f.write('homo \t%s\t%d\t%s\t%s\n' % \
                                 (chrom, k, max2_bases[0], max2_bases[1]))
                 elif v == 4: # alignment error
                     ae += 1
-                    snp_f.write('Error\t%s\t%d\n' % (chrom, k))
+                    snp_f.write('error\t%s\t%d\n' % (chrom, k))
 
-        snp_f.write('***\nPrimary SNP result\nCandidate SNPs: %d\n\
-                    Seq Error(not shown): %d\nDiscard SNP(<8x not shown): %d\n\
-                    Alignmene Error: %d\n' % (he, se, dis, ae))
+        snp_f.write('***\nPrimary SNP result\nCandidate heter SNPs: %d\nHomo SNPs: %d\n\
+                     Sequencing Error SNPs(not shown): %d\nDiscard SNPs(<8x not shown): %d\n\
+                     Alignmene Error SNPs: %d\n' % (he, ho, se, dis, ae))
     print(' - Finished SNPs filtering. Candidate SNPs: %d' % he)
     return result_heter # only return the heter snp marker and homo snp pos, seq error cost too much memory
 

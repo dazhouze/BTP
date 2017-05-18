@@ -535,7 +535,7 @@ class LinkedBinaryTree(object):
         max_num = max(v1, v2)
         if min_num == 0:
             return True
-        return max_num > 2*min_num
+        return max_num > 4*min_num
 
     def add_value_left(self, p, d, n, directect):
         '''Add value=v to all node element in depth=d.
@@ -607,6 +607,18 @@ class LinkedBinaryTree(object):
                         mar.set_cross(prev_c + c)
                         assert prev_c != mar.get_cross(), 'Value add error'
 
+    def child(self, p):
+        '''Generate a Positions represnting p's child.'''
+        num_c = self.num_children(p)
+        if num_c == 2:
+            raise ValueError('Tree pruning error.')
+        elif num_c == 0:
+            return None
+        if self.left(p) is not None:
+            return self.left(p)
+        else:
+            return self.right(p)
+
     def linkage_result(self, l, heter_snp, level_pos, chrom, heter_f):
         '''Get conclusion of heter-snp-marker linkage infomation.
         l is length of heter_snp.
@@ -624,8 +636,9 @@ class LinkedBinaryTree(object):
         frag = 0 # fragment caused by break point (equal to i in sub_l/sub_r)
         j = 0 # column index of sub_l/sub_r 
         pos_index = {} # dict k is dep of tree and v is indexes in sub_l/sub_r (phase 0/1)
-        for other in self.__subtree_preorder(self.left(self.root())): # sub left tree
-            node = self.__validate(other) # node in tree
+        cursor = self.left(self.root()) # sub left tree
+        while cursor is not None:
+            node = self.__validate(cursor) # node in tree
             mar = node.get_element() # class Marker
             dep, direct = mar.get_depth(), mar.get_dir() # depth and direction of Marker
             pos = level_pos[dep] # heter snp pos
@@ -644,12 +657,15 @@ class LinkedBinaryTree(object):
             j += 1
             temp_array.append([base, significant])
             heter_print[dep-1][0], heter_print[dep-1][2] = base, frag
+            cursor = self.child(cursor)
         sub_l.append(temp_array)
-        temp_array = [] # renew temp_array as an empty one
         phase_pos.append([phase_s, pos])
 
-        for other in self.__subtree_preorder(self.right(self.root())):# sub right tree
-            node = self.__validate(other) # node in tree
+        temp_array = [] # renew temp_array as an empty one
+        frag = 0
+        cursor = self.right(self.root())# sub right tree
+        while cursor is not None:
+            node = self.__validate(cursor) # node in tree
             mar = node.get_element() # class Marker
             dep, direct = mar.get_depth(), mar.get_dir() # depth and direction of Marker
             pos = level_pos[dep] # heter snp pos
@@ -658,8 +674,11 @@ class LinkedBinaryTree(object):
             if mar.get_num() == -1: # linkage number of Marker == -1 is break point
                 sub_r.append(temp_array)
                 temp_array = [] # renew temp_array as an empty one
+                frag += 1
             temp_array.append([base, significant])
-            heter_print[dep-1][1], heter_print[dep-1][2] = base, frag
+            heter_print[dep-1][1] = base
+            assert heter_print[dep-1][2] == frag, 'Fragment No. error.'
+            cursor = self.child(cursor)
         sub_r.append(temp_array)
 
         for x in range(0, len(heter_print)):

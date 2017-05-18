@@ -34,9 +34,8 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     hit_p = os.path.join(log, 'read_eval.txt') # reads evaluation
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
     with open(sum_p, 'w') as sum_f: # path of summary
-        sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\n\
-                    seq_error:%.2f\n' % (input, output, chrom, reg_s,\
-                                                         reg_e, seq_error))
+        sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nseq_error:%.2f\n' \
+                    % (input, output, chrom, reg_s, reg_e, seq_error))
     print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input, output))
 
     ''' Entry read information '''
