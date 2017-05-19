@@ -134,19 +134,16 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             level_s = level_e # renew level_s equall to next level_s
         # end of walk through heter_snp
     #tree.preorder_indent(tree.root()) # whole MHC region: maximum recursion depth exceeded
+    print(' - Finish construct phased SNPs tree. Level: %d.' % level_e)
+
+    read_queue = move_back(bak_queue, read_queue) # move bak_queue back to read_queue
 
     with open(heter_p, 'w') as heter_f:
         phase_0, phase_1, phase_pos , pos_index = tree.linkage_result\
             (len(heter_snp), heter_snp, level_pos, chrom, heter_f)
-    
-    read_queue = move_back(bak_queue, read_queue) # move bak_queue back to read_queue
-
-    assert len(phase_0) == len(phase_1), 'Phase 0 %d fragment != phase 1 %d fragment.' % (len(phase_0), len(phase_1))
-    for x in range(0, len(phase_0)):
-        assert len(phase_0[x]) == len(phase_1[x]), 'Phase 0/1 SNPs not equal at No.%d.' % x
     assert level_e == len(pos_index), 'SNP pos and index not equal.'
+    print(' - Finish analysis phased fragment: %d.' % len(phase_pos))
 
-    print(' - Finish construct phased SNPs tree. Level: %d.' % level_e)
     return phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp
 
 def last_min(pos_level, coor): # pruning level

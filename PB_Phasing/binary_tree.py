@@ -629,7 +629,6 @@ class LinkedBinaryTree(object):
         heter_print = [[None, None, None] for x in range(0, len(heter_snp))] # for result print
 
         sub_l = [] # 2D list for sub left tree
-        sub_r = [] # 2D list for sub right tree
         phase_s, phase_e = -1, -1 # phase region start and end
         phase_pos = [] # list for phased snps' region start and end
         temp_array = [] # temporary array for a fragment without break point
@@ -661,9 +660,11 @@ class LinkedBinaryTree(object):
         sub_l.append(temp_array)
         phase_pos.append([phase_s, pos])
 
+        print('phase 0 fragemnt', frag, len(sub_l))
         temp_array = [] # renew temp_array as an empty one
         frag = 0
-        cursor = self.right(self.root())# sub right tree
+        sub_r = [] # 2D list for sub right tree
+        cursor = self.right(self.root()) # sub right tree
         while cursor is not None:
             node = self.__validate(cursor) # node in tree
             mar = node.get_element() # class Marker
@@ -672,19 +673,24 @@ class LinkedBinaryTree(object):
             base = heter_snp[pos][direct] # base of Marker: ACGT and Ref
             significant = mar.get_sig() # significant of Marker's linkage number
             if mar.get_num() == -1: # linkage number of Marker == -1 is break point
-                sub_r.append(temp_array)
-                temp_array = [] # renew temp_array as an empty one
                 frag += 1
+                sub_l.append(temp_array)
+                temp_array = [] # renew temp_array as an empty one
+                phase_pos.append([phase_s, level_pos[dep-1]])
+                phase_s = -1 # re-inite
             temp_array.append([base, significant])
             heter_print[dep-1][1] = base
             assert heter_print[dep-1][2] == frag, 'Fragment No. error.'
             cursor = self.child(cursor)
         sub_r.append(temp_array)
-
+        
         for x in range(0, len(heter_print)):
             pos = level_pos[x+1]
             heter_f.write('%s\t%d\t%s\t%s\t%d\n' % (chrom, pos, heter_print[x][0], heter_print[x][1], heter_print[x][2]))
 
+        assert len(phase_0) == len(phase_1), 'Phase 0 %d fragment != phase 1 %d fragment.' % (len(phase_0), len(phase_1))
+        for x in range(0, len(phase_0)):
+            assert len(phase_0[x]) == len(phase_1[x]), 'Phase 0/1 SNPs not equal at No.%d.' % x
         return sub_l, sub_r, phase_pos, pos_index
 
     def setdefault(self, p, d, n):
