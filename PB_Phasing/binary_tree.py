@@ -463,8 +463,8 @@ class LinkedBinaryTree(object):
                     right_mar = self.__validate(right_p).get_element()
                     left_num = left_mar.get_num()  # left child element link num
                     right_num = right_mar.get_num()  # right child element link num
-                    left_cross = left_mar.get_cross() # value + crossover
-                    right_cross = right_mar.get_cross() # value + crossover
+                    left_cross = left_mar.get_cross() # crossover
+                    right_cross = right_mar.get_cross() # crossover
 
                     '''homo snp removing.'''
                     # link num direction result, crossover link num direction result
@@ -487,10 +487,9 @@ class LinkedBinaryTree(object):
 
                     if com is True and ae is not True: # good heter snp marker
                         pruning_f.write('%d\t%d\t%d\t%d\t%d\t%d\n' % \
-                                        (left_num, right_num, left_cross, right_cross, \
-                                         max(right_num, left_num), min(right_num, left_num)))
+                                        (left_num, right_num, left_cross, right_cross, dep+1, subtree_dir))
                     if left_num is not None and right_num is not None:
-                        if left_num > right_num >= 0 or left_num >= right_num > 0:
+                        if left_num > right_num:
                             '''Left child element value is larger, delete right child tree.'''
                             result.append(left_p) # add left child node Position to result list
                             self.delete_subtree(right_p)
@@ -500,7 +499,7 @@ class LinkedBinaryTree(object):
                             if ae is True:
                                 '''Left child element need to clean as seq/align error.'''
                                 self.__validate(left_p).get_element().set_clean(1)
-                        elif right_num > left_num >= 0:
+                        elif right_num > left_num:
                             '''Right child element value is larger, delete left child tree.'''
                             result.append(right_p) # add right child node Position to result list
                             self.delete_subtree(left_p)
@@ -510,14 +509,14 @@ class LinkedBinaryTree(object):
                             if ae is True:
                                 '''Right child element need to clean as seq/align error.'''
                                 self.__validate(right_p).get_element().set_clean(1)
-                        elif left_num == right_num == 0: # no link information
+                        elif left_num == right_num: # no link information or equal information
                             if left_cross > right_cross: # use cross information
                                 result.append(left_p) # add left child node Position to result list
                                 self.delete_subtree(right_p)
                             elif right_cross > left_cross:
                                 result.append(right_p) # add right child node Position to result list
                                 self.delete_subtree(left_p)
-                            else: # no link info and crossover info
+                            else: 
                                 '''Break point.'''
                                 if subtree_dir == 0: # left subtree
                                     result.append(left_p) # add left child node Position to result list
@@ -527,6 +526,8 @@ class LinkedBinaryTree(object):
                                     result.append(right_p) # add right child node Position to result list
                                     self.delete_subtree(left_p)
                                     right_mar.set_num(-1) # set linkage num as -1, for break point
+                        else:
+                            raise ValueError('Strange Value in tree node pruning.')
         return result # result list: tree node Position
 
     def significant(self, v1, v2):
@@ -646,6 +647,7 @@ class LinkedBinaryTree(object):
             if phase_s == -1: # inite value
                 phase_s = pos
             if mar.get_num() == -1: # linkage number of Marker == -1 is break point
+                print(dep, frag, 'left')
                 frag += 1
                 j = 0
                 sub_l.append(temp_array)
@@ -660,7 +662,6 @@ class LinkedBinaryTree(object):
         sub_l.append(temp_array)
         phase_pos.append([phase_s, pos])
 
-        print('phase 0 fragemnt', frag, len(sub_l))
         temp_array = [] # renew temp_array as an empty one
         frag = 0
         sub_r = [] # 2D list for sub right tree
@@ -673,14 +674,15 @@ class LinkedBinaryTree(object):
             base = heter_snp[pos][direct] # base of Marker: ACGT and Ref
             significant = mar.get_sig() # significant of Marker's linkage number
             if mar.get_num() == -1: # linkage number of Marker == -1 is break point
+                print(dep, frag, 'left')
                 frag += 1
-                sub_l.append(temp_array)
+                sub_r.append(temp_array)
                 temp_array = [] # renew temp_array as an empty one
                 phase_pos.append([phase_s, level_pos[dep-1]])
                 phase_s = -1 # re-inite
             temp_array.append([base, significant])
             heter_print[dep-1][1] = base
-            assert heter_print[dep-1][2] == frag, 'Fragment No. error.'
+            assert heter_print[dep-1][2] == frag, 'Fragment No.%d error.' % frag
             cursor = self.child(cursor)
         sub_r.append(temp_array)
         
@@ -688,9 +690,6 @@ class LinkedBinaryTree(object):
             pos = level_pos[x+1]
             heter_f.write('%s\t%d\t%s\t%s\t%d\n' % (chrom, pos, heter_print[x][0], heter_print[x][1], heter_print[x][2]))
 
-        assert len(phase_0) == len(phase_1), 'Phase 0 %d fragment != phase 1 %d fragment.' % (len(phase_0), len(phase_1))
-        for x in range(0, len(phase_0)):
-            assert len(phase_0[x]) == len(phase_1[x]), 'Phase 0/1 SNPs not equal at No.%d.' % x
         return sub_l, sub_r, phase_pos, pos_index
 
     def setdefault(self, p, d, n):
