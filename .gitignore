@@ -19,6 +19,7 @@ nohup.out
 __*/
 *__/
 HLA_*/
+MHC*/
 
 # Python
 *.py[cod]
