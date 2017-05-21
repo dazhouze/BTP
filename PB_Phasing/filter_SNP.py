@@ -152,9 +152,9 @@ def remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp
                     ae += 1
                     snp_f.write('error\t%s\t%d\n' % (chrom, k))
 
-        snp_f.write('***\nPrimary SNP result\nCandidate heter SNPs: %d\nHomo SNPs: %d\n\
-                     Sequencing Error SNPs(not shown): %d\nDiscard SNPs(<8x not shown): %d\n\
-                     Alignmene Error SNPs: %d\n' % (he, ho, se, dis, ae))
+        snp_f.write('***\nPrimary SNP result\nCandidate heter SNPs: %d\nHomo SNPs: %d\n' % (he, ho))
+        snp_f.write('Sequencing Error SNPs(not shown): %d\nDiscard SNPs(<8x not shown): %d\n' % (se, dis))
+        snp_f.write('Alignmene Error SNPs: %d\n' % ae)
     print(' - Finished SNPs filtering. Candidate SNPs: %d' % he)
     return result_heter # only return the heter snp marker and homo snp pos, seq error cost too much memory
 

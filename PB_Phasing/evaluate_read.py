@@ -63,6 +63,6 @@ def evaluation(phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, re
 
     print(' - Finish reads evaluation.')
     for x in range(0, len(phase_0)):
-        print('\tfragment: No.%d phase_0 reads: %d phase_1 reads %d' % (x, len(phase_0_q[x]), len(phase_1_q[x])))
+        print('    fragment No.%d reads number: phase_0:%d phase_1:%d' % (x, len(phase_0_q[x]), len(phase_1_q[x])))
 
     return phase_0_q, phase_1_q

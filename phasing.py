@@ -33,19 +33,21 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     heter_p = os.path.join(log, 'heter_snp.txt') # heter snp in binary tree
     hit_p = os.path.join(log, 'read_eval.txt') # reads evaluation
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
-    with open(sum_p, 'w') as sum_f: # path of summary
-        sum_f.write('***\nOptions:\ninput:%s\noutput:%s\nchr:%s, start:%d, end:%d\nseq_error:%.2f\n' \
-                    % (input, output, chrom, reg_s, reg_e, seq_error))
+    sum_f = open(sum_p, 'w') # path of summary
+    sum_f.write('***\nOptions:\ninput: \"%s\"\noutput:\"%s\"\nchromosome=%s, start=%d, end=%d\nseq_error=%.2f\n' \
+                % (input, output, chrom, reg_s, reg_e, seq_error))
     print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input, output))
 
     ''' Entry read information '''
     read_queue = positional_list.PositionalList() # initialize a positional list
     read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input, read_queue)
+    sum_f.write('Detected Reads number: %d\n' % len(read_queue))
+    sum_f.write('Primary candidate heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Identify heterozygous SNP marker; seq error and homo SNP (within block) '''
     # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
-    heter_snp = filter_SNP.remove(read_queue, heter_snp, seq_depth, \
-                                  chrom, reg_s, reg_e, seq_error, snp_p) 
+    heter_snp = filter_SNP.remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp_p) 
+    sum_f.write('Filtered candidate heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Heterozygous SNP clustering by construct binary tree. '''
     tree = binary_tree.LinkedBinaryTree() # init a heter-snp-marker tree
@@ -54,10 +56,18 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     bak_queue = positional_list.PositionalList() # a back up positional list
     phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp = clustering_SNP.clustering\
         (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
+    sum_f.write('Binary tree\'s heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Reads evaluation. '''
     phase_0_q, phase_1_q = evaluate_read.evaluation\
         (phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, reg_s, reg_e, hit_p)
+    sum_f.write('Phased fragments total number: %d\n' % len(phase_0))
+    n = 0 # count of phased reads
+    for x in (phase_0_q, phase_1_q):
+        for i in x:
+            for j in i:
+                n += 1
+    sum_f.write('Phased reads total number: %d\n' % n)
 
     ''' Reads' Qname print out. '''
     for fragment in range(0, len(phase_0_q)):
@@ -71,9 +81,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
             for x in phase_1_q[fragment]:
                 out_f.write('%s\n' % x)
 
-    with open(sum_p, 'a') as sum_f: # path of summary
-        sum_f.write('Detected reads number: %d\nDetected heter-SNPs number: %d\n'\
-                     % (len(read_queue), len(heter_snp)))
+    sum_f.close()
     return 0
 
 if __name__ == '__main__': # Run the program.
