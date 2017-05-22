@@ -29,8 +29,9 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     if not os.path.exists(log):
         os.makedirs(log)
     snp_p = os.path.join(log, 'prime_snp.txt') # primary result of snps
-    tree_p = os.path.join(log, 'tree_node.txt') # binary tree node linkage and crossover
     heter_p = os.path.join(log, 'heter_snp.txt') # heter snp in binary tree
+    rm_p = os.path.join(log, 'remove_snp.txt') # remove ambiguous snp in binary tree
+    tree_p = os.path.join(log, 'tree_node.txt') # binary tree node linkage and crossover
     hit_p = os.path.join(log, 'read_eval.txt') # reads evaluation
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
     sum_f = open(sum_p, 'w') # path of summary
@@ -55,7 +56,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     tree.setdefault(tree.root(), 1, 1)
     bak_queue = positional_list.PositionalList() # a back up positional list
     phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp = clustering_SNP.clustering\
-        (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p)
+        (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p, rm_p)
     sum_f.write('Binary tree\'s heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Reads evaluation. '''

@@ -10,15 +10,15 @@ import sys
 import os
 import getopt
 
-def fetch(qname_dir, ccs):
+def fetch(work_dir, ccs):
 
-    if os.path.exists(qname_dir) is False:
-        raise ValueError('%s is not exists.' % qname_dir)
+    if os.path.exists(work_dir) is False:
+        raise ValueError('%s is not exists.' % work_dir)
     for x in ccs:
         if os.path.exists(x) is False:
             raise ValueError('%s is not exists.' % x)
 
-    qname_path = os.path.abspath(qname_dir)
+    qname_path = os.path.abspath(work_dir)
     phase_0_qname=[] # 2d list for qname
     phase_1_qname=[] # 2d list for qname
     num = 0 # phase file No.
@@ -90,14 +90,12 @@ usage: fetch.py phased/directory  ccs/fastq/files
 
 if __name__ == '__main__':
     '''Set default value.'''
-    qname_dir = None # qname_dir phased read qname folder
+    work_dir = None # work_dir phased read qname folder
     ccs = [] # ccs fastq files list
-    qname_dir = sys.argv[1]
+    work_dir = sys.argv[1]
     ccs = sys.argv[2:]
-    if sys.argv[1] is None: 
-        qname_dir = './MHC'
     if len(ccs) == 0: 
         ccs=['/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH01/data/m150721_013320_42266_c100807592550000001823171810291583_s1_p0.1.ccs.fastq' , '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH01/data/m150721_013320_42266_c100807592550000001823171810291583_s1_p0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH01/data/m150721_013320_42266_c100807592550000001823171810291583_s1_p0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH04/data/m151029_075523_42266_c100877892550000001823193803261610_s1_p0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH04/data/m151029_075523_42266_c100877892550000001823193803261610_s1_p0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH04/data/m151029_075523_42266_c100877892550000001823193803261610_s1_p0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH05/data/m151029_121436_42266_c100877892550000001823193803261611_s1_p0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH05/data/m151029_121436_42266_c100877892550000001823193803261611_s1_p0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH05/data/m151029_121436_42266_c100877892550000001823193803261611_s1_p0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH06/data/m160301_070351_42266_c100916372550000001823203004301600_s1_X0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH06/data/m160301_070351_42266_c100916372550000001823203004301600_s1_X0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH06/data/m160301_070351_42266_c100916372550000001823203004301600_s1_X0.3.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH07/data/m160301_112718_42266_c100916372550000001823203004301601_s1_X0.1.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH07/data/m160301_112718_42266_c100916372550000001823203004301601_s1_X0.2.ccs.fastq', '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/YH07/data/m160301_112718_42266_c100916372550000001823203004301601_s1_X0.3.ccs.fastq']
     print(' - Start fetch fastq from:\n', ccs)
-    fetch(qname_dir, ccs)
-    print(' - Finish fetch fastq to dirctory', qname_dir)
+    fetch(work_dir, ccs)
+    print(' - Finish fetch fastq to dirctory', work_dir)

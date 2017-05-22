@@ -23,13 +23,14 @@ tree:
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p):
+def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p, rm_p):
     '''Clustering heterozygous SNP marker by optimised binary tree algorithm.
     Use slice tree.
     Back up read queue.
     Clean homo snp tree.
     '''
     print(' - Start clustering SNPs.')
+    rm_f = open(rm_p, 'w')
     # start from 1. tree level dict: k is sorted heter_snp position, v is level in tree
     pos_level = {}
     # start from 1. k, v reverse of pos_level
@@ -120,7 +121,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
         '''Clean alignment error snps and ambiguous snps.'''
-        mis_level = tree.clean(tree_pointer[level_s]) # clean tree
+        mis_level = tree.clean(tree_pointer[level_s], chrom, level_pos, rm_f) # clean tree
         if mis_level is not None:
             '''Delete subtree at and after mis_level.'''
             tree.delete_depth(tree_pointer[level_s][0], mis_level)
@@ -143,6 +144,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             (len(heter_snp), heter_snp, level_pos, chrom, heter_f)
     assert level_e == len(pos_index), 'SNP pos and index not equal.'
     print(' - Finish analysis phased fragment: %d.' % len(phase_pos))
+    rm_f.close()
 
     return phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp
 
@@ -191,11 +193,6 @@ def level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p):
         Clean the SNP in heter_snp, pos_level and level_pos.
     '''
     pos = level_pos[mis_level]
-    print('%d' % pos)
-    '''
-    with open(heter_p, 'a') as heter_f:
-        heter_f.write('mis_align\t%d\n' % pos)
-    '''
     del heter_snp[pos]
     pos_level = None
     level_pos = None

@@ -3,6 +3,7 @@ dir=./HLA_A
 gene=A
 rm -rf $dir
 python3 phasing.py -s 29910247 -e 29913661 -o $dir 
+exit
 
 # fetch fastq
 python3 fetch.py $dir/phase_0.0.txt $dir/phase_1.0.txt $dir/phase_0.0.fq $dir/phase_1.0.fq

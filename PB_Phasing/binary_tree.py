@@ -707,7 +707,7 @@ class LinkedBinaryTree(object):
                 self.add_left(other, Marker(dep+1, n, 0))
                 self.add_right(other, Marker(dep+1, n, 1))
 
-    def clean(self, left_right_p):
+    def clean(self, left_right_p, chrom, level_pos, rm_f):
         '''Return the min level of node need to be clean.'''
         for p in left_right_p:
             for other in self.__subtree_preorder(p):
@@ -715,10 +715,14 @@ class LinkedBinaryTree(object):
                 dep = mar.get_depth()  # depth of mar
                 clean_type = mar.get_clean() # clean value: 0=do not clean 1=seq/align error 2=homo snp
                 if clean_type == 1:
-                    print('    rm seq-error/mis-aligned SNP at level:%d' % dep, end=' ')
+                    pos = level_pos[dep]
+                    print('    rm seq-error/mis-aligned SNP at level:%d %s %d' % (dep, chrom, pos))
+                    rm_f.write('seq-error/mis-aligned\t%s\t%d\n' % (chrom, pos))
                     return dep
                 elif clean_type == 2:
-                    print('    rm homo/ambiguous-heter SNP at level:%d' % dep, end=' ')
+                    pos = level_pos[dep]
+                    print('    rm homo/ambiguous-heter SNP at level:%d %s %d' % (dep, chrom, pos))
+                    rm_f.write('homo/ambiguous-heter\t%s\t%d\n' % (chrom, pos))
                     return dep
 
     def delete_depth(self, p, d):
