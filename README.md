@@ -1,22 +1,23 @@
 # PB_Phasing
 
-- PacBio reads haplotype phasing program.
-
+- PacBio reads haplotype phasing program by applying binary tree.
 - Perform better than Samtools phase on PacBio extra long reads.
 
+## Install
 ```
-### All reads of gene HLA-A(IGV view).
-![All reads in gene HLA-A](./workFlow/HLA-all.png)
-
-### Samtools phasing result of gene HLA-A reads(IGV view).
-![Samtools phase](workFlow/HLA-A_SAMtools.png)
-
-### My phasing result of gene HLA-A reads(IGV view).
-![my phase](workFlow/HLA-A_my.png)
-
-## Data volume (sequencing depth) is a key factor.
-
-## Suggestions:
-* If pattern frequency in seed selection is too low (2-3) and the pattern is too many (>40 SNPs) try to lower -w (500bp default) to 300.
-* If read extention time is too low (<10) try to lower -c (0.95 default) to 0.8+.
+git clone
 ```
+
+## Run
+Firstly, get ccs corrected Fastq files from raw PacBio reads.
+Secondly, get sam files by running BWA-MEM (-x pacbio) alignment to ccs Fastq files.
+Thirdly, convert sam files to bam files, merge them, sort merged bam file and index it.
+Then run this program by:
+```
+/path/to/phasing.py -m chromosome -s start_pos -e end_pos -o output_dir
+```
+See more information by: -h
+
+## Result
+Phased fragments' qname will be in your output_dir folder.
+Logs file will be in your output_dir/log folder.
