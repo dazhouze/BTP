@@ -14,23 +14,22 @@ def fetch(work_dir, bam, chrom='chr6'):
     if os.path.exists(bam) is False:
         raise ValueError('%s is not exists.' % bam)
 
-    qname_path = os.path.abspath(work_dir)
+    work_path = os.path.abspath(work_dir)
     phase_0_qname=[] # 2d list for qname
     phase_1_qname=[] # 2d list for qname
     num = 0 # phase file No.
     total_read = 0
-    while os.path.exists('%s/phase_0.%d.txt' % (qname_path, num)) and os.path.exists('%s/phase_1.%d.txt' % (qname_path, num)):
-        print('%s/phase_0.%d.txt' % (qname_path, num), '%s/phase_1.%d.txt' % (qname_path, num))
+    while os.path.exists('%s/Qname/phase_0.%d.txt' % (work_path, num)) and os.path.exists('%s/Qname/phase_1.%d.txt' % (work_path, num)):
         phase_0_qname.append(None)
         phase_1_qname.append(None)
         qname_0 = {}
         qname_1 = {}
-        with open('%s/phase_0.%d.txt' % (qname_path, num), 'r') as f0_f:
+        with open('%s/Qname/phase_0.%d.txt' % (work_path, num), 'r') as f0_f:
             for line in f0_f:
                  qname = line.rstrip()
                  qname_0.setdefault(qname, 1)
 
-        with open('%s/phase_1.%d.txt' % (qname_path, num)) as f1_f:
+        with open('%s/Qname/phase_1.%d.txt' % (work_path, num)) as f1_f:
             for line in f1_f:
                  qname = line.rstrip()
                  qname_1.setdefault(qname, 1)
@@ -42,8 +41,8 @@ def fetch(work_dir, bam, chrom='chr6'):
     phase_0_out = [None]*num # output fastq file
     phase_1_out = [None]*num # output fastq file
     for i in range(0, num):
-        phase_0_out[i] = open('%s/phase_0.%d.pos' % (qname_path, i), 'w')
-        phase_1_out[i] = open('%s/phase_1.%d.pos' % (qname_path, i), 'w')
+        phase_0_out[i] = open('%s/Pos/phase_0.%d.pos' % (work_path, i), 'w')
+        phase_1_out[i] = open('%s/Pos/phase_1.%d.pos' % (work_path, i), 'w')
          
     bamfile = pysam.AlignmentFile(bam, "rb") # file handle of BAM file
     target = bamfile.fetch(chrom) # iterable method of target region read
