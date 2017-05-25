@@ -69,6 +69,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
             for j in i:
                 n += 1
     sum_f.write('Phased reads total number: %d\n' % n)
+    sum_f.write('Not phased reads total number: %d\n' % len(phase_None_q))
 
     ''' Reads' Qname print out. '''
     for fragment in range(0, len(phase_0_q)):
@@ -81,7 +82,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
         with open(out, 'w') as out_f:
             for x in phase_1_q[fragment]:
                 out_f.write('%s\n' % x)
-    out = os.path.join(output, 'phase_None.txt') # path of phase_1 qname
+    out = os.path.join(log, 'phase_None.txt') # path of phase_None qname
     with open(out, 'w') as out_f:
         for x in phase_None_q:
             out_f.write('%s\n' % x)
