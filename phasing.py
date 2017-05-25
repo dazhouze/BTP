@@ -60,7 +60,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     sum_f.write('Binary tree\'s heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Reads evaluation. '''
-    phase_0_q, phase_1_q = evaluate_read.evaluation\
+    phase_0_q, phase_1_q, phase_None_q = evaluate_read.evaluation\
         (phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, reg_s, reg_e, hit_p)
     sum_f.write('Phased fragments total number: %d\n' % len(phase_0))
     n = 0 # count of phased reads
@@ -81,6 +81,10 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
         with open(out, 'w') as out_f:
             for x in phase_1_q[fragment]:
                 out_f.write('%s\n' % x)
+    out = os.path.join(output, 'phase_None.txt') # path of phase_1 qname
+    with open(out, 'w') as out_f:
+        for x in phase_None_q:
+            out_f.write('%s\n' % x)
 
     sum_f.close()
     return 0

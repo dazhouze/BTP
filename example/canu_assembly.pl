@@ -15,5 +15,4 @@ for my $f (@fastqs){
     my $len = $end - $start;
     next if ($len < 1);
     system("canu -pacbio-raw $work_dir/Fastq/phase_$phase.$num.fastq -p frag_$num -d $work_dir/phase_$phase\_$num genomeSize=$len useGrid=false");
-    last;
 }

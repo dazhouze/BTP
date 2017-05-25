@@ -11,6 +11,7 @@ def evaluation(phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, re
     print(' - Start reads evaluation.')
     hit_f = open(hit_p, 'w')
     phase_0_q, phase_1_q = [None]*len(phase_0), [None]*len(phase_0) # list for qname
+    phase_None_q = [] # list for None phase reads' qname
     for i in range(0, len(phase_0)): # phased region one by one
         phase_0_q_p, phase_1_q_p = [], [] # part list for qname
         for x in read_queue: # x is Read object
@@ -52,6 +53,8 @@ def evaluation(phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, re
                 phase_0_q_p.append(qname)
             elif cons_1_n > cons_0_n: # phase 1 read
                 phase_1_q_p.append(qname)
+            else:
+                phase_None_q.append(qname)
             '''
             else:
                 print('==', qname, cons_1_n , cons_0_n, conf_n)
@@ -64,5 +67,6 @@ def evaluation(phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, re
     print(' - Finish reads evaluation.')
     for x in range(0, len(phase_0)):
         print('    fragment No.%d reads number: phase_0:%d phase_1:%d' % (x, len(phase_0_q[x]), len(phase_1_q[x])))
+    print('    Not phased reads:%d' % (len(phase_None_q)))
 
-    return phase_0_q, phase_1_q
+    return phase_0_q, phase_1_q, phase_None_q
