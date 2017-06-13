@@ -62,7 +62,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     ''' Reads evaluation. '''
     phase_0_q, phase_1_q, phase_None_q = evaluate_read.evaluation\
         (phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, reg_s, reg_e, hit_p)
-    sum_f.write('Phased fragments total number: %d\n' % len(phase_0))
+    sum_f.write('\nResult:\nPhased fragments total number: %d\n' % len(phase_0))
     n = 0 # count of phased reads
     for x in (phase_0_q, phase_1_q):
         for i in x:
