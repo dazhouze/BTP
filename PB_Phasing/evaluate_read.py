@@ -45,7 +45,8 @@ def evaluation(phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, re
 
             hit_f.write('%d\t%d\t%d\n' % (cons_0_n, cons_1_n, conf_n))
 
-            if cons_0_n == cons_1_n == conf_n == 0:
+            if cons_0_n == cons_1_n == 0:
+            #if cons_0_n == cons_1_n == conf_n == 0:
                 phase_0_q_p.append(qname)
                 phase_1_q_p.append(qname)
             elif cons_0_n > cons_1_n: # phase 0 read
@@ -54,11 +55,6 @@ def evaluation(phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, re
                 phase_1_q_p.append(qname)
             else:
                 phase_None_q.append(qname)
-            '''
-            else:
-                print('==', qname, cons_1_n , cons_0_n, conf_n)
-                pass
-            '''
         phase_0_q[i] = phase_0_q_p
         phase_1_q[i] = phase_1_q_p
     hit_f.close()

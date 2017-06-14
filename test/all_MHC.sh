@@ -7,8 +7,8 @@ python3 phasing.py -o $dir
 mkdir -p $dir/Pos
 mkdir -p $dir/Fastq
 mkdir -p $dir/Qname
-mv $dir/*fastq Fastq
-mv $dir/*txt Qname
+mv $dir/*fastq $dir/Fastq
+mv $dir/*txt $dir/Qname
 python3 example/fastq_fetch.py $dir $ccs_fastq
 python3 example/canu_fetch.py $dir $ccs_bam
-perl example/canu_assembly.pl $dir
+(perl example/canu_assembly_0.pl $dir &); (perl example/canu_assembly_1.pl $dir &)
