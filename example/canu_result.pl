@@ -12,7 +12,7 @@ for my $f (@sub_dir){
 
     my $file = readpipe("ls $work_dir/phase_$phase\_$num/");
     if ($file=~/contigs\.fasta/){
-        my $contig_num = readpipe("cat $work_dir/phase_$phase\_$num/frag_$num.contigs.fasta | grep '>' | wc -l");
+        my $contig_num = readpipe("cat $work_dir/phase_$phase\_$num/*contigs.fasta | grep '>' | wc -l");
         chomp($contig_num);
         $contig_num = int($contig_num);
         print("#multi_contig: phase_$phase.$num contig:$contig_num\n") if $contig_num!= 1;

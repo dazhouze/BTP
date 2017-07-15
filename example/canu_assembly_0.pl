@@ -15,7 +15,7 @@ for my $f (@fastqs){
     my $len = $end - $start;
     next if ($len < 1);
     my $cer = 0.3; # correctedErrorRate
-    while ($cer >= 0.04){
+    while ($cer >= 0.1){
         my $contig_num = (split/\s/,readpipe("cat canu_assembly/phase_$phase\_$num/*contigs.fasta | grep \">\" | wc -l "))[0];
         if ($contig_num){
             print("phase_$phase\_$num\t$cer\n");
