@@ -438,12 +438,11 @@ class LinkedBinaryTree(object):
                 node.set_right(None)
                 other = None
 
-    def pruning(self, p, tree_p, subtree_dir):
+    def pruning(self, p, pruning_f, subtree_dir):
         '''Decide the SNP linkage result(based on element value).
         And crop non SNP linkage branch and subtree.
         And return the root of tree or the break point(new root of tree)
         '''
-        pruning_f = open(tree_p, 'a')
         result = [] # result list: tree node Position
         if not self.is_empty():
             for other in self.__subtree_preorder(p):

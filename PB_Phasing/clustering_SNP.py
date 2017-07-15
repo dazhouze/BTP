@@ -23,7 +23,7 @@ tree:
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p, rm_p):
+def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_f, heter_p, rm_p):
     '''Clustering heterozygous SNP marker by optimised binary tree algorithm.
     Use slice tree.
     Back up read queue.
@@ -114,10 +114,10 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             cursor = read_queue.after(cursor) # cursor point to next node
             # end of cursor traverse read_queue
         '''Alignment error and snp error check.'''
-        pointers = tree.pruning(tree_pointer[level_s][0], tree_p, 0) # left subtree pruning
+        pointers = tree.pruning(tree_pointer[level_s][0], tree_f, 0) # left subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][0] = pointers[x]
-        pointers = tree.pruning(tree_pointer[level_s][1], tree_p, 1) # right subtree pruning
+        pointers = tree.pruning(tree_pointer[level_s][1], tree_f, 1) # right subtree pruning
         for x in range(0, len(pointers)):
             tree_pointer[level_s+x+1][1] = pointers[x]
         '''Clean alignment error snps and ambiguous snps.'''
@@ -128,7 +128,7 @@ def clustering(tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree
             tree.delete_depth(tree_pointer[level_s][1], mis_level)
             '''Remove homo snp and alignment error snp in heter_snp dict.'''
             heter_snp, pos_level, level_pos = level_clean\
-                (mis_level, heter_snp, pos_level, level_pos, heter_p)
+                (mis_level, heter_snp, pos_level, level_pos)
             tree_pointer.pop(mis_level)
             level_s = mis_level - 1
         else:
@@ -188,7 +188,7 @@ def pattern(start, end, read_snp, heter_snp, level_s, level_e, level_pos):
             pass
     return pat
 
-def level_clean(mis_level, heter_snp, pos_level, level_pos, heter_p):
+def level_clean(mis_level, heter_snp, pos_level, level_pos):
     ''' Clean the level because of homo snp and alignemnt error.
         Clean the SNP in heter_snp, pos_level and level_pos.
     '''

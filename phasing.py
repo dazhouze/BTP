@@ -19,6 +19,7 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     '''
     import os.path
     import pysam
+    import time
     from PB_Phasing import positional_list, binary_tree, detect_SNP, filter_SNP, clustering_SNP, evaluate_read
 
     ''' init output directory '''
@@ -35,6 +36,8 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     hit_p = os.path.join(log, 'read_eval.txt') # reads evaluation
     sum_p = os.path.join(log, 'summary.txt') # path of summary.txt
     sum_f = open(sum_p, 'w') # path of summary
+    now_time = time.localtime()
+    sum_f.write('%s %s %s %s %s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('***\nOptions:\ninput: \"%s\"\noutput:\"%s\"\nchromosome=%s, start=%d, end=%d\nseq_error=%.2f\n' \
                 % (input, output, chrom, reg_s, reg_e, seq_error))
     print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input, output))
@@ -42,12 +45,16 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     ''' Entry read information '''
     read_queue = positional_list.PositionalList() # initialize a positional list
     read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input, read_queue)
+    now_time = time.localtime()
+    sum_f.write('%s %s %s %s %s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('Detected Reads number: %d\n' % len(read_queue))
     sum_f.write('Primary candidate heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Identify heterozygous SNP marker; seq error and homo SNP (within block) '''
     # heter_snp dict: k is position, v is tuple for max frequency SNP and second max frequency SNP.
     heter_snp = filter_SNP.remove(read_queue, heter_snp, seq_depth, chrom, reg_s, reg_e, seq_error, snp_p) 
+    now_time = time.localtime()
+    sum_f.write('%s %s %s %s %s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('Filtered candidate heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Heterozygous SNP clustering by construct binary tree. '''
@@ -55,19 +62,27 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     tree.add_root(binary_tree.Marker(0, 'root', 0)) # root
     tree.setdefault(tree.root(), 1, 1)
     bak_queue = positional_list.PositionalList() # a back up positional list
+    tree_f = open(tree_p, 'a')
     phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp = clustering_SNP.clustering\
-        (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_p, heter_p, rm_p)
+        (tree, read_queue, bak_queue, heter_snp, chrom, reg_s, reg_e, tree_f, heter_p, rm_p)
+    tree_f.close()
+    now_time = time.localtime()
+    sum_f.write('%s %s %s %s %s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('Binary tree\'s heterozygous SNPs: %d\n' % len(heter_snp))
 
     ''' Reads evaluation. '''
     phase_0_q, phase_1_q, phase_None_q = evaluate_read.evaluation\
         (phase_0, phase_1, phase_pos, pos_index, read_queue, heter_snp, reg_s, reg_e, hit_p)
+    now_time = time.localtime()
+    sum_f.write('%s %s %s %s %s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('\nResult:\nPhased fragments total number: %d\n' % len(phase_0))
     n = 0 # count of phased reads
     for x in (phase_0_q, phase_1_q):
         for i in x:
             for j in i:
                 n += 1
+    now_time = time.localtime()
+    sum_f.write('%s %s %s %s %s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('Phased reads total number: %d\n' % n)
     sum_f.write('Not phased reads total number: %d\n' % len(phase_None_q))
 
