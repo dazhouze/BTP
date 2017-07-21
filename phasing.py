@@ -10,10 +10,10 @@ Binary tree.
 __author__ = 'Zhou Ze'
 __version__ = '0.2.0'
 
-def main(input, output, chrom, reg_s, reg_e, seq_error):
+def main(input_file, output_file, chrom, reg_s, reg_e, seq_error):
     '''
-    input: SAM/BAM file path
-    output: output directory path
+    input_file: SAM/BAM file path
+    output_file: output_file directory path
     reg_s: region start coordinate
     reg_e: region end coordinate
     '''
@@ -22,11 +22,11 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     import time
     from PB_Phasing import positional_list, binary_tree, detect_SNP, filter_SNP, clustering_SNP, evaluate_read
 
-    ''' init output directory '''
-    output_dir = os.path.abspath(output)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    log = os.path.join(output, 'log') # path of log folder
+    ''' init output_file directory '''
+    output_file_dir = os.path.abspath(output_file)
+    if not os.path.exists(output_file_dir):
+        os.makedirs(output_file_dir)
+    log = os.path.join(output_file, 'log') # path of log folder
     if not os.path.exists(log):
         os.makedirs(log)
     snp_p = os.path.join(log, 'prime_snp.txt') # primary result of snps
@@ -38,13 +38,13 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     sum_f = open(sum_p, 'w') # path of summary
     now_time = time.localtime()
     sum_f.write('%s-%s-%s %s:%s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
-    sum_f.write('***\nOptions:\ninput: \"%s\"\noutput:\"%s\"\nchromosome=%s, start=%d, end=%d\nseq_error=%.2f\n' \
-                % (input, output, chrom, reg_s, reg_e, seq_error))
-    print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input, output))
+    sum_f.write('***\nOptions:\ninput_file: \"%s\"\noutput_file:\"%s\"\nchromosome=%s, start=%d, end=%d\nseq_error=%.2f\n' \
+                % (input_file, output_file, chrom, reg_s, reg_e, seq_error))
+    print(' - Input:  \"%s\"\n - Output: \"%s\"' % (input_file, output_file))
 
     ''' Entry read information '''
     read_queue = positional_list.PositionalList() # initialize a positional list
-    read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input, read_queue)
+    read_queue, heter_snp, seq_depth = detect_SNP.detection(chrom, reg_s, reg_e, input_file, read_queue)
     now_time = time.localtime()
     sum_f.write('%s-%s-%s %s:%s\n' % (now_time[0], now_time[1], now_time[2], now_time[3], now_time[4]))
     sum_f.write('Detected Reads number: %d\n' % len(read_queue))
@@ -87,11 +87,11 @@ def main(input, output, chrom, reg_s, reg_e, seq_error):
     ''' Reads' Qname print out. '''
     for fragment in range(0, len(phase_0_q)):
         '''fragment caused by break point(uncovered region on reference genome).'''
-        out = os.path.join(output, 'phase_0.%d.txt' % fragment) # path of phase_0 qname
+        out = os.path.join(output_file, 'phase_0.%d.txt' % fragment) # path of phase_0 qname
         with open(out, 'w') as out_f:
             for x in phase_0_q[fragment]:
                 out_f.write('%s\n' % x)
-        out = os.path.join(output, 'phase_1.%d.txt' % fragment) # path of phase_1 qname
+        out = os.path.join(output_file, 'phase_1.%d.txt' % fragment) # path of phase_1 qname
         with open(out, 'w') as out_f:
             for x in phase_1_q[fragment]:
                 out_f.write('%s\n' % x)
@@ -115,8 +115,8 @@ if __name__ == '__main__': # Run the program.
         sys.exit(2)
 
     '''Set default value.'''
-    output = 'HLA_test' # output dirctory
-    input = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input BAM/SAM file
+    output_file = 'HLA_test' # output_file dirctory
+    input_file = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input_file BAM/SAM file
     chrom = 'chr6' # chromosome name
     reg_s = 28476797 # start coordinate of the region
     reg_e = 33449354 # end coordinate of the region
@@ -134,10 +134,10 @@ if __name__ == '__main__': # Run the program.
             sys.exit()
 
         elif o == '-b':
-            input = a
+            input_file = a
 
         elif o == '-o':
-            output = a
+            output_file = a
 
         elif o == '-m':
             chrom = a # chromosome
@@ -152,5 +152,5 @@ if __name__ == '__main__': # Run the program.
             seq_error = float(a) # upper heter snp cutoff, alt fre/seq depth
 
     '''Run the program.'''
-    usage.check(input, output, chrom, reg_s, reg_e, seq_error)
-    main(input, output, chrom, reg_s, reg_e, seq_error)
+    usage.check(input_file, output_file, chrom, reg_s, reg_e, seq_error)
+    main(input_file, output_file, chrom, reg_s, reg_e, seq_error)
