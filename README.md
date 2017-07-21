@@ -5,7 +5,7 @@
 
 ## Install
 ```
-git clone
+git clone git@github.com:dazhouze/BTP.git
 ```
 
 ## Run
