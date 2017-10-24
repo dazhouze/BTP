@@ -1,7 +1,8 @@
 # Binary tree based diploid genome Phasing
 
 - PacBio CCS reads haplotype phasing program.
-- Perform better than Samtools phase on PacBio extra long and high error rate reads.
+- Only for diploid genome (e.g. human genome).
+- It performs better than SAMtools-phase on PacBio ultra long and high-error reads.
 
 ## Install
 ```
@@ -23,4 +24,4 @@ For more information: /path/to/phasing.py -h
 Example srcipt can be found in the example dirctory of this repo.
 
 ## Result
-Phased fragments' QNAME will be in your output_dir folder. Then you need to fetch FASTQ file. The logs file will be in your output_dir/log folder.
+Phased fragments' QNAME will be in your output_dir folder. Then you need to fetch FASTQ file. The log files will be in your output_dir/log folder.
