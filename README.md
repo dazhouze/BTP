@@ -23,5 +23,4 @@ For more information: /path/to/phasing.py -h
 Example srcipt can be found in the example dirctory of this repo.
 
 ## Result
-Phased fragments' QNAME will be in your output_dir folder. Then you need to fetch FASTQ file 
-Logs file will be in your output_dir/log folder.
+Phased fragments' QNAME will be in your output_dir folder. Then you need to fetch FASTQ file. The logs file will be in your output_dir/log folder.
