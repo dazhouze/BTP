@@ -20,7 +20,8 @@ Python3 and pysam module.
 ```
 /path/to/phasing.py -m chromosome -s start_pos -e end_pos -o output_dir -b BAM
 ```
-For more information please see /path/to/phasing.py -h
+For more information please see /path/to/phasing.py -h.
+
 Example srcipt can be found in the example dirctory of this repo.
 
 ## Result:
