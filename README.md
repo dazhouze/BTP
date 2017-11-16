@@ -1,4 +1,4 @@
-# Binary tree based diploid genome Phasing software
+# Binary Tree based diploid genome Phasing software (BTP)
 
 - PacBio CCS reads haplotype phasing program.
 - Only for diploid genome (e.g. human genome).
