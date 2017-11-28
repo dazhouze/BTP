@@ -18,7 +18,7 @@ Python3 and pysam module.
 - Thirdly, convert alignment files to BAM files, then merge, sort and bulid index of BAM file.
 - Fourthly, run BTP using command below:
 ```
-/path/to/phasing.py -m chromosome -s start_pos -e end_pos -o output_dir -b BAM
+/path/to/phasing.py -m <chromosome_id> -s <start_pos> -e <end_pos> -o <output_dir> -b <aln.srt.bam>
 ```
 For more information please see /path/to/phasing.py -h.
 
