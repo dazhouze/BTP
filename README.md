@@ -14,9 +14,10 @@ Python3 and pysam module.
 
 ## Run:
 - Firstly, generate accurate circular consensus sequenct (CCS) from raw PacBio .h5 reads.
-- Secondly, map CCS to reference genome through BWA-MEM (-x pacbio) or any other aligner.
-- Thirdly, convert alignment files to BAM files, then merge, sort and bulid index of BAM file.
-- Fourthly, run BTP using command below:
+- Secondly, map CCS to reference genome through BWA-MEM (-x pacbio) or any other aligner. 
+- Thirdly, select the alignment with highest AS score, if there are multiple alignment results of one read.
+- Fourthly, convert alignment files to BAM format, then merge, sort and bulid index for the BAM file.
+- Fifthly, phase haplotypes by running BTP using command below:
 ```
 /path/to/phasing.py -m <chromosome_id> -s <start_pos> -e <end_pos> -o <output_dir> -b <aln.srt.bam>
 ```
@@ -26,3 +27,6 @@ Example srcipt can be found in the example dirctory of this repo.
 
 ## Result:
 Phased read Qname will be in your output_dir folder. Then you need to fetch FASTQ data by the Qname and assembly the FASTQ data by [Canu](https://github.com/marbl/canu) or any other assembler. The log files will be in your output_dir/log folder.
+
+## TODO:
+In multiple aligned reads, we select the alignment in highest AS score to avoid mis-alignment influencing phasing process. And in structure variants, there will be two true split alignments of a single reads, and in this case we will ignore one of the true alignment and generate a break point between phased blocks. Further, we will try to support this case.
