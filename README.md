@@ -13,11 +13,11 @@ git clone git@github.com:dazhouze/BTP.git
 Python3 and pysam module.
 
 ## Run:
-- Firstly, generate accurate circular consensus sequenct (CCS) from raw PacBio .h5 reads.
+- Firstly, generate accurate circular consensus sequence (CCS) from raw PacBio .h5 reads.
 - Secondly, map CCS to reference genome through BWA-MEM (-x pacbio) or any other aligner. 
-- Thirdly, select the alignment with highest AS score, if there are multiple alignment results of one read.
-- Fourthly, convert alignment files to BAM format, then merge, sort and bulid index for the BAM file.
-- Fifthly, phase haplotypes by running BTP using command below:
+- Thirdly, select the highest AS score alignment result of read, if there are multiple-alignment results of same read.
+- Fourthly, convert alignment results, SAM files, to BAM format, then merge, sort and bulid index for the BAM file.
+- Fifthly, phase haplotypes by running BTP using command below, user have to assign a specific region of reference genome:
 ```
 /path/to/phasing.py -m <chromosome_id> -s <start_pos> -e <end_pos> -o <output_dir> -b <aln.srt.bam>
 ```
