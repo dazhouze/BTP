@@ -115,8 +115,8 @@ if __name__ == '__main__': # Run the program.
         sys.exit(2)
 
     '''Set default value.'''
-    output_file = 'HLA_test' # output_file dirctory
-    input_file = '/ifs1/ST_IM/USER/zhouze/YH_MHC_PacBio/Data/CCS/merged5YH.best.ccs.sort.bam' # input_file BAM/SAM file
+    output_file = 'output' # output_file dirctory
+    input_file = '' # input_file BAM/SAM file
     chrom = 'chr6' # chromosome name
     reg_s = 28476797 # start coordinate of the region
     reg_e = 33449354 # end coordinate of the region
