@@ -19,7 +19,7 @@ Python3 and pysam module.
 - Fourthly, convert alignment results, SAM files, to BAM format, then merge, sort and bulid index for the BAM file.
 - Fifthly, phase haplotypes by running BTP using command below, user have to assign a specific region of reference genome:
 ```
-/path/to/phasing.py -m <chromosome_id> -s <start_pos> -e <end_pos> -o <output_dir> -b <aln.srt.bam> -r <seq-error AF>
+/path/to/phasing.py -m <chr> -s <start> -e <end> -o <output_dir> -b <aln.srt.bam> -r <seq-error AF>
 ```
 For more information please see /path/to/phasing.py -h. And for target capture sequencing, -r 0.25 is appropriate (default), but for WGS data, higher -r value is expected, eg. 0.3 or 0.35.
 
