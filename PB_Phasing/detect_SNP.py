@@ -91,9 +91,7 @@ def detection(chrom, reg_s, reg_e, input, read_queue):
         Match(SNP): (116, 29052381, 'a') (117, 29052382, 'C')
         '''
         '''Read information entry'''
-        for x in read.get_aligned_pairs(matches_only=False, with_seq=True):
-            # tuple of read pos, ref pos, ref seq
-            read_pos, ref_pos, ref_seq = x[0:3]
+        for read_pos,ref_pos,ref_seq in read.get_aligned_pairs(matches_only=False, with_seq=True):
             if ref_seq is not None and reg_s <= ref_pos <= reg_e:
                 # Match(SNP and non SNP) and Deletions
                 snp_pos = ref_pos
